@@ -27,6 +27,8 @@ const INITIAL_PRODUCTS = [
         location: 'Ký túc xá Cỏ May UTC2 (0.5 km)',
         distanceKm: 0.5,
         expiryDays: 6,
+        status: 'approved',
+        approvedAt: Date.now() - (1 * 24 * 60 * 60 * 1000),
         imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=60',
         description: 'Sách sạch đẹp không viết bậy, có kèm đề cương ôn thi học kỳ điểm 9+.'
     },
@@ -44,6 +46,8 @@ const INITIAL_PRODUCTS = [
         location: 'Thư viện & Khu tự học UTC2 (0.2 km)',
         distanceKm: 0.2,
         expiryDays: 7,
+        status: 'approved',
+        approvedAt: Date.now() - (2 * 60 * 60 * 1000),
         imageUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=500&auto=format&fit=crop&q=60',
         description: 'Bản in màu sắc nét, có chú thích code C++ giải thích cây AVL và đồ thị.'
     },
@@ -60,6 +64,8 @@ const INITIAL_PRODUCTS = [
         location: 'Cổng 1 Trường UTC2 (0.4 km)',
         distanceKm: 0.4,
         expiryDays: 4,
+        status: 'approved',
+        approvedAt: Date.now() - (3 * 24 * 60 * 60 * 1000),
         imageUrl: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=500&auto=format&fit=crop&q=60',
         description: 'Nồi chống dính còn rất tốt, nấu cơm dẻo nhanh, tiết kiệm điện.'
     },
@@ -77,6 +83,8 @@ const INITIAL_PRODUCTS = [
         location: 'Ký túc xá Cỏ May UTC2 (0.5 km)',
         distanceKm: 0.5,
         expiryDays: 5,
+        status: 'approved',
+        approvedAt: Date.now() - (2 * 24 * 60 * 60 * 1000),
         imageUrl: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?w=500&auto=format&fit=crop&q=60',
         description: 'Mới 98%, phím nảy nhạy, còn tem bảo hành chính hãng Bitex.'
     }
@@ -122,6 +130,7 @@ class AppController {
         this.depositOrders = [];
         this.adminDisputes = [];
         this.adminWarningsIssued = [];
+        this.notifications = [];
 
         this.filterMaxPrice = 350000;
         this.filterMinPrice = 0;
@@ -210,6 +219,20 @@ class AppController {
         // Tự động dọn dẹp tin nhắn của các đơn hàng đã hoàn tất thành công từ trước
         this.cleanupCompletedOrdersChats();
 
+        // Tải thông báo người dùng
+        const savedNotifs = localStorage.getItem('unipass_user_notifications');
+        if (savedNotifs) {
+            try { this.notifications = JSON.parse(savedNotifs); } catch (e) { this.notifications = []; }
+        } else {
+            this.notifications = [];
+        }
+
+        // Tự động kiểm tra và xóa các bài đăng đã quá 7 ngày kể từ lúc được duyệt
+        this.checkAndCleanExpiredPosts();
+        if (typeof window !== 'undefined') {
+            setInterval(() => this.checkAndCleanExpiredPosts(), 60000);
+        }
+
         // Tải hồ sơ khiếu nại giao dịch
         const savedDisputes = localStorage.getItem('unipass_admin_disputes');
         if (savedDisputes) {
@@ -243,6 +266,8 @@ class AppController {
         this.renderProducts();
         this.updateDepositBadge();
         this.updateChatUnreadBadge();
+        this.updateNotificationBadge();
+        this.renderNotifications();
         this.initSupabaseSync();
         this.initOnlineSync();
     }
@@ -563,6 +588,18 @@ class AppController {
                 post = { ...data.post, status: 'approved', approvedAt: Date.now() };
                 this.products.unshift(post);
             }
+
+            if (post) {
+                this.addNotification({
+                    targetName: post.seller,
+                    targetEmail: post.sellerEmail,
+                    title: 'Bài đăng đã được duyệt!',
+                    message: `Bài đăng "${post.title}" của bạn đã được Admin phê duyệt TimeMark và hiển thị lên trang chính (+1 điểm uy tín). Bài sẽ tự động xóa sau 7 ngày kể từ lúc duyệt.`,
+                    type: 'post_approved',
+                    relatedId: post.id
+                });
+            }
+
             localStorage.setItem('unipass_products', JSON.stringify(this.products));
             this.rebuildDSACache();
             this.renderProducts();
@@ -579,6 +616,14 @@ class AppController {
             if (post) {
                 post.status = 'rejected';
                 post.rejectReason = data.reason || 'Ảnh TimeMark không hợp lệ';
+                this.addNotification({
+                    targetName: post.seller,
+                    targetEmail: post.sellerEmail,
+                    title: 'Bị từ chối duyệt bài đăng',
+                    message: `Bài đăng "${post.title}" của bạn bị Admin từ chối duyệt. Lý do: ${post.rejectReason}`,
+                    type: 'post_rejected',
+                    relatedId: post.id
+                });
                 localStorage.setItem('unipass_products', JSON.stringify(this.products));
                 this.rebuildDSACache();
                 this.renderProducts();
@@ -628,6 +673,17 @@ class AppController {
                 localStorage.setItem('unipass_deposit_orders', JSON.stringify(this.depositOrders));
                 this.updateDepositBadge();
                 this.renderProfile();
+
+                // Gửi thông báo tới người bán
+                this.addNotification({
+                    targetName: order.seller,
+                    targetEmail: order.sellerEmail,
+                    title: 'Có khách đặt cọc đơn hàng!',
+                    message: `${order.buyer} vừa thêm đơn hàng "${order.productTitle}" của bạn vào đơn cọc. Vui lòng vào mục Cá Nhân bấm Xác Nhận Đơn.`,
+                    type: 'order_deposit',
+                    relatedId: order.id
+                });
+
                 if (order.seller === this.user.name || order.sellerEmail === this.user.email) {
                     if (window.sound) window.sound.playSuccess();
                     showToast(`🤝 [ĐƠN ĐẶT CỌC MỚI] ${order.buyer} vừa đặt cọc món "${order.productTitle}"! Vui lòng vào mục Cá Nhân bấm Xác Nhận Đơn Hàng.`, 'success');
@@ -754,6 +810,10 @@ class AppController {
         } else if (data.type === 'DISPUTES_UPDATED') {
             this.adminDisputes = data.disputes;
             this.renderAdminDashboard();
+        } else if (data.type === 'NOTIFICATIONS_UPDATED') {
+            this.notifications = data.notifications;
+            this.updateNotificationBadge();
+            this.renderNotifications();
         } else if (data.type === 'USER_WARNED') {
             if (data.targetName === this.user.name) {
                 if (window.sound) window.sound.playWarning();
@@ -874,20 +934,40 @@ class AppController {
 
     updateDepositBadge() {
         const badge = document.getElementById('depositOrderCount');
-        if (!badge) return;
+        const profileTotalBadge = document.getElementById('profileDepositTotalBadge');
+
         if (!this.user) {
-            badge.style.display = 'none';
-            badge.innerText = '0';
+            if (badge) {
+                badge.innerText = '0';
+                badge.style.display = 'none';
+            }
+            if (profileTotalBadge) profileTotalBadge.innerText = '0 đơn';
             return;
         }
-        
-        // Đếm số đơn cọc liên quan đến tài khoản hiện tại
-        const myOrderCount = this.depositOrders.filter(o => 
-            o.buyer === this.user.name || o.seller === this.user.name
-        ).length;
 
-        badge.innerText = myOrderCount;
-        badge.style.display = myOrderCount > 0 ? 'inline-block' : 'none';
+        // Lọc các đơn cọc liên quan đến tài khoản hiện tại (người mua HOẶC người bán)
+        const myOrders = this.depositOrders.filter(o => 
+            (o.buyer && o.buyer === this.user.name) || 
+            (o.buyerEmail && o.buyerEmail === this.user.email) ||
+            (o.seller && o.seller === this.user.name) || 
+            (o.sellerEmail && o.sellerEmail === this.user.email)
+        );
+        const myOrderCount = myOrders.length;
+
+        // Nếu tài khoản nào chưa cọc đơn hàng nào thì đơn cọc hiển thị bằng 0
+        if (badge) {
+            badge.innerText = myOrderCount;
+            badge.style.display = 'inline-block';
+            if (myOrderCount === 0) {
+                badge.style.background = '#94a3b8';
+            } else {
+                badge.style.background = '#6366f1';
+            }
+        }
+
+        if (profileTotalBadge) {
+            profileTotalBadge.innerText = `${myOrderCount} đơn`;
+        }
     }
 
     updateChatUnreadBadge() {
@@ -907,6 +987,308 @@ class AppController {
             badge.innerText = count;
         } else {
             badge.style.display = 'none';
+        }
+    }
+
+    // ==========================================
+    // QUẢN LÝ THÔNG BÁO HOẠT ĐỘNG (NOTIFICATION CENTER)
+    // ==========================================
+    saveNotifications() {
+        localStorage.setItem('unipass_user_notifications', JSON.stringify(this.notifications));
+        if (this.syncChannel) {
+            this.syncChannel.postMessage({ type: 'NOTIFICATIONS_UPDATED', notifications: this.notifications });
+        }
+    }
+
+    getUserNotifications() {
+        if (!this.user) return [];
+        const myName = this.user.name;
+        const myEmail = this.user.email;
+        const isAdmin = this.user.role === 'admin' || myEmail === '6651071091@st.utc2.edu.vn';
+
+        return this.notifications.filter(n => {
+            if (n.targetName === myName || (n.targetEmail && n.targetEmail === myEmail)) return true;
+            if (isAdmin && (n.type === 'admin' || n.targetName === 'ALL_ADMINS')) return true;
+            return false;
+        });
+    }
+
+    getUnreadNotificationCount() {
+        return this.getUserNotifications().filter(n => !n.isRead).length;
+    }
+
+    updateNotificationBadge() {
+        const badge = document.getElementById('unreadNotifBadge');
+        const profileCountBadge = document.getElementById('profileNotifBadgeCount');
+        const unreadCount = this.getUnreadNotificationCount();
+        const totalCount = this.getUserNotifications().length;
+
+        if (badge) {
+            if (unreadCount > 0) {
+                badge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+                badge.innerText = '0';
+            }
+        }
+
+        if (profileCountBadge) {
+            profileCountBadge.innerText = `${totalCount} (${unreadCount} mới)`;
+        }
+    }
+
+    addNotification({ targetName, targetEmail, title, message, type = 'info', relatedId = null }) {
+        const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+        const newNotif = {
+            id: 'NOTIF_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            targetName: targetName || '',
+            targetEmail: targetEmail || '',
+            title: title || 'Thông báo mới',
+            message: message || '',
+            type: type, // 'order_deposit', 'order_update', 'post_approved', 'post_rejected', 'post_expired', 'warning', 'info'
+            relatedId: relatedId,
+            timestamp: Date.now(),
+            timeStr: timeStr,
+            isRead: false
+        };
+
+        this.notifications.unshift(newNotif);
+        if (this.notifications.length > 150) {
+            this.notifications = this.notifications.slice(0, 150);
+        }
+
+        this.saveNotifications();
+        this.updateNotificationBadge();
+        this.renderNotifications();
+
+        // Nếu thông báo hướng tới tài khoản hiện tại -> phát âm thanh & hiển thị Toast
+        if (this.user && (this.user.name === targetName || this.user.email === targetEmail)) {
+            if (window.sound) window.sound.playNotification();
+            showToast(`🔔 [THÔNG BÁO] ${title}: ${message}`, (type === 'warning' || type === 'post_rejected') ? 'danger' : 'info');
+        }
+    }
+
+    renderNotifications() {
+        const dropdownList = document.getElementById('notificationDropdownList');
+        const profileList = document.getElementById('profileNotificationsListContainer');
+        const totalCountText = document.getElementById('notifTotalCountText');
+
+        if (!this.user) {
+            const emptyHtml = `
+                <div style="text-align:center; padding:24px 12px; color:#64748b; font-size:12px;">
+                    <div style="font-size:32px; margin-bottom:6px;">🔒</div>
+                    <strong>Vui lòng đăng nhập</strong><br>Đăng nhập để xem thông báo hoạt động của bạn.
+                </div>
+            `;
+            if (dropdownList) dropdownList.innerHTML = emptyHtml;
+            if (profileList) profileList.innerHTML = emptyHtml;
+            if (totalCountText) totalCountText.innerText = '0 thông báo';
+            return;
+        }
+
+        const userNotifs = this.getUserNotifications();
+        if (totalCountText) {
+            totalCountText.innerText = `${userNotifs.length} thông báo (${this.getUnreadNotificationCount()} chưa đọc)`;
+        }
+
+        if (userNotifs.length === 0) {
+            const noNotifHtml = `
+                <div style="text-align:center; padding:28px 14px; color:#64748b; font-size:12px;">
+                    <div style="font-size:32px; margin-bottom:8px;">📭</div>
+                    <strong style="color:#0f172a; font-size:13px; display:block; margin-bottom:4px;">Chưa có thông báo nào</strong>
+                    <p style="margin:0; font-size:11.5px; color:#64748b; line-height:1.4;">
+                        Khi có người cọc đơn, bài đăng được duyệt, hoặc đơn hàng hoàn tất, thông báo sẽ hiển thị tại đây.
+                    </p>
+                </div>
+            `;
+            if (dropdownList) dropdownList.innerHTML = noNotifHtml;
+            if (profileList) profileList.innerHTML = noNotifHtml;
+            return;
+        }
+
+        const renderItemHtml = (n) => {
+            let icon = '🔔';
+            let iconBg = '#e0f2fe';
+            let iconCol = '#0284c7';
+
+            if (n.type === 'order_deposit') {
+                icon = '🛒';
+                iconBg = '#fef3c7';
+                iconCol = '#b45309';
+            } else if (n.type === 'order_update') {
+                icon = '🤝';
+                iconBg = '#dcfce7';
+                iconCol = '#15803d';
+            } else if (n.type === 'post_approved') {
+                icon = '✅';
+                iconBg = '#dcfce7';
+                iconCol = '#15803d';
+            } else if (n.type === 'post_rejected') {
+                icon = '❌';
+                iconBg = '#fee2e2';
+                iconCol = '#dc2626';
+            } else if (n.type === 'post_expired') {
+                icon = '⏳';
+                iconBg = '#fff7ed';
+                iconCol = '#ea580c';
+            } else if (n.type === 'warning') {
+                icon = '⚠️';
+                iconBg = '#fee2e2';
+                iconCol = '#dc2626';
+            }
+
+            const unreadClass = n.isRead ? '' : 'unread';
+
+            return `
+                <div class="notification-item ${unreadClass}" onclick="handleNotificationClick('${n.id}', '${n.type}')">
+                    <div class="notification-item-header">
+                        <div class="notification-item-title">
+                            <span style="background:${iconBg}; color:${iconCol}; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px;">${icon}</span>
+                            <span>${n.title}</span>
+                            ${!n.isRead ? '<span style="background:#0284c7; width:6px; height:6px; border-radius:50%; display:inline-block;"></span>' : ''}
+                        </div>
+                        <span class="notification-item-time">${n.timeStr || ''}</span>
+                    </div>
+                    <div class="notification-item-msg">${n.message}</div>
+                </div>
+            `;
+        };
+
+        const listHtml = userNotifs.map(renderItemHtml).join('');
+        if (dropdownList) dropdownList.innerHTML = listHtml;
+        if (profileList) profileList.innerHTML = listHtml;
+    }
+
+    markAllNotificationsAsRead() {
+        if (!this.user) return;
+        const myName = this.user.name;
+        const myEmail = this.user.email;
+        this.notifications.forEach(n => {
+            if (n.targetName === myName || n.targetEmail === myEmail) {
+                n.isRead = true;
+            }
+        });
+        this.saveNotifications();
+        this.updateNotificationBadge();
+        this.renderNotifications();
+        showToast('✓ Đã đánh dấu tất cả thông báo là đã đọc!', 'info');
+    }
+
+    clearAllUserNotifications() {
+        if (!this.user) return;
+        const myName = this.user.name;
+        const myEmail = this.user.email;
+        this.notifications = this.notifications.filter(n => {
+            return !(n.targetName === myName || n.targetEmail === myEmail);
+        });
+        this.saveNotifications();
+        this.updateNotificationBadge();
+        this.renderNotifications();
+        showToast('🗑 Đã xóa toàn bộ thông báo hoạt động của bạn!', 'info');
+    }
+
+    // ==========================================
+    // TỰ ĐỘNG XÓA BÀI ĐĂNG SAU 7 NGÀY KỂ TỪ LÚC ĐƯỢC DUYỆT
+    // ==========================================
+    formatPostExpiryCountdown(post) {
+        if (!post) {
+            return {
+                text: 'Còn 7 ngày',
+                html: '<span style="background:#fffbeb; color:#d97706; padding:2px 7px; border-radius:4px; font-weight:700; font-size:11px;">⏳ Hết hạn sau: 7 ngày</span>',
+                isExpired: false
+            };
+        }
+
+        const approvedTime = post.approvedAt || post.submittedAt || (Date.now() - (7 - (post.expiryDays || 7)) * 24 * 60 * 60 * 1000);
+        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        const expireTime = approvedTime + SEVEN_DAYS_MS;
+        const msLeft = expireTime - Date.now();
+
+        if (msLeft <= 0) {
+            return {
+                text: 'Đã hết hạn 7 ngày',
+                isExpired: true,
+                isUrgent: true,
+                html: '<span style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; padding:2px 7px; border-radius:4px; font-weight:700; font-size:11px;">⚠️ Đã hết hạn (Tự xóa)</span>'
+            };
+        }
+
+        const totalHours = Math.floor(msLeft / (1000 * 60 * 60));
+        const days = Math.floor(totalHours / 24);
+        const hours = totalHours % 24;
+        const minutes = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
+
+        let countdownStr = '';
+        if (days > 0) {
+            countdownStr = `${days} ngày ${hours} giờ`;
+        } else if (hours > 0) {
+            countdownStr = `${hours} giờ ${minutes} phút`;
+        } else {
+            countdownStr = `${Math.max(1, minutes)} phút`;
+        }
+
+        const isUrgent = days === 0;
+        const bg = isUrgent ? '#fff7ed' : '#fffbeb';
+        const col = isUrgent ? '#c2410c' : '#b45309';
+        const border = isUrgent ? '#ffedd5' : '#fef3c7';
+        const label = isUrgent ? '⚠️ Sắp hết hạn' : '⏳ Hết hạn sau';
+
+        return {
+            text: `${label}: ${countdownStr}`,
+            daysLeft: days,
+            isExpired: false,
+            isUrgent: isUrgent,
+            html: `<span style="background:${bg}; color:${col}; border:1px solid ${border}; padding:2px 7px; border-radius:4px; font-weight:700; font-size:11px; display:inline-flex; align-items:center; gap:4px;" title="Bài đăng tự động xóa sau 7 ngày kể từ lúc Admin duyệt bài">${label}: <strong>${countdownStr}</strong></span>`
+        };
+    }
+
+    checkAndCleanExpiredPosts() {
+        const now = Date.now();
+        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        const expiredList = [];
+        const activeList = [];
+
+        this.products.forEach(p => {
+            // Chỉ xóa bài đăng đã duyệt / đang hiển thị (không xóa nhầm bài pending)
+            if (p.status !== 'pending' && p.status !== 'rejected') {
+                const approvedTime = p.approvedAt || p.submittedAt;
+                if (approvedTime && (now - approvedTime >= SEVEN_DAYS_MS)) {
+                    expiredList.push(p);
+                } else {
+                    activeList.push(p);
+                }
+            } else {
+                activeList.push(p);
+            }
+        });
+
+        if (expiredList.length > 0) {
+            this.products = activeList;
+            this.saveProducts();
+            this.rebuildDSACache();
+            this.renderProducts();
+            this.renderAdminDashboard();
+            this.renderProfile();
+
+            expiredList.forEach(p => {
+                this.addNotification({
+                    targetName: p.seller,
+                    targetEmail: p.sellerEmail,
+                    title: 'Bài đăng hết hạn sau 7 ngày',
+                    message: `Bài đăng "${p.title}" của bạn đã hết hạn sau 7 ngày kể từ lúc được duyệt và đã tự động được gỡ khỏi hệ thống UTC2.`,
+                    type: 'post_expired',
+                    relatedId: p.id
+                });
+
+                if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+                    window.UniPassSupabase.deleteProduct(p.id);
+                }
+                if (window.UniPassOnlineSync) {
+                    window.UniPassOnlineSync.broadcastDeletePost(p.id);
+                }
+            });
+            console.log(`🧹 Đã tự động dọn dẹp ${expiredList.length} bài đăng hết hạn 7 ngày sau khi duyệt.`);
         }
     }
 
@@ -951,6 +1333,10 @@ class AppController {
         if (profRep) profRep.innerText = this.user.reputation;
         if (profAvatar) profAvatar.innerText = letter;
 
+        this.updateDepositBadge();
+        this.updateNotificationBadge();
+        this.renderNotifications();
+
         localStorage.setItem('unipass_current_user', JSON.stringify(this.user));
     }
 
@@ -964,6 +1350,9 @@ class AppController {
         this.user = this.registeredUsers[nextIdx];
 
         this.updateUserUI();
+        this.updateDepositBadge();
+        this.updateNotificationBadge();
+        this.renderNotifications();
         this.renderProducts();
         this.renderProfile();
         this.renderChatMessages();
@@ -1093,8 +1482,8 @@ class AppController {
                             <span>📍 ${item.location}</span>
                         </div>
 
-                        <div class="card-expiry-row">
-                            ⏳ Tự hết hạn sau: ${item.expiryDays} ngày
+                        <div class="card-expiry-row" style="margin: 6px 0;">
+                            ${this.formatPostExpiryCountdown(item).html}
                         </div>
 
                         <button class="card-cta-btn" onclick="event.stopPropagation(); openCheckoutModal('${item.id}')">
@@ -1112,6 +1501,7 @@ class AppController {
         if (!this.user) {
             if (myPosts) myPosts.innerHTML = `<p style="font-size:12px; color:#64748b;">Vui lòng đăng nhập để xem bài đăng.</p>`;
             if (history) history.innerHTML = `<p style="font-size:12px; color:#64748b;">Vui lòng đăng nhập để xem lịch sử cọc.</p>`;
+            this.renderNotifications();
             return;
         }
 
@@ -1125,15 +1515,16 @@ class AppController {
                     if (p.status === 'pending') {
                         statusBadge = `<span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">⏳ Chờ Admin duyệt TimeMark</span>`;
                     } else if (p.status === 'rejected') {
-                        statusBadge = `<span style="background:#fee2e2; color:#b91c1c; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">❌ Bị từ chối duyệt</span>`;
+                        statusBadge = `<span style="background:#fee2e2; color:#b91c1c; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">❌ Bị từ chối: ${p.rejectReason || 'Không hợp lệ'}</span>`;
                     } else {
-                        statusBadge = `<span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">✅ Đã duyệt (Hiển thị)</span>`;
+                        const countdown = this.formatPostExpiryCountdown(p);
+                        statusBadge = `<span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">✅ Đã duyệt</span> ${countdown.html}`;
                     }
 
                     return `
                     <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:8px; font-size:12.5px; display:flex; justify-content:space-between; align-items:center;">
                         <div>
-                            <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <strong>${p.title}</strong>
                                 ${statusBadge}
                             </div>
@@ -1152,18 +1543,41 @@ class AppController {
        if (history) {
             // ✅ Chỉ lấy các đơn mà tài khoản hiện tại là người mua (buyer) HOẶC người bán (seller)
             const myOrders = this.depositOrders.filter(o => 
-                o.buyer === this.user.name || o.buyerEmail === this.user.email ||
-                o.seller === this.user.name || o.sellerEmail === this.user.email
+                (o.buyer && o.buyer === this.user.name) || 
+                (o.buyerEmail && o.buyerEmail === this.user.email) ||
+                (o.seller && o.seller === this.user.name) || 
+                (o.sellerEmail && o.sellerEmail === this.user.email)
             );
 
+            const profileTotalBadge = document.getElementById('profileDepositTotalBadge');
+            if (profileTotalBadge) {
+                profileTotalBadge.innerText = `${myOrders.length} đơn`;
+            }
+
             if (myOrders.length === 0) {
-                history.innerHTML = `<p style="font-size:12px; color:#64748b;">Chưa có đơn cọc nào.</p>`;
+                history.innerHTML = `
+                    <div style="text-align:center; padding:26px 16px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px; color:#64748b;">
+                        <div style="font-size:32px; margin-bottom:8px;">🛒</div>
+                        <strong style="color:#0f172a; font-size:13.5px; display:block; margin-bottom:4px;">Bạn hiện có 0 đơn cọc</strong>
+                        <p style="font-size:11.5px; margin:0 0 12px 0; color:#64748b;">Tài khoản của bạn chưa đặt cọc đơn hàng nào và chưa có ai đặt cọc món đồ của bạn.</p>
+                        <button onclick="switchNavTab('home')" class="btn-primary-confirm" style="width:auto; padding:6px 14px; font-size:11.5px; margin:0 auto;">🔍 Khám Phá Món Đồ Ngay</button>
+                    </div>
+                `;
             } else {
                 history.innerHTML = myOrders.map(o => {
                     const isBuyer = (this.user.name === o.buyer || this.user.email === o.buyerEmail);
                     const isSeller = (this.user.name === o.seller || this.user.email === o.sellerEmail);
                     const counterpartName = isBuyer ? o.seller : o.buyer;
                     const counterpartRole = isBuyer ? 'Người bán' : 'Người mua';
+
+                    const isDelivered = (o.status === 'completed');
+                    const deliveryStatusHtml = isDelivered ? 
+                        `<span class="badge-delivered">✓ ĐÃ GIAO HÀNG THÀNH CÔNG</span>` : 
+                        `<span class="badge-undelivered">⏳ CHƯA GIAO HÀNG (Đang hẹn gặp / Chờ giao nhận)</span>`;
+
+                    const roleBadgeHtml = isBuyer ?
+                        `<span style="background:#e0f2fe; color:#0369a1; padding:2px 7px; border-radius:4px; font-weight:700; font-size:10.5px;">🏷️ ĐƠN BẠN MUA (ĐÃ CỌC)</span>` :
+                        `<span style="background:#fef3c7; color:#b45309; padding:2px 7px; border-radius:4px; font-weight:700; font-size:10.5px;">📦 KHÁCH CỌC BẠN (ĐƠN BÁN)</span>`;
 
                     let statusBadge = '';
                     let actionButtonsHtml = '';
@@ -1195,7 +1609,7 @@ class AppController {
                             if (!buyerDone) {
                                 actionButtonsHtml += `
                                     <button class="btn-primary-confirm" style="background:#16a34a; font-size:11.5px; padding:6px 12px; width:auto; margin:0;" onclick="confirmTradeComplete('${o.id}', 'buyer')">
-                                        🤝 Tôi Đã Nhận Đồ (Xác Nhận Thành Công)
+                                        🤝 Tôi Đã Nhận Đồ (Xác Nhận Đã Nhận)
                                     </button>
                                 `;
                             } else {
@@ -1208,7 +1622,7 @@ class AppController {
                             if (!sellerDone) {
                                 actionButtonsHtml += `
                                     <button class="btn-primary-confirm" style="background:#16a34a; font-size:11.5px; padding:6px 12px; width:auto; margin:0;" onclick="confirmTradeComplete('${o.id}', 'seller')">
-                                        🤝 Tôi Đã Giao Đồ (Xác Nhận Thành Công)
+                                        🤝 Tôi Đã Giao Đồ (Xác Nhận Đã Giao)
                                     </button>
                                 `;
                             } else {
@@ -1246,8 +1660,12 @@ class AppController {
 
                     return `
                         <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
                                 <div>
+                                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px; flex-wrap:wrap;">
+                                        ${roleBadgeHtml}
+                                        ${deliveryStatusHtml}
+                                    </div>
                                     <strong style="font-size:13.5px; color:#0f172a;">${o.productTitle}</strong>
                                     <div style="font-size:11px; color:#64748b; margin-top:2px;">
                                         Mã đơn: <span style="font-family:monospace; font-weight:700; color:#0284c7;">${o.orderCode || o.id}</span> • 
@@ -1262,8 +1680,8 @@ class AppController {
                                 <div>Tổng thanh toán: <strong>${formatNumber(o.totalPayment || o.finalTotal || 0)} đ</strong></div>
                                 <div>
                                     Tiến độ xác nhận: 
-                                    <span style="color:${o.buyerCompleted ? '#16a34a' : '#b45309'}; font-weight:700;">Mua: ${o.buyerCompleted ? '✓' : 'Chưa'}</span> | 
-                                    <span style="color:${o.sellerCompleted ? '#16a34a' : '#b45309'}; font-weight:700;">Bán: ${o.sellerCompleted ? '✓' : 'Chưa'}</span>
+                                    <span style="color:${o.buyerCompleted ? '#16a34a' : '#b45309'}; font-weight:700;">Mua (Nhận đồ): ${o.buyerCompleted ? '✓ Đã nhận' : 'Chưa'}</span> | 
+                                    <span style="color:${o.sellerCompleted ? '#16a34a' : '#b45309'}; font-weight:700;">Bán (Giao đồ): ${o.sellerCompleted ? '✓ Đã giao' : 'Chưa'}</span>
                                 </div>
                             </div>
 
@@ -1275,6 +1693,8 @@ class AppController {
                 }).join('');
             }
         }
+
+        this.renderNotifications();
     }
 
     // ==========================================
@@ -2229,6 +2649,9 @@ function logoutToAuthScreen() {
     window.app.user = null;
     localStorage.removeItem('unipass_current_user');
     window.app.checkAuthDisplay();
+    window.app.updateDepositBadge();
+    window.app.updateNotificationBadge();
+    window.app.renderNotifications();
 
     const emailInput = document.getElementById('authEmailInput');
     const pwdInput = document.getElementById('authPasswordInput');
@@ -2428,6 +2851,16 @@ function adminApprovePost(postId) {
     window.app.renderAdminDashboard();
     window.app.renderProfile();
 
+    // Gửi thông báo tới người bán: bài đăng đã được duyệt
+    window.app.addNotification({
+        targetName: post.seller,
+        targetEmail: post.sellerEmail,
+        title: 'Bài đăng đã được duyệt!',
+        message: `Bài đăng "${post.title}" của bạn đã được Admin phê duyệt TimeMark và hiển thị lên trang chính (+1 điểm uy tín). Bài sẽ tự động xóa sau 7 ngày kể từ lúc duyệt.`,
+        type: 'post_approved',
+        relatedId: post.id
+    });
+
     if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
         window.UniPassSupabase.updateProductStatus(postId, 'approved');
     }
@@ -2450,6 +2883,14 @@ function adminApproveAllPendingPosts() {
     pendingList.forEach(p => {
         p.status = 'approved';
         p.approvedAt = Date.now();
+        window.app.addNotification({
+            targetName: p.seller,
+            targetEmail: p.sellerEmail,
+            title: 'Bài đăng đã được duyệt!',
+            message: `Bài đăng "${p.title}" của bạn đã được Admin phê duyệt TimeMark và hiển thị lên trang chính (+1 điểm uy tín). Bài sẽ tự động xóa sau 7 ngày kể từ lúc duyệt.`,
+            type: 'post_approved',
+            relatedId: p.id
+        });
         if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
             window.UniPassSupabase.updateProductStatus(p.id, 'approved');
         }
@@ -2483,6 +2924,16 @@ function adminRejectPost(postId) {
     window.app.renderProducts();
     window.app.renderAdminDashboard();
     window.app.renderProfile();
+
+    // Gửi thông báo tới người bán: bài đăng bị từ chối duyệt
+    window.app.addNotification({
+        targetName: post.seller,
+        targetEmail: post.sellerEmail,
+        title: 'Bị từ chối duyệt bài đăng',
+        message: `Bài đăng "${post.title}" của bạn bị Admin từ chối duyệt. Lý do: ${reason}`,
+        type: 'post_rejected',
+        relatedId: post.id
+    });
 
     if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
         window.UniPassSupabase.updateProductStatus(postId, 'rejected');
@@ -2550,6 +3001,15 @@ function adminWarnUser(userName) {
 
     if (window.sound) window.sound.playWarning();
     showToast(`Đã gửi cảnh cáo chính thức tới sinh viên ${userName}!`, 'danger');
+
+    // Gửi thông báo trực tiếp tới tài khoản bị cảnh cáo
+    window.app.addNotification({
+        targetName: userName,
+        targetEmail: (userToWarn && userToWarn.email) || 'student@st.utc2.edu.vn',
+        title: 'Cảnh cáo từ Admin UTC2',
+        message: `Tài khoản của bạn nhận cảnh cáo: "${warningMsg}" (-2 điểm uy tín).`,
+        type: 'warning'
+    });
 
     if (window.app.syncChannel) {
         window.app.syncChannel.postMessage({
@@ -2820,6 +3280,26 @@ function confirmDepositOrder() {
     window.app.depositOrders.push(newOrderData);
     window.app.saveOrders();
 
+    // Gửi thông báo tới người bán: Có người thêm đơn hàng của bạn vào đơn cọc
+    window.app.addNotification({
+        targetName: currentCheckoutProduct.seller,
+        targetEmail: currentCheckoutProduct.sellerEmail || 'seller@st.utc2.edu.vn',
+        title: 'Có khách đặt cọc đơn hàng!',
+        message: `${window.app.user.name} vừa thêm đơn hàng "${currentCheckoutProduct.title}" của bạn vào đơn cọc (Cọc giữ chỗ: ${formatNumber(depositAmount)} đ). Vui lòng vào mục Cá Nhân kiểm tra.`,
+        type: 'order_deposit',
+        relatedId: newOrderData.id
+    });
+
+    // Gửi thông báo tới người mua: Đã đặt cọc thành công
+    window.app.addNotification({
+        targetName: window.app.user.name,
+        targetEmail: window.app.user.email,
+        title: 'Thêm vào đơn cọc thành công!',
+        message: `Bạn đã thêm đơn hàng "${currentCheckoutProduct.title}" vào đơn cọc (Đã cọc: ${formatNumber(depositAmount)} đ). Đang chờ người bán xác nhận đơn.`,
+        type: 'order_deposit',
+        relatedId: newOrderData.id
+    });
+
     // Đồng bộ đơn cọc lên Supabase Cloud
     if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
         window.UniPassSupabase.createOrder(newOrderData);
@@ -2853,6 +3333,16 @@ function confirmOrderBySeller(orderId) {
     order.sellerAccepted = true;
     order.status = 'in_trade';
     window.app.saveOrders();
+
+    // Gửi thông báo tới người mua: Người bán đã xác nhận đơn
+    window.app.addNotification({
+        targetName: order.buyer,
+        targetEmail: order.buyerEmail,
+        title: 'Người bán đã xác nhận đơn!',
+        message: `${order.seller} đã xác nhận đơn hàng "${order.productTitle}". Hãy chuẩn bị hẹn gặp tại ${order.meetLocation || 'Campus UTC2'} để trao đổi đồ.`,
+        type: 'order_update',
+        relatedId: order.id
+    });
 
     if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
         window.UniPassSupabase.updateOrder(order.id, { status: 'in_trade', notes: 'Người bán đã xác nhận đơn' });
@@ -2952,6 +3442,25 @@ function confirmTradeComplete(orderId, role) {
 
         window.app.saveOrders();
 
+        // Gửi thông báo hoàn tất giao dịch cho cả 2 bên
+        window.app.addNotification({
+            targetName: order.buyer,
+            targetEmail: order.buyerEmail,
+            title: 'Giao dịch hoàn tất - Đã giao hàng!',
+            message: `Đơn hàng "${order.productTitle}" đã được giao và nhận thành công 100%! (+2 điểm uy tín). Tin nhắn riêng tư đã được tự động dọn dẹp bảo mật.`,
+            type: 'order_update',
+            relatedId: order.id
+        });
+
+        window.app.addNotification({
+            targetName: order.seller,
+            targetEmail: order.sellerEmail,
+            title: 'Giao dịch hoàn tất - Đã giao hàng!',
+            message: `Bạn đã giao thành công đơn hàng "${order.productTitle}" cho ${order.buyer}! (+2 điểm uy tín). Bài đăng đã tự động gỡ khỏi hệ thống.`,
+            type: 'order_update',
+            relatedId: order.id
+        });
+
         if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
             window.UniPassSupabase.updateOrder(order.id, { status: 'completed' });
         }
@@ -2965,6 +3474,20 @@ function confirmTradeComplete(orderId, role) {
         // Chỉ mới 1 bên xác nhận
         order.status = 'pending_mutual';
         window.app.saveOrders();
+
+        const waitingParty = role === 'buyer' ? order.seller : order.buyer;
+        const waitingEmail = role === 'buyer' ? order.sellerEmail : order.buyerEmail;
+        const confirmer = role === 'buyer' ? order.buyer : order.seller;
+        const actionStr = role === 'buyer' ? 'đã nhận đồ' : 'đã giao đồ';
+
+        window.app.addNotification({
+            targetName: waitingParty,
+            targetEmail: waitingEmail,
+            title: 'Đối phương đã bấm xác nhận!',
+            message: `${confirmer} vừa xác nhận ${actionStr} cho đơn "${order.productTitle}". Vui lòng vào mục Cá Nhân bấm xác nhận để hoàn tất giao dịch.`,
+            type: 'order_update',
+            relatedId: order.id
+        });
 
         if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
             window.UniPassSupabase.updateOrder(order.id, { status: 'pending_mutual' });
@@ -3325,7 +3848,26 @@ function openShopeeSuggestion() {
 
 function openDepositOrders() {
     switchNavTab('profile');
-    showToast(`Bạn đang có ${window.app.depositOrders.length} đơn đặt cọc giữ chỗ.`, 'info');
+    if (!window.app.user) {
+        showToast('Vui lòng đăng nhập để xem đơn đặt cọc!', 'warning');
+        return;
+    }
+    const myOrders = window.app.depositOrders.filter(o => 
+        (o.buyer && o.buyer === window.app.user.name) || 
+        (o.buyerEmail && o.buyerEmail === window.app.user.email) ||
+        (o.seller && o.seller === window.app.user.name) || 
+        (o.sellerEmail && o.sellerEmail === window.app.user.email)
+    );
+    const count = myOrders.length;
+    if (count === 0) {
+        showToast(`Tài khoản của bạn hiện có 0 đơn cọc.`, 'info');
+    } else {
+        showToast(`Bạn đang có ${count} đơn đặt cọc & mua bán giữ chỗ.`, 'info');
+    }
+    const block = document.getElementById('profileDepositOrdersBlock');
+    if (block) {
+        block.scrollIntoView({ behavior: 'smooth' });
+    }
 }
 
 // ==========================================
@@ -4123,3 +4665,61 @@ function disconnectSupabase() {
     updateSupabaseNavIndicator();
     showToast('Đã ngắt kết nối Supabase Cloud. Dùng Local Cache.', 'info');
 }
+
+// ==========================================
+// CÁC HÀM ĐIỀU KHIỂN THÔNG BÁO HOẠT ĐỘNG (GLOBAL CONTROLLERS)
+// ==========================================
+function toggleNotificationDropdown() {
+    const menu = document.getElementById('notificationDropdownMenu');
+    if (!menu) return;
+    const isVisible = (menu.style.display === 'block');
+    menu.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible && window.app) {
+        window.app.renderNotifications();
+    }
+}
+
+function markAllNotificationsAsRead() {
+    if (window.app) {
+        window.app.markAllNotificationsAsRead();
+    }
+}
+
+function clearAllUserNotifications() {
+    if (window.app) {
+        window.app.clearAllUserNotifications();
+    }
+}
+
+function handleNotificationClick(notifId, type) {
+    if (!window.app) return;
+    const n = window.app.notifications.find(item => item.id === notifId);
+    if (n) {
+        n.isRead = true;
+        window.app.saveNotifications();
+        window.app.updateNotificationBadge();
+        window.app.renderNotifications();
+    }
+
+    const menu = document.getElementById('notificationDropdownMenu');
+    if (menu) menu.style.display = 'none';
+
+    if (type === 'order_deposit' || type === 'order_update') {
+        switchNavTab('profile');
+        const block = document.getElementById('profileDepositOrdersBlock');
+        if (block) block.scrollIntoView({ behavior: 'smooth' });
+    } else if (type === 'post_approved' || type === 'post_rejected' || type === 'post_expired') {
+        switchNavTab('profile');
+    }
+}
+
+// Đóng dropdown thông báo khi click ra ngoài
+document.addEventListener('click', (e) => {
+    const bellWrapper = document.querySelector('.notification-bell-wrapper');
+    const menu = document.getElementById('notificationDropdownMenu');
+    if (menu && menu.style.display === 'block') {
+        if (bellWrapper && !bellWrapper.contains(e.target)) {
+            menu.style.display = 'none';
+        }
+    }
+});

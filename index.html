@@ -187,9 +187,34 @@
                     <span style="font-size:11.5px; font-weight:700; color:#15803d;">Online Đa Máy</span>
                 </div>
 
-               
+                <!-- Nút Chuông Thông Báo Hoạt Động (Ô thông báo) -->
+                <div class="notification-bell-wrapper" style="position:relative;">
+                    <button class="notification-bell-btn" id="btnNotificationBell" title="Thông Báo Hoạt Động" onclick="toggleNotificationDropdown()">
+                        🔔
+                        <span class="badge-count" id="unreadNotifBadge" style="display:none; position:absolute; top:-3px; right:-3px; padding:1px 5px; font-size:10px;">0</span>
+                    </button>
 
-               
+                    <!-- Dropdown Box Thông Báo Hoạt Động -->
+                    <div class="notification-dropdown-menu" id="notificationDropdownMenu" style="display:none;">
+                        <div class="notification-dropdown-header">
+                            <div style="font-weight:800; font-size:13.5px; display:flex; align-items:center; gap:6px;">
+                                <span>🔔</span> Thông Báo Hoạt Động
+                            </div>
+                            <div style="display:flex; gap:6px;">
+                                <button class="notif-header-btn" onclick="markAllNotificationsAsRead()" title="Đánh dấu tất cả đã đọc">Đã đọc</button>
+                                <button class="notif-header-btn" onclick="clearAllUserNotifications()" title="Xóa tất cả">Xóa</button>
+                                <button class="notif-close-btn" onclick="toggleNotificationDropdown()">✕</button>
+                            </div>
+                        </div>
+                        <div id="notificationDropdownList" class="notification-list-scroll">
+                            <!-- Rendered by JS -->
+                        </div>
+                        <div class="notification-dropdown-footer">
+                            <span id="notifTotalCountText" style="color:#64748b; font-size:11px;">0 thông báo</span>
+                            <button onclick="switchNavTab('profile'); toggleNotificationDropdown();" style="background:none; border:none; color:#0284c7; font-size:11.5px; cursor:pointer; font-weight:700;">Xem trong Cá Nhân ➔</button>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Nút Đổi Tài Khoản Sinh Viên (Ẩn để mỗi người dùng đúng tài khoản của mình) -->
                 <button class="switch-user-btn" id="quickSwitchUserBtn" style="display:none;" onclick="toggleQuickAccount()">
@@ -604,13 +629,37 @@
 
                 <hr style="border:none; border-top:1px solid #e2e8f0; margin:18px 0;">
 
+                <!-- KHUNG THÔNG BÁO HOẠT ĐỘNG CỦA TÀI KHOẢN -->
+                <div class="profile-notif-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:18px;">🔔</span>
+                            <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0;">Thông Báo Hoạt Động Của Bạn</h4>
+                            <span id="profileNotifBadgeCount" style="background:#0284c7; color:#fff; font-size:11px; padding:2px 8px; border-radius:10px; font-weight:700;">0</span>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn-outline-chat" style="font-size:11px; padding:4px 10px;" onclick="markAllNotificationsAsRead()">✓ Đã đọc hết</button>
+                            <button class="btn-outline-chat" style="font-size:11px; padding:4px 10px; color:#ef4444; border-color:#fca5a5;" onclick="clearAllUserNotifications()">🗑 Xóa hết</button>
+                        </div>
+                    </div>
+                    <div id="profileNotificationsListContainer" style="max-height:240px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                     <div>
-                        <h4 style="font-size:14px; color:#0284c7; margin-bottom:10px;">📦 Bài đăng của tôi</h4>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h4 style="font-size:14px; color:#0284c7; margin:0;">📦 Bài đăng của tôi</h4>
+                            <span style="font-size:11px; color:#d97706; background:#fffbeb; padding:2px 8px; border-radius:4px; border:1px solid #fef3c7; font-weight:700;">⏳ Tự xóa sau 7 ngày duyệt</span>
+                        </div>
                         <div id="myPostsListContainer"></div>
                     </div>
-                    <div>
-                        <h4 style="font-size:14px; color:#d97706; margin-bottom:10px;">📜 Lịch sử cọc & pass đồ</h4>
+                    <div id="profileDepositOrdersBlock">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h4 style="font-size:14px; color:#d97706; margin:0;">📜 Đơn đặt cọc & Mua bán</h4>
+                            <span id="profileDepositTotalBadge" style="font-size:11.5px; font-weight:700; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px;">0 đơn</span>
+                        </div>
                         <div id="purchaseHistoryContainer"></div>
                     </div>
                 </div>
