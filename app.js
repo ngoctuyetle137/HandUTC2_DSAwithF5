@@ -1315,12 +1315,21 @@ class AppController {
         const profEmail = document.getElementById('profileEmail');
         const profRep = document.getElementById('profileRepScore');
         const profAvatar = document.getElementById('profileAvatarCircle');
+        const removeAvatarBtn = document.getElementById('btnRemoveAvatar');
 
         const letter = this.user.avatarLetter || (this.user.name ? this.user.name.charAt(0).toUpperCase() : 'U');
+        const customAvatar = this.user.avatarUrl || null;
 
         if (nameEl) nameEl.innerText = this.user.name;
         if (coinsEl) coinsEl.innerText = this.user.coins;
-        if (avatarEl) avatarEl.innerText = letter;
+        
+        if (avatarEl) {
+            if (customAvatar) {
+                avatarEl.innerHTML = `<img src="${customAvatar}" alt="${this.user.name}" class="avatar-img-fit">`;
+            } else {
+                avatarEl.innerText = letter;
+            }
+        }
 
         if (switchBtn) {
             const nextIdx = (this.registeredUsers.findIndex(u => u.email === this.user.email) + 1) % this.registeredUsers.length;
@@ -1331,7 +1340,18 @@ class AppController {
         if (profName) profName.innerText = this.user.name;
         if (profEmail) profEmail.innerText = this.user.email;
         if (profRep) profRep.innerText = this.user.reputation;
-        if (profAvatar) profAvatar.innerText = letter;
+        
+        if (profAvatar) {
+            if (customAvatar) {
+                profAvatar.innerHTML = `<img src="${customAvatar}" alt="${this.user.name}" class="avatar-img-fit">`;
+            } else {
+                profAvatar.innerText = letter;
+            }
+        }
+
+        if (removeAvatarBtn) {
+            removeAvatarBtn.style.display = customAvatar ? 'inline-block' : 'none';
+        }
 
         this.updateDepositBadge();
         this.updateNotificationBadge();
@@ -1817,9 +1837,10 @@ class AppController {
                         </div>
                         ${otherUsers.map(u => {
                             const safeUName = u.name.replace(/'/g, "\\'");
+                            const uAvatarHtml = u.avatarUrl ? `<img src="${u.avatarUrl}" alt="${u.name}" class="avatar-img-fit">` : (u.avatarLetter || u.name.charAt(0)).toUpperCase();
                             return `
                                 <div class="chat-inbox-item" onclick="openChatBetweenUsers('${safeUName}')" style="margin-bottom:6px;">
-                                    <div class="chat-inbox-avatar">${(u.avatarLetter || u.name.charAt(0)).toUpperCase()}</div>
+                                    <div class="chat-inbox-avatar">${uAvatarHtml}</div>
                                     <div class="chat-inbox-info">
                                         <div class="chat-inbox-name">${u.name}</div>
                                         <div class="chat-inbox-snippet" style="color:#0284c7;">Bấm để bắt đầu nhắn tin trao đổi đồ</div>
@@ -1849,7 +1870,10 @@ class AppController {
         conversations.sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
 
         listEl.innerHTML = conversations.map(c => {
+            const partnerUser = this.registeredUsers.find(u => u.name === c.partnerName);
             const initial = (c.partnerName.charAt(0) || 'U').toUpperCase();
+            const partnerAvatarHtml = (partnerUser && partnerUser.avatarUrl) ?
+                `<img src="${partnerUser.avatarUrl}" alt="${c.partnerName}" class="avatar-img-fit">` : initial;
             const lastTxt = c.lastMessage ? (
                 c.lastMessage.sender === myName ? `Bạn: ${c.lastMessage.text}` : c.lastMessage.text
             ) : 'Bắt đầu trò chuyện...';
@@ -1864,7 +1888,7 @@ class AppController {
 
             return `
                 <div class="chat-inbox-item" onclick="openChatBetweenUsers('${safePartner}', { id: '${safeProductId}', title: '${safeProductTitle}' }, '${safeOrderId}')">
-                    <div class="chat-inbox-avatar">${initial}</div>
+                    <div class="chat-inbox-avatar">${partnerAvatarHtml}</div>
                     <div class="chat-inbox-info">
                         <div class="chat-inbox-top">
                             <div class="chat-inbox-name">${c.partnerName} ${roleTagHtml}</div>
@@ -4302,6 +4326,92 @@ function closeModal(id) {
 
 function openReputationRules() {
     showToast('Điểm uy tín: 95 mặc định, max 100. <90 sẽ bị khóa quyền cọc & pass đồ!', 'info');
+}
+
+// ==========================================
+// TÍNH NĂNG TẢI ẢNH ĐẠI DIỆN CÁ NHÂN (AVATAR)
+// ==========================================
+function triggerAvatarUpload() {
+    const input = document.getElementById('avatarFileInput');
+    if (input) input.click();
+}
+
+function handleAvatarUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        showToast('Vui lòng chọn tệp hình ảnh hợp lệ (PNG, JPG, WEBP)!', 'warning');
+        return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+        showToast('Kích thước ảnh quá lớn (tối đa 15MB)!', 'warning');
+        return;
+    }
+
+    showToast('Đang xử lý ảnh đại diện...', 'info');
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const rawImg = new Image();
+        rawImg.onload = function() {
+            // Nén và cắt vuông tâm hình tròn chuẩn 250x250 để lưu trữ tối ưu
+            const canvas = document.createElement('canvas');
+            const targetSize = 250;
+            canvas.width = targetSize;
+            canvas.height = targetSize;
+            const ctx = canvas.getContext('2d');
+
+            const minDim = Math.min(rawImg.width, rawImg.height);
+            const sx = (rawImg.width - minDim) / 2;
+            const sy = (rawImg.height - minDim) / 2;
+
+            ctx.drawImage(rawImg, sx, sy, minDim, minDim, 0, 0, targetSize, targetSize);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+
+            if (window.app && window.app.user) {
+                window.app.user.avatarUrl = compressedDataUrl;
+
+                // Đồng bộ vào registeredUsers
+                const uIdx = window.app.registeredUsers.findIndex(u => u.email === window.app.user.email);
+                if (uIdx !== -1) {
+                    window.app.registeredUsers[uIdx].avatarUrl = compressedDataUrl;
+                    window.app.saveUsers();
+                }
+
+                localStorage.setItem('unipass_current_user', JSON.stringify(window.app.user));
+                window.app.updateUserUI();
+                showToast('🎉 Đã cập nhật ảnh đại diện thành công!', 'success');
+                if (window.sound) window.sound.playSuccess();
+            }
+        };
+        rawImg.onerror = function() {
+            showToast('Không thể đọc ảnh, vui lòng thử lại tệp khác!', 'danger');
+        };
+        rawImg.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input để có thể chọn lại cùng 1 file
+    event.target.value = '';
+}
+
+function removeUserAvatar() {
+    if (!window.app || !window.app.user) return;
+    if (!confirm('Bạn có chắc chắn muốn gỡ ảnh đại diện và quay về chữ viết tắt mặc định?')) return;
+
+    delete window.app.user.avatarUrl;
+
+    const uIdx = window.app.registeredUsers.findIndex(u => u.email === window.app.user.email);
+    if (uIdx !== -1) {
+        delete window.app.registeredUsers[uIdx].avatarUrl;
+        window.app.saveUsers();
+    }
+
+    localStorage.setItem('unipass_current_user', JSON.stringify(window.app.user));
+    window.app.updateUserUI();
+    showToast('Đã gỡ ảnh đại diện thành công.', 'info');
 }
 
 // Khởi tạo listeners khi tải trang

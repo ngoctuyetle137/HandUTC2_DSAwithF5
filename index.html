@@ -107,6 +107,14 @@
                     <!-- HƯỚNG DẪN KIỂM TRA GMAIL -->
                     
 
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <a href="https://mail.google.com" target="_blank" class="apply-filter-btn" style="background:#ea4335; width:auto; padding:7px 16px; margin:0; text-decoration:none; font-size:12px; display:inline-flex; align-items:center; gap:6px; font-weight:700;">
+                            <span>✉️</span> Mở Hộp Thư Gmail (mail.google.com) ➔
+                        </a>
+                        <span style="font-size:11.5px; color:#64748b;" id="otpTimerText">Mã có hiệu lực trong 5 phút</span>
+                    </div>
+                </div>
                 <!-- Nút Xác Nhận Đăng Ký / Đăng Nhập -->
                 <button type="submit" class="auth-submit-btn" id="authSubmitButton">
                     ✓ Đăng Nhập Vào Hệ Thống
@@ -595,9 +603,17 @@
             <div style="width:100%;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
                     <div style="display:flex; align-items:center; gap:14px;">
-                        <div class="user-avatar-circle" style="width:52px; height:52px; font-size:22px;" id="profileAvatarCircle">U</div>
+                        <div style="position:relative; cursor:pointer;" onclick="triggerAvatarUpload()" title="Nhấp để tải ảnh đại diện">
+                            <div class="user-avatar-circle" style="width:62px; height:62px; font-size:24px; border:2.5px solid #0284c7; box-shadow:0 3px 12px rgba(2,132,199,0.25);" id="profileAvatarCircle">U</div>
+                            <div class="avatar-edit-badge" title="Tải ảnh đại diện">📷</div>
+                            <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)">
+                        </div>
                         <div>
-                            <h3 id="profileFullName" style="font-size:18px; color:#0f172a;">Sinh viên UTC2</h3>
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">
+                                <h3 id="profileFullName" style="font-size:18px; color:#0f172a; margin:0;">Sinh viên UTC2</h3>
+                                <button type="button" class="btn-change-avatar-text" onclick="triggerAvatarUpload()">📷 Đổi ảnh đại diện</button>
+                                <button type="button" class="btn-remove-avatar-text" id="btnRemoveAvatar" style="display:none;" onclick="removeUserAvatar()">Gỡ ảnh</button>
+                            </div>
                             <div style="font-size:12.5px; color:#64748b;" id="profileEmail">sinhvien@st.utc2.edu.vn</div>
                             <div style="margin-top:4px; font-size:12.5px; color:#16a34a; font-weight:700;">
                                 🛡 Điểm Uy Tín: <span id="profileRepScore">95</span>/100
