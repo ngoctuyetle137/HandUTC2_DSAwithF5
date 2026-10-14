@@ -141,12 +141,13 @@ body {
 }
 
 .auth-logo-img {
-    width: 72px;
-    height: 72px;
+    width: 88px;
+    height: 88px;
     border-radius: 50%;
-    object-fit: cover;
+    object-fit: contain;
+    padding: 2px;
     margin-bottom: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
     background: #ffffff;
     border: 2px solid #ffffff;
     transition: transform 0.3s ease;
@@ -415,10 +416,11 @@ body {
 }
 
 .brand-logo-img {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    object-fit: cover;
+    object-fit: contain;
+    padding: 1px;
     background: #ffffff;
     border: 2px solid #ffffff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
