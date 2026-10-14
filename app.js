@@ -2216,7 +2216,7 @@ function switchAuthMode(mode) {
         tabLog.classList.remove('active');
         if (nameField) nameField.style.display = 'block';
         if (otpSec) otpSec.style.display = 'block';
-        if (submitBtn) submitBtn.innerText = '✓ Hoàn Tất Đăng Ký & Nhận 500 Xu';
+        if (submitBtn) submitBtn.innerText = '✓ Hoàn Tất Đăng Ký & Nhận 20 Xu';
     } else {
         tabLog.classList.add('active');
         tabReg.classList.remove('active');
@@ -2535,7 +2535,7 @@ async function handleAuthSubmitForm(e) {
                 email: email,
                 password: isOfficialAdmin ? ADMIN_CREDENTIALS.password : password,
                 role: isOfficialAdmin ? 'admin' : 'student',
-                coins: isOfficialAdmin ? 9999 : 500,
+                coins: isOfficialAdmin ? 9999 : 20,
                 reputation: isOfficialAdmin ? 100 : 95,
                 isEmailVerified: true,
                 verifiedAt: new Date().toISOString(),
@@ -2562,7 +2562,7 @@ async function handleAuthSubmitForm(e) {
         }
 
         if (window.sound) window.sound.playSuccess();
-        showToast(isOfficialAdmin ? `Đăng nhập quyền Quản Trị Viên UTC2 (6651071091)!` : `Đăng ký thành công! Chào mừng bạn gia nhập UniPass UTC2 (+500 Xu, Uy tín 95đ)!`, 'success');
+        showToast(isOfficialAdmin ? `Đăng nhập quyền Quản Trị Viên UTC2 (6651071091)!` : `Đăng ký thành công! Chào mừng bạn gia nhập UniPass UTC2 (+20 Xu, Uy tín 95đ)!`, 'success');
         if (isOfficialAdmin) {
             switchNavTab('admin');
         }
