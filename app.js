@@ -1677,6 +1677,7 @@ class AppController {
 
                             <div style="background:#f8fafc; border-radius:6px; padding:8px 10px; margin-bottom:8px; font-size:11.5px; color:#334155; display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;">
                                 <div>Cọc giữ chỗ: <strong style="color:#16a34a;">${formatNumber(o.depositAmount || 0)} đ</strong></div>
+                                ${(o.discountAmount > 0) ? `<div style="color:#d97706; font-weight:600;">Giảm giá xu: <strong>-${formatNumber(o.discountAmount)} đ</strong> (${o.discountCoins || Math.round(o.discountAmount / 100)} Xu)</div>` : ''}
                                 <div>Tổng thanh toán: <strong>${formatNumber(o.totalPayment || o.finalTotal || 0)} đ</strong></div>
                                 <div>
                                     Tiến độ xác nhận: 
@@ -3162,7 +3163,11 @@ function openCheckoutModal(productId) {
     }
 
     document.getElementById('shippingSelectOption').value = '0';
-    document.getElementById('useCoinDiscountCheckbox').checked = true;
+    const coinCheckbox = document.getElementById('useCoinDiscountCheckbox');
+    if (coinCheckbox) {
+        const availableCoins = (window.app && window.app.user) ? (window.app.user.coins || 0) : 0;
+        coinCheckbox.checked = availableCoins > 0;
+    }
 
     updateCheckoutCalculations();
 
@@ -3201,16 +3206,32 @@ function updateCheckoutCalculations() {
     const coinCheckbox = document.getElementById('useCoinDiscountCheckbox');
     const coinLabel = document.getElementById('coinDiscountLabelText');
 
-    let availableCoins = window.app.user.coins || 0;
-    let coinsToUse = Math.min(availableCoins, 20);
-    let discountVND = coinsToUse * 100;
+    const availableCoins = (window.app && window.app.user) ? (window.app.user.coins || 0) : 0;
 
-    if (coinLabel) {
-        coinLabel.innerText = `Dùng ${coinsToUse} UniCoins săn được để giảm ${formatNumber(discountVND)} đ`;
+    // Cho phép dùng khoảng 30% số xu hiện có để giảm giá mặt hàng
+    let maxCoinsAllowed = Math.round(availableCoins * 0.3);
+    if (availableCoins > 0 && maxCoinsAllowed === 0) {
+        maxCoinsAllowed = 1;
+    }
+
+    // Mức giảm giá không vượt quá giá gốc của mặt hàng
+    const maxCoinsByPrice = Math.floor(basePrice / 100);
+    const coinsToUse = Math.min(maxCoinsAllowed, maxCoinsByPrice);
+    const discountVND = coinsToUse * 100;
+
+    if (coinLabel && coinCheckbox) {
+        if (availableCoins <= 0 || coinsToUse <= 0) {
+            coinCheckbox.checked = false;
+            coinCheckbox.disabled = true;
+            coinLabel.innerHTML = `<span style="color:#64748b;">🪙 Bạn hiện có <strong>0 Xu</strong> (Chưa đủ xu để giảm giá mặt hàng)</span>`;
+        } else {
+            coinCheckbox.disabled = false;
+            coinLabel.innerHTML = `🪙 Dùng <strong>${formatNumber(coinsToUse)} Xu</strong> (30% trong tổng ${formatNumber(availableCoins)} Xu hiện có) để giảm <strong style="color:#16a34a;">-${formatNumber(discountVND)} đ</strong>`;
+        }
     }
 
     let actualDiscount = 0;
-    if (coinCheckbox && coinCheckbox.checked) {
+    if (coinCheckbox && coinCheckbox.checked && coinsToUse > 0) {
         actualDiscount = discountVND;
     }
 
@@ -3218,7 +3239,11 @@ function updateCheckoutCalculations() {
 
     const breakdownEl = document.getElementById('calculationBreakdownText');
     if (breakdownEl) {
-        breakdownEl.innerText = `(Giá đồ: ${formatNumber(basePrice)}đ + Ship: ${formatNumber(shipFee)}đ - Giảm: ${formatNumber(actualDiscount)}đ)`;
+        if (actualDiscount > 0) {
+            breakdownEl.innerText = `(Giá gốc: ${formatNumber(basePrice)}đ + Ship: ${formatNumber(shipFee)}đ - Giảm 30% xu: ${formatNumber(actualDiscount)}đ)`;
+        } else {
+            breakdownEl.innerText = `(Giá gốc: ${formatNumber(basePrice)}đ + Ship: ${formatNumber(shipFee)}đ)`;
+        }
     }
 
     const totalEl = document.getElementById('finalTotalPaymentText');
@@ -3235,16 +3260,26 @@ function confirmDepositOrder() {
         return;
     }
 
+    const basePrice = currentCheckoutProduct.price;
     const shipFee = parseInt(document.getElementById('shippingSelectOption').value) || 0;
-    const useCoins = document.getElementById('useCoinDiscountCheckbox').checked;
-    const coinsUsed = useCoins ? Math.min(window.app.user.coins || 0, 20) : 0;
+    
+    // Tính toán số xu giảm giá (30% số xu hiện có)
+    const availableCoins = (window.app && window.app.user) ? (window.app.user.coins || 0) : 0;
+    let maxCoinsAllowed = Math.round(availableCoins * 0.3);
+    if (availableCoins > 0 && maxCoinsAllowed === 0) {
+        maxCoinsAllowed = 1;
+    }
+    const maxCoinsByPrice = Math.floor(basePrice / 100);
+    const coinsToUse = Math.min(maxCoinsAllowed, maxCoinsByPrice);
+
+    const useCoins = document.getElementById('useCoinDiscountCheckbox') ? document.getElementById('useCoinDiscountCheckbox').checked : false;
+    const coinsUsed = (useCoins && availableCoins > 0) ? coinsToUse : 0;
     const discountVND = coinsUsed * 100;
 
-    const basePrice = currentCheckoutProduct.price;
     const depositAmount = Math.max(3000, Math.round((basePrice * 0.1) / 1000) * 1000);
     const finalTotal = Math.max(0, basePrice + shipFee - discountVND);
 
-    window.app.user.coins -= coinsUsed;
+    window.app.user.coins = Math.max(0, (window.app.user.coins || 0) - coinsUsed);
     
     // Đồng bộ số xu vào registeredUsers
     const uIdx = window.app.registeredUsers.findIndex(u => u.email === window.app.user.email);
@@ -3253,6 +3288,10 @@ function confirmDepositOrder() {
         window.app.saveUsers();
     }
     window.app.updateUserUI();
+
+    if (coinsUsed > 0) {
+        showToast(`Đã dùng ${coinsUsed} Xu (30% số xu) giảm ngay ${formatNumber(discountVND)} đ!`, 'success');
+    }
 
     const newOrderData = {
         id: 'ORD_' + Date.now(),
@@ -3266,6 +3305,7 @@ function confirmDepositOrder() {
         productPrice: basePrice,
         depositAmount,
         shippingFee: shipFee,
+        discountCoins: coinsUsed,
         discountAmount: discountVND,
         totalPayment: finalTotal,
         shippingOption: document.getElementById('shippingSelectOption') ? document.getElementById('shippingSelectOption').value : 'campus',

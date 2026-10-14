@@ -1349,18 +1349,28 @@ body {
 .coin-discount-checkbox-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin: 10px 0;
+    gap: 10px;
+    margin: 12px 0 10px 0;
+    padding: 9px 12px;
+    background: #fffbeb;
+    border: 1px dashed #f59e0b;
+    border-radius: 8px;
     font-size: 13px;
-    color: #0f172a;
+    color: #92400e;
     font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.coin-discount-checkbox-row:hover {
+    background: #fef3c7;
 }
 
 .coin-discount-checkbox-row input {
-    width: 16px;
-    height: 16px;
-    accent-color: #0284c7;
+    width: 17px;
+    height: 17px;
+    accent-color: #d97706;
+    cursor: pointer;
 }
 
 .deposit-note-text {
