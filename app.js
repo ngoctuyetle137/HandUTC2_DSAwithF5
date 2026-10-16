@@ -2210,22 +2210,64 @@ function switchAuthMode(mode) {
     const otpSec = document.getElementById('authOtpSection');
     const submitBtn = document.getElementById('authSubmitButton');
     const mockBox = document.getElementById('mockEmailNotification');
+    const titleEl = document.getElementById('authCardTitle');
+    const subEl = document.getElementById('authCardSubtitle');
+    const switchTxt = document.getElementById('authBottomSwitchText');
+    const switchLnk = document.getElementById('authBottomSwitchLink');
 
     if (mode === 'register') {
-        tabReg.classList.add('active');
-        tabLog.classList.remove('active');
+        if (tabReg) tabReg.classList.add('active');
+        if (tabLog) tabLog.classList.remove('active');
         if (nameField) nameField.style.display = 'block';
         if (otpSec) otpSec.style.display = 'block';
-        if (submitBtn) submitBtn.innerText = '✓ Hoàn Tất Đăng Ký & Nhận 20 Xu';
+        if (submitBtn) submitBtn.innerText = 'Sign up';
+        if (titleEl) titleEl.innerText = 'Sign up';
+        if (subEl) subEl.innerText = 'Tạo tài khoản sinh viên UTC2 mới (+20 Xu)';
+        if (switchTxt) switchTxt.innerText = 'Already have an account?';
+        if (switchLnk) switchLnk.innerText = 'Sign in';
     } else {
-        tabLog.classList.add('active');
-        tabReg.classList.remove('active');
+        if (tabLog) tabLog.classList.add('active');
+        if (tabReg) tabReg.classList.remove('active');
         if (nameField) nameField.style.display = 'none';
         if (otpSec) otpSec.style.display = 'none';
         if (mockBox) mockBox.style.display = 'none';
-        if (submitBtn) submitBtn.innerText = '✓ Đăng Nhập Vào Hệ Thống';
+        if (submitBtn) submitBtn.innerText = 'Sign in';
+        if (titleEl) titleEl.innerText = 'Sign in';
+        if (subEl) subEl.innerText = 'Đăng nhập tài khoản sinh viên UTC2 của bạn';
+        if (switchTxt) switchTxt.innerText = "Don't have an account?";
+        if (switchLnk) switchLnk.innerText = 'Sign up';
     }
     if (window.sound) window.sound.playClick();
+}
+
+function toggleAuthModeViaLink() {
+    if (window.app.currentAuthMode === 'register') {
+        switchAuthMode('login');
+    } else {
+        switchAuthMode('register');
+    }
+}
+
+function togglePasswordVisibility() {
+    const pwdInput = document.getElementById('authPasswordInput');
+    const toggleBtn = document.getElementById('authPasswordToggleBtn');
+    if (!pwdInput) return;
+    if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        if (toggleBtn) toggleBtn.innerText = 'HIDE';
+    } else {
+        pwdInput.type = 'password';
+        if (toggleBtn) toggleBtn.innerText = 'SHOW';
+    }
+}
+
+function handleForgotPassword() {
+    const email = document.getElementById('authEmailInput')?.value.trim();
+    if (email) {
+        showToast(`Yêu cầu hỗ trợ mật khẩu cho ${email} đã được tiếp nhận. Vui lòng liên hệ Admin qua Zalo/Email trường hoặc dùng chức năng quản trị!`, 'info');
+    } else {
+        showToast('Vui lòng nhập User Name / Gmail UTC2 của bạn vào ô trên trước khi chọn Forgot Password!', 'warning');
+    }
 }
 
 // ==========================================
