@@ -17,6 +17,12 @@
           hợp sử dụng bừa gmail của người khác."
          =================================================================== -->
     <div class="auth-page-container" id="authPageContainer">
+        <!-- NỀN ĐỘNG MỜ ẢO HÌNH ẢNH KHUÔN VIÊN TRƯỜNG UTC2 -->
+        <div class="auth-bg-parallax" id="authBgParallax">
+            <div class="auth-bg-layer" id="authBgLayer"></div>
+        </div>
+        <div class="auth-bg-overlay" id="authBgOverlay"></div>
+
         <div class="auth-split-card">
             
             <!-- CỘT BÊN TRÁI: WELCOME TO HANDUTC2 THEO ĐÚNG HÌNH ẢNH MẪU -->
@@ -33,28 +39,28 @@
                     <h1 class="auth-welcome-heading">WELCOME</h1>
                     <div class="auth-welcome-subheading">HAND UTC2</div>
                     <p class="auth-welcome-desc">
-                        Welcom to HandUTC2 dành cho sinh viên,uy tín,chất lượng,tiện lợi và an toàn
+                        Chào mừng bạn đến với hệ thống dành cho sinh viên:uy tín-chất lượng-tiện lợi và an toàn
                     </p>
                 </div>
 
                 <!-- Các điểm nhấn uy tín & lợi ích sinh viên -->
                 <div class="auth-welcome-points">
                     <div class="auth-welcome-point-item">
-                        <span class="point-icon">🛡️</span>
+                        <span class="point-icon"></span>
                         <div>
                             <strong>Uy Tín Mặc Định 95đ</strong>
                             <p>Cơ chế cọc chống bùng hẹn và giao dịch an toàn</p>
                         </div>
                     </div>
                     <div class="auth-welcome-point-item">
-                        <span class="point-icon">🪙</span>
+                        <span class="point-icon"></span>
                         <div>
                             <strong>Tặng 20 Xu Chào Mừng</strong>
                             <p>Sử dụng 30% số xu để giảm giá trực tiếp mọi mặt hàng</p>
                         </div>
                     </div>
                     <div class="auth-welcome-point-item">
-                        <span class="point-icon">🎓</span>
+                        <span class="point-icon"></span>
                         <div>
                             <strong>Xác Thực Gmail Trường</strong>
                             <p>Bảo mật và chống spam qua đuôi @st.utc2.edu.vn</p>
@@ -66,7 +72,7 @@
             <!-- CỘT BÊN PHẢI: KHUNG ĐĂNG NHẬP / ĐĂNG KÝ TRẮNG BO TRÒN NỔI BẬT -->
             <div class="auth-form-card">
                 <div class="auth-card-header">
-                    <h2 class="auth-card-title" id="authCardTitle">Sign in</h2>
+                    <h2 class="auth-card-title" id="authCardTitle">SIGN IN_HANDUTC2</h2>
                     <p class="auth-card-subtitle" id="authCardSubtitle">Đăng nhập tài khoản sinh viên UTC2 của bạn</p>
                 </div>
 
@@ -86,7 +92,7 @@
                     <div class="auth-form-group" id="authNameField" style="display:none;">
                         <label class="auth-label">Họ và tên sinh viên *</label>
                         <div class="auth-input-wrap">
-                            <span class="auth-input-icon">👤</span>
+                            <span class="auth-input-icon"></span>
                             <input type="text" id="authFullNameInput" class="auth-input" 
                                    placeholder="Ví dụ: Nguyễn Văn An, Trần Thị Mai..." value="">
                         </div>
@@ -96,7 +102,7 @@
                     <div class="auth-form-group">
                         <label class="auth-label">User Name / Gmail UTC2 *</label>
                         <div class="auth-input-wrap">
-                            <span class="auth-input-icon">✉️</span>
+                            <span class="auth-input-icon"></span>
                             <input type="email" id="authEmailInput" class="auth-input" 
                                    placeholder="User Name (masv@st.utc2.edu.vn)" value="" required>
                         </div>
@@ -106,7 +112,7 @@
                     <div class="auth-form-group">
                         <label class="auth-label">Password *</label>
                         <div class="auth-input-wrap">
-                            <span class="auth-input-icon">🔒</span>
+                            <span class="auth-input-icon"></span>
                             <input type="password" id="authPasswordInput" class="auth-input auth-input-password" 
                                    placeholder="Password" value="" required>
                             <button type="button" class="auth-password-toggle-btn" id="authPasswordToggleBtn" onclick="togglePasswordVisibility()">SHOW</button>
@@ -126,11 +132,11 @@
                     <div class="auth-form-group" id="authOtpSection" style="display:none;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                             <label class="auth-label" style="margin:0;">Mã OTP xác thực Gmail *</label>
-                            <span style="font-size:11px; color:#16a34a; font-weight:700;">🛡️ Bảo mật Gmail</span>
+                            <span style="font-size:11px; color:#16a34a; font-weight:700;"> Bảo mật Gmail</span>
                         </div>
                         <div class="auth-otp-row">
                             <div class="auth-input-wrap" style="flex:1;">
-                                <span class="auth-input-icon">🔑</span>
+                                <span class="auth-input-icon"></span>
                                 <input type="text" id="authOtpInput" class="auth-input" 
                                        placeholder="Mã 6 số từ Gmail..." maxlength="6" autocomplete="off" style="letter-spacing:4px; font-weight:800; font-size:15px; text-align:center;">
                             </div>
@@ -144,7 +150,7 @@
                     <div class="mock-email-box" id="mockEmailNotification" style="display:none; background:#f0fdf4; border:1.5px solid #86efac; border-radius:12px; padding:14px; text-align:left; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08); margin:12px 0;">
                         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px dashed #bbf7d0; padding-bottom:6px;">
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <span style="font-size:20px;">📬</span>
+                                <span style="font-size:20px;"></span>
                                 <div>
                                     <strong style="color:#15803d; font-size:13px; display:block;">ĐÃ GỬI MÃ OTP VỀ GMAIL</strong>
                                     <span style="font-size:11px; color:#64748b;">Mở hòm thư Gmail của bạn để lấy mã 6 số</span>
@@ -159,7 +165,7 @@
 
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                             <a href="https://mail.google.com" target="_blank" class="apply-filter-btn" style="background:#ea4335; width:auto; padding:6px 14px; margin:0; text-decoration:none; font-size:11.5px; display:inline-flex; align-items:center; gap:6px; font-weight:700;">
-                                <span>✉️</span> Mở Hộp Thư Gmail ➔
+                                <span></span> Mở Hộp Thư Gmail ➔
                             </a>
                             <span style="font-size:11px; color:#64748b;" id="otpTimerText">Mã hiệu lực 5 phút</span>
                         </div>

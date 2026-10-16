@@ -4915,3 +4915,62 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+// ==========================================
+// HIỆU ỨNG TƯƠNG TÁC CON CHUỘT ĐỘNG VỚI NỀN KHUÔN VIÊN UTC2
+// ==========================================
+function initAuthBgMouseEffect() {
+    const authContainer = document.getElementById('authPageContainer');
+    const authParallax = document.getElementById('authBgParallax');
+    if (!authContainer) return;
+
+    let targetX = 0, targetY = 0;
+    let currentX = 0, currentY = 0;
+    let isTicking = false;
+
+    authContainer.addEventListener('mousemove', (e) => {
+        const rect = authContainer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const xPercent = ((x / rect.width) * 100).toFixed(1);
+        const yPercent = ((y / rect.height) * 100).toFixed(1);
+
+        authContainer.style.setProperty('--mouse-x', `${xPercent}%`);
+        authContainer.style.setProperty('--mouse-y', `${yPercent}%`);
+
+        // Dịch chuyển nhẹ theo hướng con trỏ chuột (Parallax)
+        const moveRatioX = (e.clientX / window.innerWidth) - 0.5;
+        const moveRatioY = (e.clientY / window.innerHeight) - 0.5;
+        targetX = moveRatioX * -24;
+        targetY = moveRatioY * -18;
+
+        if (!isTicking) {
+            isTicking = true;
+            requestAnimationFrame(() => {
+                currentX += (targetX - currentX) * 0.15;
+                currentY += (targetY - currentY) * 0.15;
+                if (authParallax) {
+                    authParallax.style.setProperty('--mouse-shift-x', `${currentX.toFixed(2)}px`);
+                    authParallax.style.setProperty('--mouse-shift-y', `${currentY.toFixed(2)}px`);
+                }
+                isTicking = false;
+            });
+        }
+    });
+
+    authContainer.addEventListener('mouseleave', () => {
+        authContainer.style.setProperty('--mouse-x', '50%');
+        authContainer.style.setProperty('--mouse-y', '50%');
+        if (authParallax) {
+            authParallax.style.setProperty('--mouse-shift-x', '0px');
+            authParallax.style.setProperty('--mouse-shift-y', '0px');
+        }
+    });
+}
+
+// Khởi chạy ngay hiệu ứng nền động
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAuthBgMouseEffect);
+} else {
+    initAuthBgMouseEffect();
+}

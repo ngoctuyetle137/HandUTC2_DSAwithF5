@@ -99,17 +99,79 @@ body {
     padding: 30px 20px;
     position: relative;
     z-index: 50;
-    background: #ebf1f6;
+    overflow: hidden;
+    background: #081a33;
+}
+
+/* KHUNG WRAPPER CHUYỂN ĐỘNG PARALLAX THEO CON CHUỘT */
+.auth-bg-parallax {
+    position: absolute;
+    top: -40px;
+    left: -40px;
+    right: -40px;
+    bottom: -40px;
+    pointer-events: none;
+    z-index: 0;
+    transform: translate(var(--mouse-shift-x, 0px), var(--mouse-shift-y, 0px));
+    transition: transform 0.25s cubic-bezier(0.2, 0.4, 0.2, 1);
+    will-change: transform;
+}
+
+/* NỀN HÌNH ẢNH KHUÔN VIÊN TRƯỜNG UTC2: MỜ MỜ & CHUYỂN ĐỘNG (FLOATING / KEN BURNS) */
+.auth-bg-layer {
+    width: 100%;
+    height: 100%;
+    background-image: url('utc2_campus_bg.jpg');
+    background-size: cover;
+    background-position: center 40%;
+    filter: blur(4px) brightness(0.85) saturate(1.15);
+    animation: authBgBreathing 18s ease-in-out infinite alternate;
+    transform-origin: center center;
+    will-change: transform, filter;
+}
+
+@keyframes authBgBreathing {
+    0% {
+        transform: scale(1.04) translate(0, 0);
+        filter: blur(4px) brightness(0.85) saturate(1.15);
+    }
+    50% {
+        transform: scale(1.09) translate(-14px, -8px);
+        filter: blur(3.5px) brightness(0.90) saturate(1.22);
+    }
+    100% {
+        transform: scale(1.06) translate(10px, 6px);
+        filter: blur(4.5px) brightness(0.83) saturate(1.12);
+    }
+}
+
+/* LỚP PHỦ ÁNH SÁNG THEO VỊ TRÍ CON CHUỘT TĂNG CHIỀU SÂU VÀ ĐỘ TẬP TRUNG */
+.auth-bg-overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        circle 650px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+        rgba(29, 101, 212, 0.22) 0%,
+        rgba(13, 56, 130, 0.45) 50%,
+        rgba(5, 18, 42, 0.72) 100%
+    );
+    backdrop-filter: blur(1px);
+    pointer-events: none;
+    z-index: 1;
+    transition: background 0.12s ease-out;
 }
 
 .auth-split-card {
     position: relative;
+    z-index: 10;
     width: 100%;
     max-width: 960px;
     min-height: 540px;
-    background: linear-gradient(135deg, #1d65d4 0%, #154fa8 50%, #0d3882 100%);
+    background: linear-gradient(135deg, rgba(29, 101, 212, 0.95) 0%, rgba(21, 79, 168, 0.96) 50%, rgba(13, 56, 130, 0.98) 100%);
     border-radius: 28px;
-    box-shadow: 0 24px 60px rgba(13, 56, 130, 0.28), 0 8px 24px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45), 0 8px 30px rgba(29, 101, 212, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(10px);
     display: grid;
     grid-template-columns: 1.05fr 0.95fr;
     align-items: center;
