@@ -150,10 +150,10 @@ body {
     position: absolute;
     inset: 0;
     background: radial-gradient(
-        circle 650px at var(--mouse-x, 50%) var(--mouse-y, 50%),
-        rgba(29, 101, 212, 0.22) 0%,
-        rgba(13, 56, 130, 0.45) 50%,
-        rgba(5, 18, 42, 0.72) 100%
+        circle 750px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(186, 230, 253, 0.24) 45%,
+        rgba(12, 74, 110, 0.38) 100%
     );
     backdrop-filter: blur(1px);
     pointer-events: none;
@@ -167,11 +167,11 @@ body {
     width: 100%;
     max-width: 960px;
     min-height: 540px;
-    background: linear-gradient(135deg, rgba(29, 101, 212, 0.95) 0%, rgba(21, 79, 168, 0.96) 50%, rgba(13, 56, 130, 0.98) 100%);
+    background: linear-gradient(135deg, rgba(238, 247, 255, 0.94) 0%, rgba(219, 238, 254, 0.92) 50%, rgba(191, 224, 254, 0.90) 100%);
     border-radius: 28px;
-    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45), 0 8px 30px rgba(29, 101, 212, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(10px);
+    box-shadow: 0 24px 60px rgba(12, 74, 110, 0.22), 0 8px 24px rgba(0, 0, 0, 0.06);
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
     display: grid;
     grid-template-columns: 1.05fr 0.95fr;
     align-items: center;
@@ -190,7 +190,7 @@ body {
     width: 440px;
     height: 440px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.03) 65%, transparent 100%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.15) 65%, transparent 100%);
     pointer-events: none;
     z-index: 1;
 }
@@ -203,7 +203,7 @@ body {
     width: 380px;
     height: 380px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(96, 165, 250, 0.25) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(147, 197, 253, 0.45) 0%, transparent 70%);
     pointer-events: none;
     z-index: 1;
 }
@@ -217,7 +217,7 @@ body {
 .auth-welcome-left {
     position: relative;
     z-index: 2;
-    color: #ffffff;
+    color: #0f172a;
     padding: 10px 14px;
     display: flex;
     flex-direction: column;
@@ -237,7 +237,8 @@ body {
     border-radius: 12px;
     background: #ffffff;
     padding: 3px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+    border: 1.5px solid #bae6fd;
     object-fit: contain;
 }
 
@@ -245,7 +246,7 @@ body {
     display: block;
     font-size: 11px;
     letter-spacing: 0.8px;
-    color: rgba(255, 255, 255, 0.82);
+    color: #475569;
     font-weight: 600;
 }
 
@@ -254,24 +255,24 @@ body {
     font-size: 13.5px;
     font-weight: 800;
     letter-spacing: 0.5px;
-    color: #ffffff;
+    color: #034887;
 }
 
 .auth-welcome-heading {
     font-size: 40px;
     font-weight: 900;
     letter-spacing: 2.5px;
-    color: #ffffff;
+    color: #034887;
     line-height: 1.1;
     margin: 0 0 6px 0;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.8);
 }
 
 .auth-welcome-subheading {
     font-size: 14.5px;
     font-weight: 800;
     letter-spacing: 1.8px;
-    color: #93c5fd;
+    color: #0284c7;
     text-transform: uppercase;
     margin-bottom: 16px;
 }
@@ -279,7 +280,7 @@ body {
 .auth-welcome-desc {
     font-size: 14px;
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.92);
+    color: #1e3a5f;
     max-width: 420px;
     margin-bottom: 22px;
     font-weight: 500;
@@ -296,11 +297,12 @@ body {
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.82);
     backdrop-filter: blur(8px);
     padding: 10px 14px;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(186, 230, 253, 0.9);
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.08);
 }
 
 .auth-welcome-point-item .point-icon {
@@ -312,13 +314,13 @@ body {
 .auth-welcome-point-item strong {
     font-size: 12.5px;
     font-weight: 700;
-    color: #ffffff;
+    color: #034887;
     display: block;
 }
 
 .auth-welcome-point-item p {
     font-size: 11.5px;
-    color: rgba(255, 255, 255, 0.82);
+    color: #475569;
     margin: 2px 0 0 0;
     line-height: 1.4;
 }
@@ -330,7 +332,8 @@ body {
     background: #ffffff;
     border-radius: 24px;
     padding: 34px 30px;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+    border: 1.5px solid rgba(186, 230, 253, 0.85);
+    box-shadow: 0 16px 40px rgba(2, 132, 199, 0.12);
 }
 
 .auth-card-header {
@@ -340,7 +343,7 @@ body {
 .auth-card-title {
     font-size: 26px;
     font-weight: 800;
-    color: #0f346f;
+    color: #034887;
     margin: 0 0 4px 0;
 }
 
@@ -354,7 +357,7 @@ body {
 .auth-tabs-toggle {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    background: #f1f5f9;
+    background: #e0f2fe;
     padding: 4px;
     border-radius: 30px;
     margin-bottom: 18px;
@@ -367,15 +370,15 @@ body {
     background: transparent;
     font-size: 13px;
     font-weight: 700;
-    color: #64748b;
+    color: #0369a1;
     cursor: pointer;
     transition: var(--transition);
 }
 
 .auth-tab-btn.active {
     background: #ffffff;
-    color: #1754aa;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    color: #0284c7;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.18);
 }
 
 /* Form Groups */
@@ -411,8 +414,8 @@ body {
 
 .auth-input:focus {
     background: #ffffff;
-    border-color: #1a5ec4;
-    box-shadow: 0 0 0 3px rgba(26, 94, 196, 0.15);
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18);
 }
 
 .auth-input-icon {
@@ -434,7 +437,7 @@ body {
     border: none;
     font-size: 11px;
     font-weight: 800;
-    color: #1a5ec4;
+    color: #0284c7;
     cursor: pointer;
     padding: 4px 6px;
     letter-spacing: 0.5px;
@@ -443,7 +446,7 @@ body {
 }
 
 .auth-password-toggle-btn:hover {
-    color: #0d3882;
+    color: #034887;
 }
 
 .auth-options-row {
@@ -466,7 +469,7 @@ body {
 
 .auth-remember-wrap input {
     cursor: pointer;
-    accent-color: #1a5ec4;
+    accent-color: #0284c7;
     width: 14px;
     height: 14px;
 }
@@ -479,7 +482,7 @@ body {
 }
 
 .auth-forgot-link:hover {
-    color: #1a5ec4;
+    color: #0284c7;
     text-decoration: underline;
 }
 
@@ -490,7 +493,7 @@ body {
 }
 
 .btn-get-otp {
-    background: #1a5ec4;
+    background: #0284c7;
     color: #ffffff;
     border: none;
     border-radius: 10px;
@@ -506,7 +509,7 @@ body {
 }
 
 .btn-get-otp:hover {
-    background: #154fa8;
+    background: #0369a1;
 }
 
 /* Hộp mô phỏng Hộp thư Gmail sinh viên UTC2 */
@@ -550,7 +553,7 @@ body {
 /* Nút Submit Form Auth */
 .auth-submit-btn {
     width: 100%;
-    background: linear-gradient(135deg, #1b65d4 0%, #154fa8 100%);
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
     color: #ffffff;
     border: none;
     border-radius: 10px;
@@ -558,15 +561,15 @@ body {
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(21, 79, 168, 0.35);
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
     transition: var(--transition);
     margin-top: 6px;
 }
 
 .auth-submit-btn:hover {
-    background: linear-gradient(135deg, #154fa8 0%, #0d3882 100%);
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(21, 79, 168, 0.45);
+    box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45);
 }
 
 .auth-bottom-switch {
@@ -577,7 +580,7 @@ body {
 }
 
 .auth-bottom-switch a {
-    color: #1a5ec4;
+    color: #0284c7;
     font-weight: 700;
     text-decoration: none;
     margin-left: 4px;
