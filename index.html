@@ -106,8 +106,8 @@
                         <label class="auth-label">User Name / Gmail UTC2 *</label>
                         <div class="auth-input-wrap">
                             <span class="auth-input-icon"></span>
-                            <input type="email" id="authEmailInput" class="auth-input" 
-                                   placeholder="User Name (masv@st.utc2.edu.vn)" value="" required>
+                            <input type="text" id="authEmailInput" class="auth-input" 
+                                   placeholder="User Name / MSSV / Gmail UTC2" value="" required autocomplete="username">
                         </div>
                     </div>
 
@@ -117,7 +117,7 @@
                         <div class="auth-input-wrap">
                             <span class="auth-input-icon"></span>
                             <input type="password" id="authPasswordInput" class="auth-input auth-input-password" 
-                                   placeholder="Password" value="" required>
+                                   placeholder="Password" value="" required autocomplete="current-password">
                             <button type="button" class="auth-password-toggle-btn" id="authPasswordToggleBtn" onclick="togglePasswordVisibility()">SHOW</button>
                         </div>
                     </div>
@@ -184,6 +184,24 @@
                 <div class="auth-bottom-switch">
                     <span id="authBottomSwitchText">Don't have an account?</span>
                     <a href="javascript:void(0)" id="authBottomSwitchLink" onclick="toggleAuthModeViaLink()">Sign up</a>
+                </div>
+
+                <!-- Gợi ý đăng nhập nhanh 1-chạm -->
+                <div class="auth-quick-accounts-box" style="margin-top:16px; padding-top:12px; border-top:1px dashed #cbd5e1; font-size:11.5px; color:#475569;">
+                    <div style="font-weight:700; margin-bottom:8px; color:#0f172a; display:flex; align-items:center; gap:6px;">
+                        <span>⚡</span> Đăng nhập nhanh tài khoản mẫu:
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="addr-chip" onclick="fillQuickLogin('6651071091', 'TietLee113377')" title="Tài khoản Quản Trị Viên UTC2" style="font-size:11px; padding:5px 10px; cursor:pointer;">
+                            🛡️ Admin (6651071091)
+                        </button>
+                        <button type="button" class="addr-chip" onclick="fillQuickLogin('tuyetltn.st@st.utc2.edu.vn', '123456')" title="Sinh viên Lê Thị Ngọc Tuyết" style="font-size:11px; padding:5px 10px; cursor:pointer;">
+                            🎓 Lê Thị Ngọc Tuyết
+                        </button>
+                        <button type="button" class="addr-chip" onclick="fillQuickLogin('sinhvien@st.utc2.edu.vn', '123456')" title="Sinh viên UTC2 mẫu" style="font-size:11px; padding:5px 10px; cursor:pointer;">
+                            🎒 Sinh Viên UTC2
+                        </button>
+                    </div>
                 </div>
             </div>
 

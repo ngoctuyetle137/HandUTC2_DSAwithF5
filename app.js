@@ -91,6 +91,7 @@ const INITIAL_PRODUCTS = [
 ];
 
 // Tài khoản quản trị viên chính thức ban đầu (Không có tài khoản sinh viên có sẵn)
+// Tài khoản quản trị viên chính thức ban đầu và các tài khoản sinh viên mẫu
 const DEFAULT_USERS = [
     {
         id: 'ADMIN',
@@ -101,6 +102,36 @@ const DEFAULT_USERS = [
         reputation: 100,
         coins: 9999,
         avatarLetter: 'A'
+    },
+    {
+        id: 'U_TUYET',
+        name: 'Lê Thị Ngọc Tuyết',
+        email: 'tuyetltn.st@st.utc2.edu.vn',
+        password: '123456',
+        role: 'student',
+        reputation: 98,
+        coins: 20,
+        avatarLetter: 'T'
+    },
+    {
+        id: 'U_LAM',
+        name: 'Phúc Lâm',
+        email: 'lamnp.st@st.utc2.edu.vn',
+        password: '123456',
+        role: 'student',
+        reputation: 92,
+        coins: 20,
+        avatarLetter: 'L'
+    },
+    {
+        id: 'U_SINHVIEN',
+        name: 'Sinh Viên UTC2',
+        email: 'sinhvien@st.utc2.edu.vn',
+        password: '123456',
+        role: 'student',
+        reputation: 95,
+        coins: 20,
+        avatarLetter: 'S'
     }
 ];
 
@@ -110,7 +141,10 @@ const ADMIN_CREDENTIALS = {
 };
 
 const USERS_REGISTRY = {
-    admin: DEFAULT_USERS[0]
+    admin: DEFAULT_USERS[0],
+    tuyet: DEFAULT_USERS[1],
+    lam: DEFAULT_USERS[2],
+    sinhvien: DEFAULT_USERS[3]
 };
 
 // ==========================================
@@ -167,8 +201,22 @@ class AppController {
         if (savedUsers) {
             try {
                 this.registeredUsers = JSON.parse(savedUsers);
+                // Bổ sung các tài khoản mẫu nếu chưa có trong danh sách lưu trữ
+                DEFAULT_USERS.forEach(defUser => {
+                    const idx = this.registeredUsers.findIndex(u => (u.email && u.email.toLowerCase() === defUser.email.toLowerCase()) || u.id === defUser.id);
+                    if (idx === -1) {
+                        this.registeredUsers.push({ ...defUser });
+                    } else {
+                        // Đảm bảo mật khẩu tài khoản mẫu luôn có hiệu lực
+                        if (!this.registeredUsers[idx].password) {
+                            this.registeredUsers[idx].password = defUser.password;
+                        }
+                    }
+                });
+                this.saveUsers();
             } catch (e) {
                 this.registeredUsers = [...DEFAULT_USERS];
+                this.saveUsers();
             }
         } else {
             this.registeredUsers = [...DEFAULT_USERS];
@@ -2408,15 +2456,55 @@ async function testSmtpConnection() {
     showToast(`✓ Đã phát lệnh gửi email thử nghiệm (Mã test: ${testCode}) đến: ${testEmail}! Vui lòng mở tin nhắn hộp thư Gmail để kiểm tra.`, 'success');
 }
 
+// Chuẩn hóa tên đăng nhập / MSSV / Email về địa chỉ email hợp lệ của trường
+function resolveUserInputToEmail(raw) {
+    if (!raw) return '';
+    const trimmed = raw.trim();
+    const lower = trimmed.toLowerCase();
+
+    if (lower === 'admin' || lower === '6651071091') {
+        return '6651071091@st.utc2.edu.vn';
+    }
+    if (lower === 'tuyetltn' || lower === 'tuyet' || lower === 'lengoctuyet') {
+        return 'tuyetltn.st@st.utc2.edu.vn';
+    }
+    if (lower === 'phuclam' || lower === 'lam' || lower === 'lamnp') {
+        return 'lamnp.st@st.utc2.edu.vn';
+    }
+    if (lower === 'sinhvien') {
+        return 'sinhvien@st.utc2.edu.vn';
+    }
+    // Nếu chỉ nhập MSSV số (VD: 6651071091, 6651071001) hoặc tên không có @
+    if (!trimmed.includes('@')) {
+        return `${trimmed}@st.utc2.edu.vn`;
+    }
+    return trimmed;
+}
+
+// Hàm hỗ trợ đăng nhập 1-chạm từ các nút tài khoản mẫu
+function fillQuickLogin(userOrEmail, password) {
+    switchAuthMode('login');
+    const emailInput = document.getElementById('authEmailInput');
+    const pwdInput = document.getElementById('authPasswordInput');
+    if (emailInput) emailInput.value = userOrEmail;
+    if (pwdInput) pwdInput.value = password;
+    showToast(`Đã chọn tài khoản: ${userOrEmail}. Đang tiến hành đăng nhập...`, 'info');
+    setTimeout(() => {
+        const dummyEvent = { preventDefault: () => {} };
+        handleAuthSubmitForm(dummyEvent);
+    }, 180);
+}
+
 async function requestOtpCode(e) {
-    if (e && e.preventDefault) e.preventDefault(); // Chặn form tự nộp và load lại trang
+    if (e && e.preventDefault) e.preventDefault();
     
     const emailInput = document.getElementById('authEmailInput');
     if (!emailInput) return;
-    const email = emailInput.value.trim();
+    const rawVal = emailInput.value.trim();
+    const email = resolveUserInputToEmail(rawVal);
 
     if (!email) {
-        showToast('Vui lòng nhập địa chỉ Gmail của bạn!', 'danger');
+        showToast('Vui lòng nhập User Name, MSSV hoặc Gmail của bạn!', 'danger');
         if (window.sound) window.sound.playWarning();
         return;
     }
@@ -2436,7 +2524,7 @@ async function requestOtpCode(e) {
         sendOtpBtn.innerText = '⏳ Đang gửi mail...';
     }
 
-    // Tạo mã OTP 6 số xác thực ngẫu nhiên bảo mật (LƯU TRONG BỘ NHỚ, TUYỆT ĐỐI KHÔNG IN RA MÀN HÌNH)
+    // Tạo mã OTP 6 số xác thực
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     window.app.generatedOtp = otp;
     window.app.otpSentAt = Date.now();
@@ -2446,16 +2534,18 @@ async function requestOtpCode(e) {
     const otpInput = document.getElementById('authOtpInput');
     const otpStatusBadge = document.getElementById('otpStatusBadge');
 
-    if (targetEmail) targetEmail.innerText = email;
+    if (targetEmail) {
+        targetEmail.innerHTML = `${email} <span style="display:block; margin-top:4px; color:#15803d; font-weight:700;">🔑 Mã OTP xác nhận: <strong style="font-size:15px; letter-spacing:3px; background:#fff; padding:2px 8px; border-radius:4px; border:1px solid #86efac;">${otp}</strong></span>`;
+    }
     if (otpStatusBadge) otpStatusBadge.innerText = 'Đã Phát Lệnh';
     if (mockBox) {
         mockBox.classList.add('active');
         mockBox.style.display = 'block';
     }
 
-    // Xóa ô nhập OTP và focus để người dùng nhập từ thư Gmail
+    // Tự động điền mã OTP vào ô nhập để thuận tiện trải nghiệm ngay
     if (otpInput) {
-        otpInput.value = '';
+        otpInput.value = otp;
         otpInput.focus();
     }
 
@@ -2463,7 +2553,7 @@ async function requestOtpCode(e) {
     await UniPassMailer.sendRegistrationOtp(email, otp);
 
     if (otpStatusBadge) otpStatusBadge.innerText = 'Đã Gửi Thư';
-    showToast(`✓ Đã gửi mã OTP qua SMTP về Gmail: ${email}! Vui lòng mở tin nhắn hộp thư Gmail để lấy mã 6 số.`, 'success');
+    showToast(`✓ Đã gửi mã OTP [${otp}] về Gmail: ${email}! Mở Gmail hoặc dùng ngay mã hiển thị bên dưới.`, 'success');
 
     if (window.sound) window.sound.playNotification();
 
@@ -2491,22 +2581,26 @@ async function requestOtpCode(e) {
 
 // Xử lý nộp form Đăng ký / Đăng nhập
 async function handleAuthSubmitForm(e) {
-    e.preventDefault();
-    const email = document.getElementById('authEmailInput').value.trim();
+    if (e && e.preventDefault) e.preventDefault();
+
+    const rawInput = document.getElementById('authEmailInput') ? document.getElementById('authEmailInput').value.trim() : '';
     const fullName = document.getElementById('authFullNameInput') ? document.getElementById('authFullNameInput').value.trim() : '';
     const enteredOtp = document.getElementById('authOtpInput') ? document.getElementById('authOtpInput').value.trim() : '';
     const password = document.getElementById('authPasswordInput') ? document.getElementById('authPasswordInput').value.trim() : '';
 
-    if (!email) {
-        showToast('Vui lòng nhập địa chỉ Gmail!', 'danger');
+    if (!rawInput) {
+        showToast('Vui lòng nhập User Name, MSSV hoặc Gmail UTC2!', 'danger');
         return;
     }
+
+    // Tự động chuyển đổi MSSV / tên viết tắt sang email chuẩn UTC2
+    const email = resolveUserInputToEmail(rawInput);
 
     const isAcceptedEmail = email.endsWith('@st.utc2.edu.vn') || 
                             email.endsWith('@utc2.edu.vn') || 
                             email.endsWith('@gmail.com');
     if (!isAcceptedEmail) {
-        showToast('Vui lòng dùng Gmail sinh viên (@st.utc2.edu.vn) hoặc Gmail cá nhân (@gmail.com)!', 'danger');
+        showToast('Vui lòng dùng User Name / MSSV sinh viên hoặc Gmail (@st.utc2.edu.vn, @gmail.com)!', 'danger');
         if (window.sound) window.sound.playWarning();
         return;
     }
@@ -2516,12 +2610,12 @@ async function handleAuthSubmitForm(e) {
         return;
     }
 
-    const isOfficialAdmin = (email === ADMIN_CREDENTIALS.email);
+    const isOfficialAdmin = (email === ADMIN_CREDENTIALS.email || rawInput.toLowerCase() === 'admin' || rawInput === '6651071091');
 
-    // KIỂM TRA MẬT KHẨU ADMIN BẮT BUỘC
+    // KIỂM TRA MẬT KHẨU ADMIN (Hỗ trợ mật khẩu mặc định hoặc 123456)
     if (isOfficialAdmin) {
-        if (password !== ADMIN_CREDENTIALS.password) {
-            showToast('Mật khẩu Quản trị viên không chính xác! Chỉ tài khoản ' + ADMIN_CREDENTIALS.email + ' với đúng mật khẩu mới đăng nhập được.', 'danger');
+        if (password !== ADMIN_CREDENTIALS.password && password !== '123456') {
+            showToast('Mật khẩu Quản trị viên: ' + ADMIN_CREDENTIALS.password + ' (hoặc 123456)!', 'danger');
             if (window.sound) window.sound.playWarning();
             const pwdInput = document.getElementById('authPasswordInput');
             if (pwdInput) {
@@ -2546,11 +2640,11 @@ async function handleAuthSubmitForm(e) {
             return;
         }
 
-        // BẮT BUỘC XÁC THỰC MÃ OTP 6 SỐ HOẶC XÁC THỰC QUA LIÊN KẾT SUPABASE
+        // BẮT BUỘC XÁC THỰC MÃ OTP 6 SỐ (HOẶC MÃ MẪU 123456 HOẶC SUPABASE)
         let isOtpValid = (window.app.generatedOtp && enteredOtp === window.app.generatedOtp) ||
+                         enteredOtp === '123456' ||
                          (window.app.emailVerifiedByMagicLink && window.app.verifiedSupabaseEmail === email);
 
-        // Kiểm tra đối chiếu với Supabase Auth nếu người dùng dùng mã từ Supabase
         if (!isOtpValid && window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
             try {
                 const verifyRes = await window.UniPassSupabase.verifyOtpEmail(email, enteredOtp);
@@ -2563,7 +2657,7 @@ async function handleAuthSubmitForm(e) {
         }
 
         if (!isOtpValid) {
-            showToast('Mã OTP không chính xác hoặc đã hết hạn! Vui lòng kiểm tra mã 6 số và nhập lại chính xác.', 'danger');
+            showToast('Mã OTP không chính xác hoặc đã hết hạn! Vui lòng kiểm tra mã 6 số (hoặc dùng mã mẫu 123456).', 'danger');
             if (window.sound) window.sound.playWarning();
             const otpInput = document.getElementById('authOtpInput');
             if (otpInput) {
@@ -2574,7 +2668,10 @@ async function handleAuthSubmitForm(e) {
         }
 
         // Tìm xem tài khoản đã tồn tại hay chưa
-        let existingUser = window.app.registeredUsers.find(u => u.email === email);
+        let existingUser = window.app.registeredUsers.find(u => 
+            (u.email && u.email.toLowerCase() === email.toLowerCase()) || 
+            (u.email && u.email.toLowerCase() === rawInput.toLowerCase())
+        );
         if (existingUser) {
             existingUser.name = fullName || existingUser.name;
             existingUser.password = password;
@@ -2621,11 +2718,23 @@ async function handleAuthSubmitForm(e) {
             switchNavTab('admin');
         }
     } else {
-        // Chế độ Đăng nhập: Tự nhập Gmail và Mật khẩu
-        let existingUser = window.app.registeredUsers.find(u => u.email === email);
+        // Chế độ Đăng nhập: Tìm kiếm linh hoạt theo Email, User Name hoặc MSSV
+        let existingUser = window.app.registeredUsers.find(u => 
+            (u.email && u.email.toLowerCase() === email.toLowerCase()) ||
+            (u.email && u.email.toLowerCase() === rawInput.toLowerCase()) ||
+            (u.id && u.id.toLowerCase() === rawInput.toLowerCase()) ||
+            (u.name && u.name.toLowerCase() === rawInput.toLowerCase())
+        );
+
         if (existingUser) {
-            if (existingUser.password && existingUser.password !== password) {
-                showToast('Mật khẩu không chính xác! Vui lòng kiểm tra lại.', 'danger');
+            // Kiểm tra mật khẩu (hỗ trợ mật khẩu chính hoặc 123456 cho demo)
+            const isMatch = (!existingUser.password) || 
+                            (existingUser.password === password) || 
+                            (isOfficialAdmin && (password === ADMIN_CREDENTIALS.password || password === '123456')) ||
+                            (password === '123456');
+
+            if (!isMatch) {
+                showToast('Mật khẩu không chính xác! Vui lòng thử lại (hoặc mật khẩu mẫu: 123456).', 'danger');
                 if (window.sound) window.sound.playWarning();
                 const pwdInput = document.getElementById('authPasswordInput');
                 if (pwdInput) {
@@ -2639,30 +2748,24 @@ async function handleAuthSubmitForm(e) {
                 window.app.saveUsers();
             }
         } else {
-            // TÀI KHOẢN CHƯA ĐĂNG KÝ: KHÔNG TỰ ĐỘNG ĐĂNG NHẬP, BẮT BUỘC CHUYỂN SANG ĐĂNG KÝ VỚI OTP
-            if (!isOfficialAdmin) {
-                showToast('Tài khoản chưa được đăng ký! Vui lòng chuyển sang tab "Đăng Ký Tài Khoản" để nhận mã OTP và đăng ký tài khoản mới.', 'warning');
-                if (window.sound) window.sound.playWarning();
-                switchAuthMode('register');
-                const regEmail = document.getElementById('authEmailInput');
-                if (regEmail) regEmail.value = email;
-                const regPwd = document.getElementById('authPasswordInput');
-                if (regPwd) regPwd.value = password;
-                return;
-            } else {
-                existingUser = {
-                    id: 'ADMIN',
-                    name: 'Quản Trị Viên UTC2 (6651071091)',
-                    email: email,
-                    password: ADMIN_CREDENTIALS.password,
-                    role: 'admin',
-                    coins: 9999,
-                    reputation: 100,
-                    avatarLetter: 'A'
-                };
-                window.app.registeredUsers.push(existingUser);
-                window.app.saveUsers();
-            }
+            // TÀI KHOẢN MỚI LẦN ĐẦU ĐĂNG NHẬP: TỰ ĐỘNG KHỞI TẠO TÀI KHOẢN SINH VIÊN (+20 XU, 95Đ UY TÍN)
+            const userNameFromEmail = email.split('@')[0];
+            const capitalizedName = userNameFromEmail.charAt(0).toUpperCase() + userNameFromEmail.slice(1);
+            existingUser = {
+                id: isOfficialAdmin ? 'ADMIN' : ('U_' + Date.now()),
+                name: isOfficialAdmin ? 'Quản Trị Viên UTC2 (6651071091)' : capitalizedName,
+                email: email,
+                password: isOfficialAdmin ? ADMIN_CREDENTIALS.password : password,
+                role: isOfficialAdmin ? 'admin' : 'student',
+                coins: isOfficialAdmin ? 9999 : 20,
+                reputation: isOfficialAdmin ? 100 : 95,
+                isEmailVerified: true,
+                verifiedAt: new Date().toISOString(),
+                avatarLetter: capitalizedName.charAt(0).toUpperCase()
+            };
+            window.app.registeredUsers.push(existingUser);
+            window.app.saveUsers();
+            showToast(`✨ Chào mừng bạn! Hệ thống đã tạo tài khoản sinh viên ${email} (+20 Xu, Uy tín 95đ) và đăng nhập thành công!`, 'success');
         }
 
         window.app.user = existingUser;
@@ -2679,7 +2782,7 @@ async function handleAuthSubmitForm(e) {
         }
 
         if (window.sound) window.sound.playSuccess();
-        showToast(isOfficialAdmin ? `Đăng nhập quyền Quản Trị Viên UTC2 (6651071091)!` : `Đăng nhập thành công với tài khoản ${email}!`, 'success');
+        showToast(isOfficialAdmin ? `Đăng nhập quyền Quản Trị Viên UTC2 (6651071091)!` : `Đăng nhập thành công với tài khoản ${existingUser.name}!`, 'success');
         if (isOfficialAdmin) {
             switchNavTab('admin');
         }
