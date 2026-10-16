@@ -6,9 +6,6 @@
     <title> UTC2 - Hệ Thống Pass Đồ Sinh Viên</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/png" href="utc2_logo.png">
-    <!-- Thư viện bản đồ Google Maps / Leaflet tính khoảng cách & định vị giao hàng -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body>
 
@@ -237,7 +234,7 @@
                     <span></span> Tin Nhắn <span class="badge-count" id="unreadChatBadge" style="display:none;">1</span>
                 </button>
                 <button class="nav-item-btn" data-tab="orders" onclick="openDepositOrders()">
-                    <span>📦</span> Đơn Hàng <span class="badge-count" id="depositOrderCount">0</span>
+                    <span></span> Đơn Cọc <span class="badge-count" id="depositOrderCount">0</span>
                 </button>
                 <button class="nav-item-btn" data-tab="game" onclick="switchNavTab('game')">
                     <span></span> Kéo Thả Săn Xu
@@ -840,131 +837,60 @@
                 </div>
             </div>
 
-            <!-- 1. PHƯƠNG THỨC THANH TOÁN (Thay cho hình thức giao & cọc cũ) -->
-            <div class="checkout-form-group">
-                <label class="checkout-label">💳 Phương thức thanh toán *</label>
-                <div class="payment-methods-grid">
-                    <label class="payment-method-card active" id="pmCardCod">
-                        <input type="radio" name="checkoutPaymentMethod" value="cod" checked onchange="handlePaymentMethodChange('cod')">
-                        <span class="pm-icon">💵</span>
-                        <div class="pm-info">
-                            <strong>Tiền mặt khi nhận hàng (COD)</strong>
-                            <small>Nhận đồ xong thanh toán trực tiếp</small>
-                        </div>
-                    </label>
-                    <label class="payment-method-card" id="pmCardTransfer">
-                        <input type="radio" name="checkoutPaymentMethod" value="transfer" onchange="handlePaymentMethodChange('transfer')">
-                        <span class="pm-icon">📲</span>
-                        <div class="pm-info">
-                            <strong>Chuyển khoản QR sinh viên</strong>
-                            <small>Quét mã VietQR / MoMo / ZaloPay</small>
-                        </div>
-                    </label>
-                    <label class="payment-method-card" id="pmCardCoins">
-                        <input type="radio" name="checkoutPaymentMethod" value="coins" onchange="handlePaymentMethodChange('coins')">
-                        <span class="pm-icon">🪙</span>
-                        <div class="pm-info">
-                            <strong>Thanh toán bằng Xu UTC2</strong>
-                            <small>Trừ trực tiếp vào số dư ví xu</small>
-                        </div>
-                    </label>
+            <!-- Khung đặt cọc & tiền ship & giảm tiền xu -->
+            <div class="checkout-deposit-box">
+                <div class="deposit-box-header">
+                    <span class="deposit-title">
+                        🛡 Đặt cọc chống bùng hẹn (OOP Strategy)
+                    </span>
+                    <span class="deposit-pill">10% cọc (Uy tín cao)</span>
+                </div>
+
+                <div class="deposit-row">
+                    <span>Tiền cọc giữ đồ:</span>
+                    <span class="deposit-amount" id="depositAmountText">3.000 VNĐ</span>
+                </div>
+
+                <div class="shipping-options-row">
+                    <span>Hình thức giao & Tiền ship:</span>
+                    <select class="shipping-select" id="shippingSelectOption" onchange="updateCheckoutCalculations()">
+                        <option value="0">Gặp tại điểm hẹn campus (+0 đ)</option>
+                        <option value="5000">Mang tận phòng KTX/trọ Man Thiện (+5.000 đ)</option>
+                        <option value="10000">Giao nhanh ngoài giờ (+10.000 đ)</option>
+                    </select>
+                </div>
+
+                <label class="coin-discount-checkbox-row">
+                    <input type="checkbox" id="useCoinDiscountCheckbox" checked onchange="updateCheckoutCalculations()">
+                    <span id="coinDiscountLabelText">
+                        🪙 Dùng 30% số xu hiện có để giảm giá mặt hàng
+                    </span>
+                </label>
+
+                <div class="deposit-note-text">
+                    * Tiền cọc được bảo vệ tự động và hoàn trả 100% về ví khi 2 bạn gặp nhau trao đồ thành công.
                 </div>
             </div>
 
-            <!-- 2. Ô NHẬP ĐỊA CHỈ & TÍCH HỢP GOOGLE MAPS TÍNH KHOẢNG CÁCH -->
-            <div class="checkout-form-group">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <label class="checkout-label" style="margin:0;">📍 Địa chỉ nhận hàng / Điểm hẹn cụ thể *</label>
-                    <span class="distance-badge" id="calculatedDistanceBadge">📏 0.4 km (Freeship)</span>
-                </div>
-                <div class="address-input-wrapper">
-                    <span class="address-input-icon">📍</span>
-                    <input type="text" id="checkoutDeliveryAddress" class="checkout-input" 
-                           placeholder="Nhập địa chỉ (VD: Phòng 204 KTX Cỏ May, 450 Lê Văn Việt, Man Thiện...)"
-                           value="Ký túc xá Cỏ May UTC2"
-                           oninput="onAddressInputChanged(this.value)">
-                    <button type="button" class="btn-locate-gps" onclick="getCurrentGpsLocation()" title="Lấy vị trí GPS hiện tại của tôi">
-                        <span>🎯</span> GPS
-                    </button>
-                    <button type="button" class="btn-toggle-map" id="toggleMapBtn" onclick="toggleCheckoutMapPicker()" title="Mở bản đồ Google Maps tương tác">
-                        <span>🗺️</span> Bản đồ
-                    </button>
-                </div>
-
-                <!-- Các gợi ý địa điểm sinh viên quen thuộc gần UTC2 -->
-                <div class="quick-address-chips">
-                    <span class="addr-chip active" id="chipKtxCoMay" onclick="selectQuickAddress('KTX Cỏ May UTC2', 0.4, this)">🏢 KTX Cỏ May (0.4km)</span>
-                    <span class="addr-chip" onclick="selectQuickAddress('Cổng chính UTC2 (450 Lê Văn Việt)', 0.1, this)">🏛️ Cổng UTC2 (0.1km)</span>
-                    <span class="addr-chip" onclick="selectQuickAddress('Đường Man Thiện (gần trường)', 1.2, this)">🏘️ Man Thiện (1.2km)</span>
-                    <span class="addr-chip" onclick="selectQuickAddress('KTX Khu B ĐHQG TP.HCM', 4.5, this)">🎒 KTX Khu B (4.5km)</span>
-                    <span class="addr-chip" onclick="selectQuickAddress('Vincom Plaza Lê Văn Việt', 2.3, this)">🛍️ Vincom (2.3km)</span>
-                </div>
-
-                <!-- Khung Bản Đồ Tương Tác Google Maps / Leaflet (Thu gọn / Mở rộng) -->
-                <div id="checkoutMapContainer" class="checkout-map-box" style="display:none;">
-                    <div id="checkoutInteractiveMap" class="checkout-interactive-map"></div>
-                    <div class="map-status-bar">
-                        <span id="mapDistanceInfoText">📍 Bấm vào bản đồ hoặc kéo ghim để chọn vị trí chính xác</span>
-                        <a href="https://www.google.com/maps/dir/?api=1&destination=10.845705,106.794627" id="openExternalGMapBtn" target="_blank" class="gmap-external-link">
-                            Mở Google Maps ↗
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. BẢNG TÍNH TỔNG TIỀN THANH TOÁN (ĐÃ BỎ ĐẶT CỌC HOÀN TOÀN) -->
-            <div class="checkout-pricing-card">
-                <div class="pricing-card-header">
-                    <span style="font-weight:800; font-size:13px; color:#0f172a;">📋 Bảng Chi Tiết Giá Tiền</span>
-                    <span class="payment-method-pill" id="paymentMethodPill">💵 Tiền mặt khi nhận hàng (COD)</span>
-                </div>
-
-                <div class="pricing-item-row">
-                    <span class="pricing-label">🏷️ Giá gốc sản phẩm:</span>
-                    <strong class="pricing-value" id="summaryBasePrice">35.000 VNĐ</strong>
-                </div>
-
-                <div class="pricing-item-row">
-                    <span class="pricing-label">🚚 Tiền ship (<span id="summaryDistanceText">0.4 km</span>):</span>
-                    <strong class="pricing-value" id="summaryShippingFee" style="color:#0284c7;">Freeship (0 đ)</strong>
-                </div>
-
-                <div class="pricing-item-row" id="summaryCoinRow">
-                    <span class="pricing-label">🪙 Tiền trừ từ Xu UTC2:</span>
-                    <strong class="pricing-value" id="summaryCoinDiscount" style="color:#16a34a;">- 0 VNĐ</strong>
-                </div>
-
-                <!-- Tích chọn dùng 30% số xu hiện có để giảm giá -->
-                <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #cbd5e1;">
-                    <label class="coin-discount-checkbox-row" style="margin:0;">
-                        <input type="checkbox" id="useCoinDiscountCheckbox" checked onchange="updateCheckoutCalculations()">
-                        <span id="coinDiscountLabelText">
-                            🪙 Dùng 30% số xu hiện có để giảm giá mặt hàng
-                        </span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- 4. BANNER TỔNG TIỀN CẦN TRẢ (GIÁ GỐC + TIỀN SHIP - TIỀN TRỪ TỪ XU) -->
+            <!-- Tổng thanh toán -->
             <div class="checkout-total-banner">
                 <div class="checkout-total-label">
-                    TỔNG TIỀN CẦN THANH TOÁN:
-                    <div style="font-size:11.5px; font-weight:600; color:#0284c7; margin-top:2px;" id="calculationBreakdownText">
-                        (Giá gốc 35.000đ + Ship 0đ - Trừ xu 0đ)
+                    Tổng số tiền thanh toán / cọc:
+                    <div style="font-size:11px; font-weight:normal; color:#64748b;" id="calculationBreakdownText">
+                        (Giá đồ + Ship - Giảm xu)
                     </div>
                 </div>
                 <div class="checkout-total-number" id="finalTotalPaymentText">
-                    35.000 VNĐ
+                    38.000 VNĐ
                 </div>
             </div>
 
-            <!-- 5. NÚT XÁC NHẬN MUA HÀNG (THAY CHO NÚT ĐẶT CỌC CŨ) -->
             <div class="checkout-actions-row">
                 <button class="btn-outline-chat" onclick="openChatFromModal()">
                     💬 Nhắn tin hẹn gặp
                 </button>
-                <button class="btn-primary-confirm" id="confirmDepositBtn" onclick="confirmOrderPurchase()">
-                    🛍️ Xác Nhận Mua Hàng & Đặt Đơn
+                <button class="btn-primary-confirm" id="confirmDepositBtn" onclick="confirmDepositOrder()">
+                    🤝 Đặt Cọc & Giữ Chỗ
                 </button>
             </div>
         </div>
