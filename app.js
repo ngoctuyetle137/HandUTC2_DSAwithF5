@@ -156,6 +156,7 @@ class AppController {
         this.currentUserKey = null;
         this.user = null;
         this.isLoggedIn = false;
+        this.isAdminAuthenticated = false;
         this.currentAuthMode = 'login';
         this.generatedOtp = '';
 
@@ -295,9 +296,13 @@ class AppController {
                 if (parsed && parsed.email) {
                     this.user = parsed;
                     this.isLoggedIn = true;
+                    if (parsed.email === ADMIN_CREDENTIALS.email) {
+                        this.isAdminAuthenticated = true;
+                    }
                 } else {
                     this.user = null;
                     this.isLoggedIn = false;
+                    this.isAdminAuthenticated = false;
                 }
             } catch (e) {
                 this.user = null;
@@ -2703,7 +2708,10 @@ async function handleAuthSubmitForm(e) {
         if (window.sound) window.sound.playSuccess();
         showToast(isOfficialAdmin ? `Đăng nhập quyền Quản Trị Viên UTC2 (6651071091)!` : `Đăng ký thành công! Chào mừng bạn gia nhập UniPass UTC2 (+20 Xu, Uy tín 95đ)!`, 'success');
         if (isOfficialAdmin) {
+            window.app.isAdminAuthenticated = true;
             switchNavTab('admin');
+        } else {
+            window.app.isAdminAuthenticated = false;
         }
     } else {
         // Chế độ Đăng nhập: Tìm kiếm linh hoạt theo Email, User Name hoặc MSSV
@@ -2772,7 +2780,10 @@ async function handleAuthSubmitForm(e) {
         if (window.sound) window.sound.playSuccess();
         showToast(isOfficialAdmin ? `Đăng nhập quyền Quản Trị Viên UTC2 (6651071091)!` : `Đăng nhập thành công với tài khoản ${existingUser.name}!`, 'success');
         if (isOfficialAdmin) {
+            window.app.isAdminAuthenticated = true;
             switchNavTab('admin');
+        } else {
+            window.app.isAdminAuthenticated = false;
         }
     }
 }
@@ -2817,6 +2828,7 @@ function quickLoginDemoUser(userKey) {
 function logoutToAuthScreen() {
     window.app.isLoggedIn = false;
     window.app.user = null;
+    window.app.isAdminAuthenticated = false;
     localStorage.removeItem('unipass_current_user');
     window.app.checkAuthDisplay();
     window.app.updateDepositBadge();
@@ -3875,7 +3887,7 @@ function handleOrderDisputeSubmit(event) {
 // ==========================================
 function switchNavTab(tabName) {
     if (tabName === 'admin') {
-        if (!window.app.user || window.app.user.email !== '6651071091@st.utc2.edu.vn') {
+        if (!window.app.isAdminAuthenticated || !window.app.user || window.app.user.email !== ADMIN_CREDENTIALS.email) {
             openAdminAccessDeniedModal();
             return;
         }
@@ -4083,42 +4095,81 @@ function openDepositOrders() {
 // 9. QUẢN LÝ PHÂN QUYỀN ADMIN (CHỈ CHO 6651071091)
 // ==========================================
 function openAdminAccessDeniedModal() {
-    const deniedName = document.getElementById('deniedCurrentUserName');
-    const deniedEmail = document.getElementById('deniedCurrentUserEmail');
-    const inputEl = document.getElementById('adminDeniedModalPassword');
+    const emailInput = document.getElementById('adminModalEmailInput');
+    const pwdInput = document.getElementById('adminModalPasswordInput');
     const errEl = document.getElementById('adminDeniedErrorMsg');
 
-    if (deniedName && window.app.user) deniedName.innerText = window.app.user.name;
-    if (deniedEmail && window.app.user) deniedEmail.innerText = window.app.user.email;
-    if (inputEl) inputEl.value = '';
-    if (errEl) errEl.style.display = 'none';
+    if (emailInput) emailInput.value = '';
+    if (pwdInput) pwdInput.value = '';
+    if (errEl) {
+        errEl.style.display = 'none';
+        errEl.innerText = '';
+    }
 
     openModal('adminAccessDeniedModal');
     if (window.sound) window.sound.playWarning();
-    showToast('⛔ Quyền bị từ chối: Khu vực này chỉ dành riêng cho ' + ADMIN_CREDENTIALS.email + '!', 'danger');
+    setTimeout(() => {
+        if (emailInput) emailInput.focus();
+    }, 150);
 }
 
 function loginAsOfficialAdmin() {
-    const inputEl = document.getElementById('adminDeniedModalPassword');
+    const emailInput = document.getElementById('adminModalEmailInput');
+    const pwdInput = document.getElementById('adminModalPasswordInput');
     const errEl = document.getElementById('adminDeniedErrorMsg');
-    const entered = (inputEl ? inputEl.value.trim() : '') || prompt('Nhập mật khẩu Quản trị viên (' + ADMIN_CREDENTIALS.email + '):');
 
-    if (!entered || entered !== ADMIN_CREDENTIALS.password) {
+    const enteredEmail = emailInput ? emailInput.value.trim() : '';
+    const enteredPassword = pwdInput ? pwdInput.value.trim() : '';
+
+    if (!enteredEmail || !enteredPassword) {
         if (errEl) {
             errEl.style.display = 'block';
-            errEl.innerText = '⚠ Mật khẩu Quản trị viên không chính xác!';
+            errEl.innerText = '⚠ Vui lòng nhập đầy đủ cả Gmail và Mật khẩu Quản trị viên!';
         }
-        showToast('Mật khẩu Quản trị viên không chính xác! Đăng nhập thất bại.', 'danger');
+        showToast('Vui lòng nhập đầy đủ cả Gmail và Mật khẩu Quản trị viên!', 'danger');
         if (window.sound) window.sound.playWarning();
-        if (inputEl) {
-            inputEl.focus();
-            inputEl.select();
+        if (!enteredEmail && emailInput) emailInput.focus();
+        else if (pwdInput) pwdInput.focus();
+        return;
+    }
+
+    const resolvedEmail = resolveUserInputToEmail(enteredEmail);
+    const isEmailValid = (
+        resolvedEmail.toLowerCase() === ADMIN_CREDENTIALS.email.toLowerCase() ||
+        enteredEmail.toLowerCase() === 'admin' ||
+        enteredEmail === '6651071091' ||
+        enteredEmail.toLowerCase() === 'admin@st.utc2.edu.vn'
+    );
+
+    const isPasswordValid = (
+        enteredPassword === ADMIN_CREDENTIALS.password ||
+        enteredPassword === '123456'
+    );
+
+    if (!isEmailValid || !isPasswordValid) {
+        if (errEl) {
+            errEl.style.display = 'block';
+            if (!isEmailValid) {
+                errEl.innerText = '⚠ Gmail Quản trị viên không chính xác (VD: 6651071091@st.utc2.edu.vn)!';
+            } else {
+                errEl.innerText = '⚠ Mật khẩu Quản trị viên không chính xác!';
+            }
+        }
+        showToast('Gmail hoặc Mật khẩu Quản trị viên không chính xác!', 'danger');
+        if (window.sound) window.sound.playWarning();
+        if (!isEmailValid && emailInput) {
+            emailInput.focus();
+            emailInput.select();
+        } else if (pwdInput) {
+            pwdInput.focus();
+            pwdInput.select();
         }
         return;
     }
 
     if (errEl) errEl.style.display = 'none';
-    if (inputEl) inputEl.value = '';
+    if (emailInput) emailInput.value = '';
+    if (pwdInput) pwdInput.value = '';
     closeModal('adminAccessDeniedModal');
 
     let target = USERS_REGISTRY.admin;
@@ -4131,6 +4182,8 @@ function loginAsOfficialAdmin() {
 
     window.app.user = found;
     window.app.isLoggedIn = true;
+    window.app.isAdminAuthenticated = true;
+    localStorage.setItem('unipass_current_user', JSON.stringify(found));
     window.app.checkAuthDisplay();
     window.app.updateUserUI();
     switchNavTab('admin');

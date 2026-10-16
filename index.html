@@ -182,24 +182,6 @@
                     <span id="authBottomSwitchText">Don't have an account?</span>
                     <a href="javascript:void(0)" id="authBottomSwitchLink" onclick="toggleAuthModeViaLink()">Sign up</a>
                 </div>
-
-                <!-- Gợi ý đăng nhập nhanh 1-chạm -->
-                <div class="auth-quick-accounts-box" style="margin-top:16px; padding-top:12px; border-top:1px dashed #cbd5e1; font-size:11.5px; color:#475569;">
-                    <div style="font-weight:700; margin-bottom:8px; color:#0f172a; display:flex; align-items:center; gap:6px;">
-                        <span>⚡</span> Đăng nhập nhanh tài khoản mẫu:
-                    </div>
-                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                        <button type="button" class="addr-chip" onclick="fillQuickLogin('6651071091', 'TietLee113377')" title="Tài khoản Quản Trị Viên UTC2" style="font-size:11px; padding:5px 10px; cursor:pointer;">
-                            🛡️ Admin (6651071091)
-                        </button>
-                        <button type="button" class="addr-chip" onclick="fillQuickLogin('tuyetltn.st@st.utc2.edu.vn', '123456')" title="Sinh viên Lê Thị Ngọc Tuyết" style="font-size:11px; padding:5px 10px; cursor:pointer;">
-                            🎓 Lê Thị Ngọc Tuyết
-                        </button>
-                        <button type="button" class="addr-chip" onclick="fillQuickLogin('sinhvien@st.utc2.edu.vn', '123456')" title="Sinh viên UTC2 mẫu" style="font-size:11px; padding:5px 10px; cursor:pointer;">
-                            🎒 Sinh Viên UTC2
-                        </button>
-                    </div>
-                </div>
             </div>
 
         </div>
@@ -1070,41 +1052,51 @@
     </div>
 
     <!-- ==========================================
-         MODAL TRUY CẬP BỊ TỪ CHỐI DÀNH CHO ADMIN
+         MODAL XÁC THỰC QUẢN TRỊ VIÊN (ADMIN AUTH)
          ========================================== -->
     <div class="checkout-modal-overlay" id="adminAccessDeniedModal">
-        <div class="checkout-modal-card" style="max-width:480px; text-align:center;">
+        <div class="checkout-modal-card" style="max-width:460px; text-align:center;">
             <button class="checkout-close-btn" onclick="closeModal('adminAccessDeniedModal')">✕</button>
-            <div style="font-size:48px; margin-bottom:10px;">⛔</div>
-            <h3 style="font-size:19px; font-weight:800; color:#dc2626; margin-bottom:8px;">Truy Cập Bị Từ Chối!</h3>
-            <p style="font-size:13px; color:#475569; line-height:1.5; margin-bottom:16px;">
-                Phân hệ Quản Trị Hệ Thống UniPass chỉ cấp quyền duy nhất cho tài khoản:<br>
-                <strong style="color:#0284c7; font-size:14.5px;">6651071091@st.utc2.edu.vn</strong>
+            <div style="font-size:42px; margin-bottom:8px;">🛡️</div>
+            <h3 style="font-size:19px; font-weight:800; color:#0f172a; margin-bottom:6px;">Xác Thực Quyền Quản Trị Viên</h3>
+            <p style="font-size:13px; color:#64748b; line-height:1.5; margin-bottom:18px;">
+                Khu vực Quản trị hệ thống HandUTC2 yêu cầu nhập chính xác <strong>Gmail Quản Trị Viên</strong> và <strong>Mật khẩu</strong> để truy cập.
             </p>
-            <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:12px 16px; margin-bottom:18px; font-size:12.5px; color:#991b1b; text-align:left;">
-                <div style="margin-bottom:4px;">• Tài khoản đang dùng: <strong id="deniedCurrentUserName">Sinh viên</strong></div>
-                <div style="margin-bottom:4px;">• Email đăng nhập: <span id="deniedCurrentUserEmail" style="font-family:monospace; font-weight:700;">sinhvien@st.utc2.edu.vn</span></div>
-                <div>• Thẩm quyền: <strong>Tài khoản Sinh viên (Không được phép truy cập Admin)</strong></div>
-            </div>
-            <div style="margin-bottom:16px; text-align:left;">
-                <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:4px;">
-                    🔑 Nhập Mật Khẩu Quản Trị Viên (6651071091@st.utc2.edu.vn):
-                </label>
-                <input type="password" id="adminDeniedModalPassword" class="hero-search-input" 
-                       placeholder="Nhập mật khẩu Admin..." style="padding:10px 14px; border:1px solid #cbd5e1; box-shadow:none; width:100%;"
-                       onkeydown="if(event.key==='Enter') loginAsOfficialAdmin()">
-                <div id="adminDeniedErrorMsg" style="color:#ef4444; font-size:11.5px; font-weight:700; margin-top:4px; display:none;">
-                    ⚠ Mật khẩu Quản trị viên không chính xác!
+
+            <form onsubmit="event.preventDefault(); loginAsOfficialAdmin();" style="text-align:left;">
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:5px;">
+                        📧 Gmail / MSSV Quản Trị Viên:
+                    </label>
+                    <input type="text" id="adminModalEmailInput" class="hero-search-input" 
+                           placeholder="Nhập Gmail Admin (VD: 6651071091@st.utc2.edu.vn)..." 
+                           style="padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; box-shadow:none; width:100%; font-size:13px;"
+                           autocomplete="username" required>
                 </div>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                <button class="btn-primary-confirm" style="background:#0284c7;" onclick="loginAsOfficialAdmin()">
-                    🛡️ Xác Nhận Mật Khẩu & Vào Phân Hệ Admin
-                </button>
-                <button class="btn-outline-chat" onclick="closeModal('adminAccessDeniedModal')">
-                    Quay Lại Săn Đồ
-                </button>
-            </div>
+
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:5px;">
+                        🔑 Mật Khẩu Quản Trị Viên:
+                    </label>
+                    <input type="password" id="adminModalPasswordInput" class="hero-search-input" 
+                           placeholder="Nhập mật khẩu Admin..." 
+                           style="padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; box-shadow:none; width:100%; font-size:13px;"
+                           autocomplete="current-password" required>
+                </div>
+
+                <div id="adminDeniedErrorMsg" style="color:#ef4444; font-size:12px; font-weight:700; margin-bottom:12px; display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:8px 12px;">
+                    ⚠ Gmail hoặc Mật khẩu Quản trị viên không chính xác!
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
+                    <button type="submit" class="btn-primary-confirm" style="background:#0284c7; width:100%;">
+                        🛡️ Xác Thực & Vào Quản Trị Admin
+                    </button>
+                    <button type="button" class="btn-outline-chat" style="width:100%;" onclick="closeModal('adminAccessDeniedModal')">
+                        Quay Lại Săn Đồ
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
