@@ -1507,7 +1507,7 @@ class AppController {
                         </div>
 
                         <button class="card-cta-btn" onclick="event.stopPropagation(); openCheckoutModal('${item.id}')">
-                            ${isMyItem ? 'Xem chi tiết (Đồ của bạn) ➔' : 'Xem & Đặt Cọc Giữ Chỗ ➔'}
+                            ${isMyItem ? 'Xem chi tiết (Đồ của bạn) ➔' : 'Xem & Mua Hàng ➔'}
                         </button>
                     </div>
                 </div>
@@ -1578,8 +1578,8 @@ class AppController {
                 history.innerHTML = `
                     <div style="text-align:center; padding:26px 16px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px; color:#64748b;">
                         <div style="font-size:32px; margin-bottom:8px;">🛒</div>
-                        <strong style="color:#0f172a; font-size:13.5px; display:block; margin-bottom:4px;">Bạn hiện có 0 đơn cọc</strong>
-                        <p style="font-size:11.5px; margin:0 0 12px 0; color:#64748b;">Tài khoản của bạn chưa đặt cọc đơn hàng nào và chưa có ai đặt cọc món đồ của bạn.</p>
+                        <strong style="color:#0f172a; font-size:13.5px; display:block; margin-bottom:4px;">Bạn hiện có 0 đơn hàng</strong>
+                        <p style="font-size:11.5px; margin:0 0 12px 0; color:#64748b;">Tài khoản của bạn chưa mua đơn hàng nào và chưa có ai đặt mua món đồ của bạn.</p>
                         <button onclick="switchNavTab('home')" class="btn-primary-confirm" style="width:auto; padding:6px 14px; font-size:11.5px; margin:0 auto;">🔍 Khám Phá Món Đồ Ngay</button>
                     </div>
                 `;
@@ -1596,8 +1596,8 @@ class AppController {
                         `<span class="badge-undelivered">⏳ CHƯA GIAO HÀNG (Đang hẹn gặp / Chờ giao nhận)</span>`;
 
                     const roleBadgeHtml = isBuyer ?
-                        `<span style="background:#e0f2fe; color:#0369a1; padding:2px 7px; border-radius:4px; font-weight:700; font-size:10.5px;">🏷️ ĐƠN BẠN MUA (ĐÃ CỌC)</span>` :
-                        `<span style="background:#fef3c7; color:#b45309; padding:2px 7px; border-radius:4px; font-weight:700; font-size:10.5px;">📦 KHÁCH CỌC BẠN (ĐƠN BÁN)</span>`;
+                        `<span style="background:#e0f2fe; color:#0369a1; padding:2px 7px; border-radius:4px; font-weight:700; font-size:10.5px;">🏷️ ĐƠN BẠN MUA</span>` :
+                        `<span style="background:#fef3c7; color:#b45309; padding:2px 7px; border-radius:4px; font-weight:700; font-size:10.5px;">📦 KHÁCH ĐẶT MUA (ĐƠN BÁN)</span>`;
 
                     let statusBadge = '';
                     let actionButtonsHtml = '';
@@ -1678,6 +1678,8 @@ class AppController {
                         `;
                     }
 
+                    const paymentLabel = o.paymentMethodLabel || (o.paymentMethod === 'transfer' ? 'Chuyển khoản QR' : (o.paymentMethod === 'coins' ? 'Ví Xu UTC2' : 'Tiền mặt COD'));
+
                     return `
                         <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
@@ -1689,22 +1691,32 @@ class AppController {
                                     <strong style="font-size:13.5px; color:#0f172a;">${o.productTitle}</strong>
                                     <div style="font-size:11px; color:#64748b; margin-top:2px;">
                                         Mã đơn: <span style="font-family:monospace; font-weight:700; color:#0284c7;">${o.orderCode || o.id}</span> • 
-                                        ${counterpartRole}: <strong>${counterpartName}</strong> • Hẹn gặp: <strong>${o.meetLocation || 'Campus UTC2'}</strong>
+                                        ${counterpartRole}: <strong>${counterpartName}</strong> • Địa chỉ nhận: <strong>${o.deliveryAddress || o.meetLocation || 'Campus UTC2'}</strong>
                                     </div>
                                 </div>
                                 <div>${statusBadge}</div>
                             </div>
 
                             <div style="background:#f8fafc; border-radius:6px; padding:8px 10px; margin-bottom:8px; font-size:11.5px; color:#334155; display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;">
-                                <div>Cọc giữ chỗ: <strong style="color:#16a34a;">${formatNumber(o.depositAmount || 0)} đ</strong></div>
-                                ${(o.discountAmount > 0) ? `<div style="color:#d97706; font-weight:600;">Giảm giá xu: <strong>-${formatNumber(o.discountAmount)} đ</strong> (${o.discountCoins || Math.round(o.discountAmount / 100)} Xu)</div>` : ''}
-                                <div>Tổng thanh toán: <strong>${formatNumber(o.totalPayment || o.finalTotal || 0)} đ</strong></div>
+                                <div>Giá gốc: <strong>${formatNumber(o.productPrice || o.basePrice || 0)} đ</strong></div>
+                                <div>Phí ship (${o.distanceKm || 0.4}km): <strong style="color:#0284c7;">${o.shippingFee ? formatNumber(o.shippingFee) + ' đ' : 'Freeship (0 đ)'}</strong></div>
+                                ${(o.discountAmount > 0) ? `<div style="color:#16a34a; font-weight:600;">Trừ xu: <strong>-${formatNumber(o.discountAmount)} đ</strong> (${o.discountCoins || Math.round(o.discountAmount / 100)} Xu)</div>` : ''}
+                                <div>Tổng thanh toán: <strong style="color:#0f172a; font-size:12px;">${formatNumber(o.totalPayment || o.finalTotal || 0)} đ</strong></div>
+                                <div>PTTT: <span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:600;">${paymentLabel}</span></div>
                                 <div>
-                                    Tiến độ xác nhận: 
-                                    <span style="color:${o.buyerCompleted ? '#16a34a' : '#b45309'}; font-weight:700;">Mua (Nhận đồ): ${o.buyerCompleted ? '✓ Đã nhận' : 'Chưa'}</span> | 
-                                    <span style="color:${o.sellerCompleted ? '#16a34a' : '#b45309'}; font-weight:700;">Bán (Giao đồ): ${o.sellerCompleted ? '✓ Đã giao' : 'Chưa'}</span>
+                                    Tiến độ: 
+                                    <span style="color:${o.buyerCompleted ? '#16a34a' : '#b45309'}; font-weight:700;">Mua: ${o.buyerCompleted ? '✓ Đã nhận' : 'Chưa'}</span> | 
+                                    <span style="color:${o.sellerCompleted ? '#16a34a' : '#b45309'}; font-weight:700;">Bán: ${o.sellerCompleted ? '✓ Đã giao' : 'Chưa'}</span>
                                 </div>
                             </div>
+
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                                ${actionButtonsHtml}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
 
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
                                 ${actionButtonsHtml}
@@ -3207,12 +3219,299 @@ function adminRejectDispute(dispId) {
 // 7. CHECKOUT MODAL LOGIC
 // ==========================================
 let currentCheckoutProduct = null;
+let currentCheckoutDistanceKm = 0.4;
+let currentCheckoutPaymentMethod = 'cod';
+let checkoutMapInstance = null;
+let checkoutDeliveryMarker = null;
+let checkoutCampusMarker = null;
+let checkoutDistanceLine = null;
+const UTC2_CAMPUS = { 
+    lat: 10.845705, 
+    lng: 106.794627, 
+    name: 'Trường ĐH Giao thông Vận tải - Phân hiệu TP.HCM (UTC2)' 
+};
+
+// Tính khoảng cách Haversine từ tọa độ GPS đến Campus UTC2 (đơn vị: km)
+function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Bán kính Trái Đất (km)
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c;
+    return Math.round(d * 10) / 10;
+}
+
+// Bảng biểu phí ship sinh viên UTC2 theo khoảng cách
+function getShippingFeeFromDistance(km) {
+    if (km <= 0.8) return 0;           // Nội khu UTC2 & KTX Cỏ May: Freeship
+    if (km <= 2.5) return 5000;        // 0.8km - 2.5km (Man Thiện, Lê Văn Việt): 5.000đ
+    if (km <= 5.0) return 10000;       // 2.5km - 5.0km (Khu CNC, KTX Khu B, Ngã tư Thủ Đức): 10.000đ
+    if (km <= 10.0) return 15000;      // 5.0km - 10.0km: 15.000đ
+    return 15000 + Math.ceil((km - 10) * 2000); // Trên 10km: 15k + 2k/km
+}
+
+function handlePaymentMethodChange(method) {
+    currentCheckoutPaymentMethod = method;
+    document.querySelectorAll('.payment-method-card').forEach(card => card.classList.remove('active'));
+    const activeCardId = method === 'cod' ? 'pmCardCod' : (method === 'transfer' ? 'pmCardTransfer' : 'pmCardCoins');
+    const activeEl = document.getElementById(activeCardId);
+    if (activeEl) activeEl.classList.add('active');
+
+    const pill = document.getElementById('paymentMethodPill');
+    if (pill) {
+        if (method === 'cod') {
+            pill.innerHTML = '💵 Tiền mặt khi nhận hàng (COD)';
+            pill.style.background = '#f0fdf4';
+            pill.style.color = '#16a34a';
+        } else if (method === 'transfer') {
+            pill.innerHTML = '📲 Chuyển khoản QR sinh viên';
+            pill.style.background = '#eff6ff';
+            pill.style.color = '#2563eb';
+        } else {
+            pill.innerHTML = '🪙 Thanh toán bằng Ví Xu UTC2';
+            pill.style.background = '#fef3c7';
+            pill.style.color = '#b45309';
+        }
+    }
+}
+
+function selectQuickAddress(addrText, distanceKm, element) {
+    const addrInput = document.getElementById('checkoutDeliveryAddress');
+    if (addrInput) addrInput.value = addrText;
+
+    currentCheckoutDistanceKm = distanceKm;
+
+    document.querySelectorAll('.addr-chip').forEach(c => c.classList.remove('active'));
+    if (element) element.classList.add('active');
+
+    if (checkoutMapInstance && checkoutDeliveryMarker) {
+        let targetLat = UTC2_CAMPUS.lat;
+        let targetLng = UTC2_CAMPUS.lng;
+        if (addrText.includes('Cỏ May')) {
+            targetLat = 10.8443; targetLng = 106.7930;
+        } else if (addrText.includes('Cổng')) {
+            targetLat = 10.845705; targetLng = 106.794627;
+        } else if (addrText.includes('Man Thiện')) {
+            targetLat = 10.8485; targetLng = 106.7885;
+        } else if (addrText.includes('Khu B')) {
+            targetLat = 10.8805; targetLng = 106.7820;
+        } else if (addrText.includes('Vincom')) {
+            targetLat = 10.8492; targetLng = 106.7725;
+        }
+        checkoutDeliveryMarker.setLatLng([targetLat, targetLng]);
+        if (checkoutDistanceLine) {
+            checkoutDistanceLine.setLatLngs([[UTC2_CAMPUS.lat, UTC2_CAMPUS.lng], [targetLat, targetLng]]);
+        }
+        checkoutMapInstance.setView([targetLat, targetLng], 15);
+        updateMapExternalLink(targetLat, targetLng);
+    }
+
+    updateCheckoutCalculations();
+}
+
+function onAddressInputChanged(val) {
+    const text = (val || '').toLowerCase();
+    if (text.includes('cỏ may') || text.includes('nội khu') || text.includes('phân hiệu') || text.includes('trong trường')) {
+        currentCheckoutDistanceKm = 0.4;
+    } else if (text.includes('cổng') || text.includes('450 lê văn việt')) {
+        currentCheckoutDistanceKm = 0.1;
+    } else if (text.includes('man thiện')) {
+        currentCheckoutDistanceKm = 1.2;
+    } else if (text.includes('lê văn việt')) {
+        currentCheckoutDistanceKm = 1.8;
+    } else if (text.includes('vincom')) {
+        currentCheckoutDistanceKm = 2.3;
+    } else if (text.includes('ngã tư thủ đức') || text.includes('sư phạm kỹ thuật')) {
+        currentCheckoutDistanceKm = 3.2;
+    } else if (text.includes('khu b') || text.includes('đhqg') || text.includes('làng đại học')) {
+        currentCheckoutDistanceKm = 4.5;
+    } else if (text.includes('quận 9') || text.includes('thủ đức')) {
+        currentCheckoutDistanceKm = 3.5;
+    } else if (text.includes('bình thạnh') || text.includes('quận 1') || text.includes('hồ chí minh')) {
+        currentCheckoutDistanceKm = 12.0;
+    } else {
+        if (!currentCheckoutDistanceKm || currentCheckoutDistanceKm < 0.5) {
+            currentCheckoutDistanceKm = 1.0;
+        }
+    }
+    updateCheckoutCalculations();
+}
+
+function updateMapExternalLink(lat, lng) {
+    const linkEl = document.getElementById('openExternalGMapBtn');
+    if (linkEl) {
+        linkEl.href = `https://www.google.com/maps/dir/?api=1&origin=${UTC2_CAMPUS.lat},${UTC2_CAMPUS.lng}&destination=${lat},${lng}`;
+    }
+}
+
+function toggleCheckoutMapPicker() {
+    const container = document.getElementById('checkoutMapContainer');
+    const toggleBtn = document.getElementById('toggleMapBtn');
+    if (!container) return;
+
+    if (container.style.display === 'none' || !container.style.display) {
+        container.style.display = 'block';
+        if (toggleBtn) toggleBtn.innerHTML = '<span>✕</span> Đóng map';
+        setTimeout(() => {
+            initCheckoutMap();
+        }, 120);
+    } else {
+        container.style.display = 'none';
+        if (toggleBtn) toggleBtn.innerHTML = '<span>🗺️</span> Bản đồ';
+    }
+}
+
+function initCheckoutMap() {
+    const mapDiv = document.getElementById('checkoutInteractiveMap');
+    if (!mapDiv) return;
+
+    if (checkoutMapInstance) {
+        checkoutMapInstance.invalidateSize();
+        return;
+    }
+
+    if (typeof L === 'undefined') {
+        showToast('Đang kết nối thư viện bản đồ...', 'info');
+        return;
+    }
+
+    const initialLat = 10.8443;
+    const initialLng = 106.7930;
+
+    try {
+        checkoutMapInstance = L.map('checkoutInteractiveMap').setView([UTC2_CAMPUS.lat, UTC2_CAMPUS.lng], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap | Google Map UTC2',
+            maxZoom: 19
+        }).addTo(checkoutMapInstance);
+
+        const campusIcon = L.divIcon({
+            className: 'custom-map-marker campus-marker',
+            html: '<div style="background:#0284c7; color:#fff; padding:3px 7px; border-radius:10px; font-weight:700; font-size:11px; white-space:nowrap; box-shadow:0 2px 5px rgba(0,0,0,0.25); border:2px solid #fff;">🏛️ UTC2 (Xuất phát)</div>',
+            iconSize: [115, 26],
+            iconAnchor: [58, 13]
+        });
+        checkoutCampusMarker = L.marker([UTC2_CAMPUS.lat, UTC2_CAMPUS.lng], { icon: campusIcon })
+            .addTo(checkoutMapInstance)
+            .bindPopup('<b>🏛️ ĐH Giao thông Vận tải - Phân hiệu TP.HCM</b><br>450 Lê Văn Việt, P. Tăng Nhơn Phú A, TP. Thủ Đức');
+
+        const deliveryIcon = L.divIcon({
+            className: 'custom-map-marker delivery-marker',
+            html: '<div style="background:#ef4444; color:#fff; padding:3px 7px; border-radius:10px; font-weight:700; font-size:11px; white-space:nowrap; box-shadow:0 2px 5px rgba(0,0,0,0.25); border:2px solid #fff;">📍 Điểm nhận hàng (Kéo tôi)</div>',
+            iconSize: [140, 26],
+            iconAnchor: [70, 13]
+        });
+        checkoutDeliveryMarker = L.marker([initialLat, initialLng], { draggable: true, icon: deliveryIcon })
+            .addTo(checkoutMapInstance)
+            .bindPopup('Điểm nhận hàng của bạn');
+
+        checkoutDistanceLine = L.polyline([[UTC2_CAMPUS.lat, UTC2_CAMPUS.lng], [initialLat, initialLng]], {
+            color: '#0284c7',
+            weight: 3,
+            dashArray: '6, 8'
+        }).addTo(checkoutMapInstance);
+
+        const onMarkerMoved = (newLat, newLng) => {
+            const km = calculateHaversineDistance(UTC2_CAMPUS.lat, UTC2_CAMPUS.lng, newLat, newLng);
+            currentCheckoutDistanceKm = km;
+
+            if (checkoutDistanceLine) {
+                checkoutDistanceLine.setLatLngs([[UTC2_CAMPUS.lat, UTC2_CAMPUS.lng], [newLat, newLng]]);
+            }
+
+            const infoEl = document.getElementById('mapDistanceInfoText');
+            if (infoEl) {
+                infoEl.innerHTML = `📍 Vị trí chọn: <strong>${newLat.toFixed(4)}, ${newLng.toFixed(4)}</strong> • Cách UTC2: <strong style="color:#0284c7;">${km} km</strong>`;
+            }
+
+            updateMapExternalLink(newLat, newLng);
+            updateCheckoutCalculations();
+
+            const addrInput = document.getElementById('checkoutDeliveryAddress');
+            if (addrInput && (!addrInput.value || addrInput.value.includes('KTX') || addrInput.value.includes('Vị trí'))) {
+                addrInput.value = `Vị trí bản đồ (${km} km từ UTC2: ${newLat.toFixed(4)}, ${newLng.toFixed(4)})`;
+            }
+        };
+
+        checkoutDeliveryMarker.on('dragend', function (e) {
+            const pos = e.target.getLatLng();
+            onMarkerMoved(pos.lat, pos.lng);
+        });
+
+        checkoutMapInstance.on('click', function (e) {
+            checkoutDeliveryMarker.setLatLng(e.latlng);
+            onMarkerMoved(e.latlng.lat, e.latlng.lng);
+        });
+
+        updateMapExternalLink(initialLat, initialLng);
+        setTimeout(() => {
+            if (checkoutMapInstance) checkoutMapInstance.invalidateSize();
+        }, 200);
+    } catch (err) {
+        console.warn('Lỗi khởi tạo bản đồ:', err);
+    }
+}
+
+function getCurrentGpsLocation() {
+    if (!navigator.geolocation) {
+        showToast('Trình duyệt của bạn không hỗ trợ định vị GPS.', 'warning');
+        return;
+    }
+
+    showToast('Đang kết nối vệ tinh GPS xác định vị trí của bạn...', 'info');
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
+            const km = calculateHaversineDistance(UTC2_CAMPUS.lat, UTC2_CAMPUS.lng, userLat, userLng);
+            currentCheckoutDistanceKm = km;
+
+            const addrInput = document.getElementById('checkoutDeliveryAddress');
+            if (addrInput) {
+                addrInput.value = `Vị trí GPS của tôi (${km} km từ UTC2: ${userLat.toFixed(4)}, ${userLng.toFixed(4)})`;
+            }
+
+            const container = document.getElementById('checkoutMapContainer');
+            if (container) container.style.display = 'block';
+            const toggleBtn = document.getElementById('toggleMapBtn');
+            if (toggleBtn) toggleBtn.innerHTML = '<span>✕</span> Đóng map';
+
+            setTimeout(() => {
+                initCheckoutMap();
+                if (checkoutMapInstance && checkoutDeliveryMarker) {
+                    checkoutDeliveryMarker.setLatLng([userLat, userLng]);
+                    if (checkoutDistanceLine) {
+                        checkoutDistanceLine.setLatLngs([[UTC2_CAMPUS.lat, UTC2_CAMPUS.lng], [userLat, userLng]]);
+                    }
+                    checkoutMapInstance.setView([userLat, userLng], 15);
+                }
+            }, 100);
+
+            updateMapExternalLink(userLat, userLng);
+            updateCheckoutCalculations();
+            showToast(`Đã lấy vị trí GPS thành công! Cách UTC2: ${km} km.`, 'success');
+        },
+        (error) => {
+            console.warn('GPS error:', error);
+            showToast('Không thể lấy vị trí GPS (vui lòng cấp quyền hoặc bấm chọn trên bản đồ).', 'warning');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+}
 
 function openCheckoutModal(productId) {
     const item = window.app.products.find(p => p.id === productId);
     if (!item) return;
 
     currentCheckoutProduct = item;
+    currentCheckoutDistanceKm = 0.4;
+    currentCheckoutPaymentMethod = 'cod';
 
     document.getElementById('modalProductImage').src = item.imageUrl;
     document.getElementById('modalProductTimeMark').innerText = `✓ Xác minh TimeMark: ${item.timemarkCode}`;
@@ -3228,7 +3527,24 @@ function openCheckoutModal(productId) {
         descEl.innerText = item.description || 'Món đồ được đăng pass trực tiếp tại campus UTC2.';
     }
 
-    document.getElementById('shippingSelectOption').value = '0';
+    // Đặt lại địa chỉ mặc định
+    const addrInput = document.getElementById('checkoutDeliveryAddress');
+    if (addrInput) addrInput.value = 'Ký túc xá Cỏ May UTC2';
+
+    // Đặt lại chip địa chỉ
+    document.querySelectorAll('.addr-chip').forEach(c => c.classList.remove('active'));
+    const chipKtx = document.getElementById('chipKtxCoMay');
+    if (chipKtx) chipKtx.classList.add('active');
+
+    // Đặt lại phương thức thanh toán
+    handlePaymentMethodChange('cod');
+
+    // Ẩn khung map
+    const mapContainer = document.getElementById('checkoutMapContainer');
+    if (mapContainer) mapContainer.style.display = 'none';
+    const toggleMapBtn = document.getElementById('toggleMapBtn');
+    if (toggleMapBtn) toggleMapBtn.innerHTML = '<span>🗺️</span> Bản đồ';
+
     const coinCheckbox = document.getElementById('useCoinDiscountCheckbox');
     if (coinCheckbox) {
         const availableCoins = (window.app && window.app.user) ? (window.app.user.coins || 0) : 0;
@@ -3244,8 +3560,8 @@ function openCheckoutModal(productId) {
         confirmBtn.style.background = '#94a3b8';
         confirmBtn.disabled = true;
     } else {
-        confirmBtn.innerText = '🤝 Đặt Cọc & Giữ Chỗ';
-        confirmBtn.style.background = '#6366f1';
+        confirmBtn.innerText = '🛍️ Xác Nhận Mua Hàng & Đặt Đơn';
+        confirmBtn.style.background = '#16a34a';
         confirmBtn.disabled = false;
     }
 
@@ -3263,24 +3579,20 @@ function updateCheckoutCalculations() {
     if (!currentCheckoutProduct) return;
 
     const basePrice = currentCheckoutProduct.price;
-    let deposit = Math.max(3000, Math.round((basePrice * 0.1) / 1000) * 1000);
-    document.getElementById('depositAmountText').innerText = `${formatNumber(deposit)} VNĐ`;
-
-    const shippingSelect = document.getElementById('shippingSelectOption');
-    const shipFee = parseInt(shippingSelect ? shippingSelect.value : 0) || 0;
+    const distanceKm = currentCheckoutDistanceKm || 0.4;
+    const shipFee = getShippingFeeFromDistance(distanceKm);
 
     const coinCheckbox = document.getElementById('useCoinDiscountCheckbox');
     const coinLabel = document.getElementById('coinDiscountLabelText');
-
     const availableCoins = (window.app && window.app.user) ? (window.app.user.coins || 0) : 0;
 
-    // Cho phép dùng khoảng 30% số xu hiện có để giảm giá mặt hàng
+    // Cho phép dùng 30% số xu hiện có để giảm giá mặt hàng
     let maxCoinsAllowed = Math.round(availableCoins * 0.3);
     if (availableCoins > 0 && maxCoinsAllowed === 0) {
         maxCoinsAllowed = 1;
     }
 
-    // Mức giảm giá không vượt quá giá gốc của mặt hàng
+    // Mức giảm giá không vượt quá giá gốc
     const maxCoinsByPrice = Math.floor(basePrice / 100);
     const coinsToUse = Math.min(maxCoinsAllowed, maxCoinsByPrice);
     const discountVND = coinsToUse * 100;
@@ -3289,10 +3601,10 @@ function updateCheckoutCalculations() {
         if (availableCoins <= 0 || coinsToUse <= 0) {
             coinCheckbox.checked = false;
             coinCheckbox.disabled = true;
-            coinLabel.innerHTML = `<span style="color:#64748b;">🪙 Bạn hiện có <strong>0 Xu</strong> (Chưa đủ xu để giảm giá mặt hàng)</span>`;
+            coinLabel.innerHTML = `<span style="color:#64748b;">🪙 Bạn có <strong>0 Xu</strong> (Chưa đủ xu để giảm giá mặt hàng)</span>`;
         } else {
             coinCheckbox.disabled = false;
-            coinLabel.innerHTML = `🪙 Dùng <strong>${formatNumber(coinsToUse)} Xu</strong> (30% trong tổng ${formatNumber(availableCoins)} Xu hiện có) để giảm <strong style="color:#16a34a;">-${formatNumber(discountVND)} đ</strong>`;
+            coinLabel.innerHTML = `🪙 Dùng <strong>${formatNumber(coinsToUse)} Xu</strong> (30% trong ${formatNumber(availableCoins)} Xu hiện có) để giảm <strong style="color:#16a34a;">-${formatNumber(discountVND)} đ</strong>`;
         }
     }
 
@@ -3301,14 +3613,39 @@ function updateCheckoutCalculations() {
         actualDiscount = discountVND;
     }
 
+    // Tổng tiền thanh toán: Giá gốc + Tiền ship - Tiền trừ từ xu (KHÔNG CÒN ĐẶT CỌC)
     const finalTotal = Math.max(0, basePrice + shipFee - actualDiscount);
+
+    // Cập nhật DOM bảng chi tiết
+    const basePriceEl = document.getElementById('summaryBasePrice');
+    if (basePriceEl) basePriceEl.innerText = `${formatNumber(basePrice)} VNĐ`;
+
+    const distanceTextEl = document.getElementById('summaryDistanceText');
+    if (distanceTextEl) distanceTextEl.innerText = `${distanceKm} km`;
+
+    const shipFeeEl = document.getElementById('summaryShippingFee');
+    if (shipFeeEl) {
+        shipFeeEl.innerText = shipFee === 0 ? 'Freeship (0 đ)' : `${formatNumber(shipFee)} VNĐ`;
+        shipFeeEl.style.color = shipFee === 0 ? '#16a34a' : '#0284c7';
+    }
+
+    const coinDiscountEl = document.getElementById('summaryCoinDiscount');
+    if (coinDiscountEl) {
+        coinDiscountEl.innerText = actualDiscount > 0 ? `- ${formatNumber(actualDiscount)} VNĐ` : '- 0 VNĐ';
+    }
+
+    const distBadge = document.getElementById('calculatedDistanceBadge');
+    if (distBadge) {
+        distBadge.innerText = `📏 ${distanceKm} km (${shipFee === 0 ? 'Freeship' : '+' + formatNumber(shipFee) + 'đ ship'})`;
+    }
 
     const breakdownEl = document.getElementById('calculationBreakdownText');
     if (breakdownEl) {
+        const shipStr = shipFee === 0 ? '0đ (Freeship)' : `${formatNumber(shipFee)}đ`;
         if (actualDiscount > 0) {
-            breakdownEl.innerText = `(Giá gốc: ${formatNumber(basePrice)}đ + Ship: ${formatNumber(shipFee)}đ - Giảm 30% xu: ${formatNumber(actualDiscount)}đ)`;
+            breakdownEl.innerText = `(Giá gốc: ${formatNumber(basePrice)}đ + Ship: ${shipStr} - Trừ 30% xu: ${formatNumber(actualDiscount)}đ)`;
         } else {
-            breakdownEl.innerText = `(Giá gốc: ${formatNumber(basePrice)}đ + Ship: ${formatNumber(shipFee)}đ)`;
+            breakdownEl.innerText = `(Giá gốc: ${formatNumber(basePrice)}đ + Ship: ${shipStr})`;
         }
     }
 
@@ -3318,17 +3655,37 @@ function updateCheckoutCalculations() {
     }
 }
 
-function confirmDepositOrder() {
+function confirmOrderPurchase() {
     if (!currentCheckoutProduct) return;
 
+    if (!window.app.user) {
+        showToast('Vui lòng đăng nhập để tiến hành đặt mua hàng!', 'warning');
+        return;
+    }
+
     if (window.app.user.reputation < 90) {
-        showToast('Điểm uy tín dưới 90! Bạn bị khóa quyền đặt cọc.', 'danger');
+        showToast('Điểm uy tín dưới 90! Bạn bị tạm khóa quyền đặt mua hàng.', 'danger');
+        return;
+    }
+
+    const isMine = (currentCheckoutProduct.seller === window.app.user.name);
+    if (isMine) {
+        showToast('Bạn không thể tự mua món đồ của chính mình!', 'warning');
+        return;
+    }
+
+    const addrInput = document.getElementById('checkoutDeliveryAddress');
+    const deliveryAddress = addrInput ? addrInput.value.trim() : '';
+    if (!deliveryAddress) {
+        showToast('Vui lòng nhập địa chỉ nhận hàng hoặc chọn điểm hẹn trên bản đồ!', 'warning');
+        if (addrInput) addrInput.focus();
         return;
     }
 
     const basePrice = currentCheckoutProduct.price;
-    const shipFee = parseInt(document.getElementById('shippingSelectOption').value) || 0;
-    
+    const distanceKm = currentCheckoutDistanceKm || 0.4;
+    const shipFee = getShippingFeeFromDistance(distanceKm);
+
     // Tính toán số xu giảm giá (30% số xu hiện có)
     const availableCoins = (window.app && window.app.user) ? (window.app.user.coins || 0) : 0;
     let maxCoinsAllowed = Math.round(availableCoins * 0.3);
@@ -3342,85 +3699,94 @@ function confirmDepositOrder() {
     const coinsUsed = (useCoins && availableCoins > 0) ? coinsToUse : 0;
     const discountVND = coinsUsed * 100;
 
-    const depositAmount = Math.max(3000, Math.round((basePrice * 0.1) / 1000) * 1000);
+    // Tổng thanh toán cần trả = Giá gốc + Phí ship - Giảm giá xu (Không cọc)
     const finalTotal = Math.max(0, basePrice + shipFee - discountVND);
 
-    window.app.user.coins = Math.max(0, (window.app.user.coins || 0) - coinsUsed);
-    
-    // Đồng bộ số xu vào registeredUsers
-    const uIdx = window.app.registeredUsers.findIndex(u => u.email === window.app.user.email);
-    if (uIdx !== -1) {
-        window.app.registeredUsers[uIdx].coins = window.app.user.coins;
-        window.app.saveUsers();
-    }
-    window.app.updateUserUI();
-
+    // Trừ xu nếu có sử dụng
     if (coinsUsed > 0) {
+        window.app.user.coins = Math.max(0, (window.app.user.coins || 0) - coinsUsed);
+        const uIdx = window.app.registeredUsers.findIndex(u => u.email === window.app.user.email);
+        if (uIdx !== -1) {
+            window.app.registeredUsers[uIdx].coins = window.app.user.coins;
+            window.app.saveUsers();
+        }
+        window.app.updateUserUI();
         showToast(`Đã dùng ${coinsUsed} Xu (30% số xu) giảm ngay ${formatNumber(discountVND)} đ!`, 'success');
     }
+
+    const paymentLabel = currentCheckoutPaymentMethod === 'cod' 
+        ? 'Tiền mặt khi nhận hàng (COD)' 
+        : (currentCheckoutPaymentMethod === 'transfer' ? 'Chuyển khoản QR sinh viên' : 'Ví Xu UTC2');
 
     const newOrderData = {
         id: 'ORD_' + Date.now(),
         orderCode: 'UTC2-' + Math.floor(100000 + Math.random() * 900000),
         productId: currentCheckoutProduct.id,
         productTitle: currentCheckoutProduct.title,
+        productImage: currentCheckoutProduct.imageUrl,
         seller: currentCheckoutProduct.seller,
         sellerEmail: currentCheckoutProduct.sellerEmail || 'seller@st.utc2.edu.vn',
         buyer: window.app.user.name,
         buyerEmail: window.app.user.email || 'buyer@st.utc2.edu.vn',
         productPrice: basePrice,
-        depositAmount,
+        depositAmount: 0, // ĐÃ BỎ TIỀN CỌC HOÀN TOÀN
         shippingFee: shipFee,
+        distanceKm: distanceKm,
+        deliveryAddress: deliveryAddress,
+        meetLocation: deliveryAddress,
+        paymentMethod: currentCheckoutPaymentMethod,
+        paymentMethodLabel: paymentLabel,
         discountCoins: coinsUsed,
         discountAmount: discountVND,
         totalPayment: finalTotal,
-        shippingOption: document.getElementById('shippingSelectOption') ? document.getElementById('shippingSelectOption').value : 'campus',
-        meetLocation: currentCheckoutProduct.location,
-        status: 'pending_seller', // Người mua đã cọc, chờ người bán xác nhận đơn hàng
-        sellerAccepted: false,     // Người bán đã bấm xác nhận đơn hàng hay chưa
-        buyerCompleted: false,     // Người mua xác nhận đã nhận hàng
-        sellerCompleted: false,    // Người bán xác nhận đã giao hàng
+        status: 'pending_seller', // Chờ người bán xác nhận đơn hàng và giao đồ
+        sellerAccepted: false,
+        buyerCompleted: false,
+        sellerCompleted: false,
         timestamp: Date.now()
     };
 
     window.app.depositOrders.push(newOrderData);
     window.app.saveOrders();
 
-    // Gửi thông báo tới người bán: Có người thêm đơn hàng của bạn vào đơn cọc
+    // Thông báo cho người bán: Có khách đặt mua đơn hàng
     window.app.addNotification({
         targetName: currentCheckoutProduct.seller,
         targetEmail: currentCheckoutProduct.sellerEmail || 'seller@st.utc2.edu.vn',
-        title: 'Có khách đặt cọc đơn hàng!',
-        message: `${window.app.user.name} vừa thêm đơn hàng "${currentCheckoutProduct.title}" của bạn vào đơn cọc (Cọc giữ chỗ: ${formatNumber(depositAmount)} đ). Vui lòng vào mục Cá Nhân kiểm tra.`,
+        title: 'Có khách đặt mua đơn hàng mới!',
+        message: `${window.app.user.name} vừa đặt mua "${currentCheckoutProduct.title}" (Tổng thanh toán: ${formatNumber(finalTotal)} đ, Ship: ${shipFee === 0 ? 'Freeship' : formatNumber(shipFee) + 'đ'}, Đ/c: ${deliveryAddress}, PTTT: ${paymentLabel}). Vui lòng vào mục Cá Nhân bấm Xác Nhận Đơn Hàng.`,
         type: 'order_deposit',
         relatedId: newOrderData.id
     });
 
-    // Gửi thông báo tới người mua: Đã đặt cọc thành công
+    // Thông báo cho người mua: Đã đặt mua thành công
     window.app.addNotification({
         targetName: window.app.user.name,
         targetEmail: window.app.user.email,
-        title: 'Thêm vào đơn cọc thành công!',
-        message: `Bạn đã thêm đơn hàng "${currentCheckoutProduct.title}" vào đơn cọc (Đã cọc: ${formatNumber(depositAmount)} đ). Đang chờ người bán xác nhận đơn.`,
+        title: 'Đặt mua hàng thành công!',
+        message: `Bạn đã đặt mua thành công "${currentCheckoutProduct.title}". Tổng thanh toán: ${formatNumber(finalTotal)} đ (Ship: ${shipFee === 0 ? 'Freeship' : formatNumber(shipFee) + 'đ'}, PTTT: ${paymentLabel}). Đang chờ người bán xác nhận đơn và giao hàng.`,
         type: 'order_deposit',
         relatedId: newOrderData.id
     });
 
-    // Đồng bộ đơn cọc lên Supabase Cloud
+    // Đồng bộ đơn hàng lên Supabase Cloud
     if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
         window.UniPassSupabase.createOrder(newOrderData);
     }
 
-    // Đồng bộ đơn cọc lên mạng đa máy (Máy B, C, D...)
+    // Đồng bộ đơn hàng lên mạng đa máy qua Broadcast
     if (window.UniPassOnlineSync) {
         window.UniPassOnlineSync.broadcastDepositOrder(newOrderData);
     }
 
     closeCheckoutModal();
     if (window.sound) window.sound.playSuccess();
-    showToast(`Đặt cọc thành công ${formatNumber(depositAmount)} đ! Đã gửi thông báo xác nhận đơn tới người bán (${currentCheckoutProduct.seller}).`, 'success');
+    showToast(`Đặt mua hàng thành công! Tổng cần trả: ${formatNumber(finalTotal)} đ. Đã gửi thông báo đến người bán (${currentCheckoutProduct.seller}).`, 'success');
     window.app.renderProfile();
 }
+
+// Giữ alias tương thích nếu có hàm gọi cũ
+const confirmDepositOrder = confirmOrderPurchase;
 
 // ==========================================
 // 7b. QUẢN LÝ QUY TRÌNH GIAO DỊCH 2 BÊN & XỬ PHẠT (ĐẶC TẢ UTC2)
@@ -3955,7 +4321,7 @@ function openShopeeSuggestion() {
 function openDepositOrders() {
     switchNavTab('profile');
     if (!window.app.user) {
-        showToast('Vui lòng đăng nhập để xem đơn đặt cọc!', 'warning');
+        showToast('Vui lòng đăng nhập để xem đơn hàng!', 'warning');
         return;
     }
     const myOrders = window.app.depositOrders.filter(o => 
@@ -3966,9 +4332,9 @@ function openDepositOrders() {
     );
     const count = myOrders.length;
     if (count === 0) {
-        showToast(`Tài khoản của bạn hiện có 0 đơn cọc.`, 'info');
+        showToast(`Tài khoản của bạn hiện có 0 đơn hàng.`, 'info');
     } else {
-        showToast(`Bạn đang có ${count} đơn đặt cọc & mua bán giữ chỗ.`, 'info');
+        showToast(`Bạn đang có ${count} đơn hàng mua bán.`, 'info');
     }
     const block = document.getElementById('profileDepositOrdersBlock');
     if (block) {
