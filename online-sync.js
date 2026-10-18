@@ -286,6 +286,11 @@
             return this.broadcast('ADMIN_WARNING', { warning: warning });
         },
 
+        // Phát thông báo tài khoản người dùng đăng ký mới
+        broadcastUserRegistered: function (user) {
+            return this.broadcast('USER_REGISTERED', { user: user });
+        },
+
         // Cập nhật giao diện huy hiệu Online
         updateBadgeUI: function () {
             const badge = document.getElementById('onlineSyncIndicator');

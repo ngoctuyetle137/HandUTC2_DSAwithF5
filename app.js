@@ -325,6 +325,65 @@ class AppController {
         this.initOnlineSync();
     }
 
+    async syncUsersFromCloud(manual = false) {
+        const spinEl = document.getElementById('syncUserSpin');
+        if (spinEl) spinEl.style.display = 'inline-block';
+        if (spinEl) spinEl.style.transform = 'rotate(360deg)';
+        if (manual) showToast('🔄 Đang đồng bộ danh sách tài khoản từ Supabase Cloud...', 'info');
+
+        if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+            try {
+                const cloudProfiles = await window.UniPassSupabase.getProfiles();
+                if (cloudProfiles && Array.isArray(cloudProfiles) && cloudProfiles.length > 0) {
+                    cloudProfiles.forEach(cp => {
+                        if (!cp.email) return;
+                        const emailLower = cp.email.toLowerCase();
+                        const isOfficialAdmin = (emailLower === ADMIN_CREDENTIALS.email.toLowerCase() || cp.role === 'admin');
+
+                        const mappedUser = {
+                            id: cp.id || ('U_' + Date.now()),
+                            name: cp.name || emailLower.split('@')[0],
+                            email: cp.email,
+                            password: cp.password || '123456',
+                            role: isOfficialAdmin ? 'admin' : (cp.role || 'student'),
+                            reputation: typeof cp.reputation === 'number' ? cp.reputation : (Number(cp.reputation) || 95),
+                            coins: typeof cp.coins === 'number' ? cp.coins : (Number(cp.coins) || (isOfficialAdmin ? 9999 : 20)),
+                            avatarLetter: cp.avatar_letter || (cp.name ? cp.name.charAt(0).toUpperCase() : emailLower.charAt(0).toUpperCase()),
+                            avatarUrl: cp.avatar_url || null,
+                            mssv: cp.mssv || null,
+                            phone: cp.phone || null,
+                            isEmailVerified: true,
+                            verifiedAt: cp.created_at || new Date().toISOString()
+                        };
+
+                        const idx = this.registeredUsers.findIndex(u => 
+                            (u.email && u.email.toLowerCase() === emailLower) || 
+                            (u.id && u.id === mappedUser.id)
+                        );
+
+                        if (idx !== -1) {
+                            this.registeredUsers[idx] = { ...this.registeredUsers[idx], ...mappedUser };
+                        } else {
+                            this.registeredUsers.push(mappedUser);
+                        }
+                    });
+
+                    this.saveUsers();
+                    this.renderAdminDashboard();
+                    console.log(`✅ [Supabase] Đã đồng bộ ${cloudProfiles.length} tài khoản từ Cloud! Tổng tài khoản: ${this.registeredUsers.length}`);
+                    if (manual) {
+                        showToast(`✓ Đã nạp thành công ${this.registeredUsers.length} tài khoản từ Supabase Cloud!`, 'success');
+                    }
+                }
+            } catch (err) {
+                console.error('❌ Lỗi khi đồng bộ tài khoản từ Cloud:', err);
+                if (manual) showToast('Không thể kết nối tới Cloud để tải danh sách tài khoản!', 'danger');
+            }
+        }
+
+        if (spinEl) spinEl.style.transform = 'none';
+    }
+
     async initSupabaseSync() {
         if (typeof updateSupabaseNavIndicator === 'function') {
             updateSupabaseNavIndicator();
@@ -375,6 +434,9 @@ class AppController {
 
         console.log('🔄 Đang đồng bộ dữ liệu từ Supabase Cloud...');
         try {
+            // 0. Tải và đồng bộ toàn bộ tài khoản người dùng từ Supabase Cloud
+            await this.syncUsersFromCloud();
+
             // Tải sản phẩm từ Supabase
             const cloudProducts = await window.UniPassSupabase.getProducts();
             if (cloudProducts && Array.isArray(cloudProducts) && cloudProducts.length > 0) {
@@ -598,6 +660,37 @@ class AppController {
                     this.user.reputation = Math.max(0, (this.user.reputation || 95) - Number(warn.penalty_points));
                     this.updateUserUI();
                 }
+            }
+        } else if (table === 'profiles') {
+            const pUser = payload.new;
+            if (pUser && pUser.email) {
+                const emailLower = pUser.email.toLowerCase();
+                const isOfficialAdmin = (emailLower === ADMIN_CREDENTIALS.email.toLowerCase() || pUser.role === 'admin');
+                const mappedUser = {
+                    id: pUser.id || ('U_' + Date.now()),
+                    name: pUser.name || emailLower.split('@')[0],
+                    email: pUser.email,
+                    password: pUser.password || '123456',
+                    role: isOfficialAdmin ? 'admin' : (pUser.role || 'student'),
+                    reputation: typeof pUser.reputation === 'number' ? pUser.reputation : (Number(pUser.reputation) || 95),
+                    coins: typeof pUser.coins === 'number' ? pUser.coins : (Number(pUser.coins) || (isOfficialAdmin ? 9999 : 20)),
+                    avatarLetter: pUser.avatar_letter || (pUser.name ? pUser.name.charAt(0).toUpperCase() : emailLower.charAt(0).toUpperCase()),
+                    avatarUrl: pUser.avatar_url || null,
+                    mssv: pUser.mssv || null,
+                    phone: pUser.phone || null,
+                    isEmailVerified: true
+                };
+                const idx = this.registeredUsers.findIndex(u => 
+                    (u.email && u.email.toLowerCase() === emailLower) || 
+                    (u.id && u.id === mappedUser.id)
+                );
+                if (idx !== -1) {
+                    this.registeredUsers[idx] = { ...this.registeredUsers[idx], ...mappedUser };
+                } else {
+                    this.registeredUsers.push(mappedUser);
+                }
+                this.saveUsers();
+                this.renderAdminDashboard();
             }
         }
     }
@@ -824,6 +917,24 @@ class AppController {
                 this.user.reputation = Math.max(0, (this.user.reputation || 95) - (warning.penaltyPoints || 2));
                 this.updateUserUI();
             }
+        });
+
+        // 6. Nhận thông báo tài khoản người dùng đăng ký mới từ các máy khác
+        window.UniPassOnlineSync.on('USER_REGISTERED', (data) => {
+            if (!data || !data.user || !data.user.email) return;
+            const u = data.user;
+            const emailLower = u.email.toLowerCase();
+            const idx = this.registeredUsers.findIndex(existing => 
+                (existing.email && existing.email.toLowerCase() === emailLower) || 
+                (existing.id && u.id && existing.id === u.id)
+            );
+            if (idx !== -1) {
+                this.registeredUsers[idx] = { ...this.registeredUsers[idx], ...u };
+            } else {
+                this.registeredUsers.push(u);
+            }
+            this.saveUsers();
+            this.renderAdminDashboard();
         });
     }
 
@@ -2048,7 +2159,8 @@ class AppController {
         const usersTbody = document.getElementById('adminUsersTableBody');
         const disputesTbody = document.getElementById('adminDisputesTableBody');
         const totalPostsEl = document.getElementById('adminTotalPosts');
-        const totalUsersEl = document.querySelector('.admin-stat-card:nth-child(3) .admin-stat-number');
+        const totalUsersEl = document.getElementById('adminTotalUsers') || document.querySelector('.admin-stat-card:nth-child(3) .admin-stat-number');
+        const userCountSubEl = document.getElementById('adminUserCountSubtitle');
         const pendingDispEl = document.getElementById('adminPendingDisputes');
         const warningsCountEl = document.getElementById('adminWarningsCount');
 
@@ -2057,12 +2169,13 @@ class AppController {
         const activeApprovedPosts = this.products.filter(p => p.status !== 'pending' && p.status !== 'rejected');
 
         // Danh sách sinh viên thực tế (loại tài khoản quản trị)
-        const studentUsers = this.registeredUsers.filter(u => u.role !== 'admin');
+        const studentUsers = this.registeredUsers.filter(u => u.email !== ADMIN_CREDENTIALS.email && u.role !== 'admin');
 
         if (totalPostsEl) totalPostsEl.innerText = activeApprovedPosts.length;
         if (pendingPostsCountEl) pendingPostsCountEl.innerText = pendingPosts.length;
         if (pendingBadgeEl) pendingBadgeEl.innerText = `${pendingPosts.length} bài chờ`;
-        if (totalUsersEl) totalUsersEl.innerText = studentUsers.length;
+        if (totalUsersEl) totalUsersEl.innerText = this.registeredUsers.length;
+        if (userCountSubEl) userCountSubEl.innerText = `Tổng cộng ${this.registeredUsers.length} tài khoản đã đăng ký trên hệ thống (Gồm ${studentUsers.length} sinh viên & Quản Trị Viên)`;
         if (pendingDispEl) pendingDispEl.innerText = this.adminDisputes.filter(d => d.status === 'pending').length;
         if (warningsCountEl) warningsCountEl.innerText = this.adminWarningsIssued.length;
 
@@ -2144,27 +2257,48 @@ class AppController {
             `).join('');
         }
 
-        // Bảng 2: Quản lý danh sách toàn bộ sinh viên đã đăng ký
+        // Bảng 2: Quản lý danh sách toàn bộ tài khoản đã đăng ký trên hệ thống
         if (usersTbody) {
-            usersTbody.innerHTML = studentUsers.map(u => `
-                <tr>
-                    <td><strong>${u.name}</strong></td>
-                    <td style="color:#64748b;">${u.email}</td>
-                    <td><span style="color:#16a34a; font-weight:700;">★ ${u.reputation}/100</span></td>
-                    <td><span style="color:#d97706; font-weight:700;">🪙 ${u.coins} Xu</span></td>
-                    <td><span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700;">Hoạt động</span></td>
-                    <td>
-                        <div style="display:flex; gap:6px;">
-                            <button class="btn-admin-warning" onclick="adminWarnUser('${u.name}')">
-                                ⚠️ Cảnh Cáo
-                            </button>
-                            <button class="btn-admin-success" onclick="adminRemindUser('${u.name}')">
-                                💬 Nhắc Nhở
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+            if (this.registeredUsers.length === 0) {
+                usersTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px; color:#64748b;">Chưa có tài khoản nào được lưu trên hệ thống. Bấm nút "Đồng Bộ Tài Khoản Từ Cloud" để nạp dữ liệu.</td></tr>`;
+            } else {
+                usersTbody.innerHTML = this.registeredUsers.map(u => {
+                    const isAdmin = (u.email === ADMIN_CREDENTIALS.email || u.role === 'admin');
+                    return `
+                    <tr style="${isAdmin ? 'background:#f8fafc;' : ''}">
+                        <td>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <div style="width:28px; height:28px; border-radius:50%; background:${isAdmin ? '#dc2626' : '#0284c7'}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px;">
+                                    ${u.avatarLetter || (u.name ? u.name.charAt(0).toUpperCase() : 'U')}
+                                </div>
+                                <div>
+                                    <strong>${u.name}</strong>
+                                    ${isAdmin ? '<span style="background:#fee2e2; color:#b91c1c; font-size:10px; padding:1px 6px; border-radius:10px; margin-left:4px; font-weight:700;">Admin</span>' : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td style="color:#64748b; font-family:monospace; font-size:12px;">${u.email}</td>
+                        <td><span style="color:#16a34a; font-weight:700;">★ ${u.reputation || 95}/100</span></td>
+                        <td><span style="color:#d97706; font-weight:700;">🪙 ${u.coins || 0} Xu</span></td>
+                        <td><span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700;">Đã xác thực</span></td>
+                        <td>
+                            ${isAdmin ? `
+                                <span style="font-size:11px; color:#64748b; font-style:italic;">Quản trị hệ thống</span>
+                            ` : `
+                                <div style="display:flex; gap:6px;">
+                                    <button class="btn-admin-warning" onclick="adminWarnUser('${u.name}')">
+                                        ⚠️ Cảnh Cáo
+                                    </button>
+                                    <button class="btn-admin-success" onclick="adminRemindUser('${u.name}')">
+                                        💬 Nhắc Nhở
+                                    </button>
+                                </div>
+                            `}
+                        </td>
+                    </tr>
+                    `;
+                }).join('');
+            }
         }
 
         // Bảng 3: Xét duyệt khiếu nại giao dịch & trừ điểm uy tín (Boom hàng, Hàng lỗi, Không xác nhận)
@@ -2701,9 +2835,12 @@ async function handleAuthSubmitForm(e) {
         window.app.renderProfile();
         window.app.renderAdminDashboard();
 
-        // Đồng bộ profile lên Supabase Cloud
+        // Đồng bộ profile lên Supabase Cloud & Mạng Đa Máy
         if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
             window.UniPassSupabase.upsertProfile(window.app.user);
+        }
+        if (window.UniPassOnlineSync) {
+            window.UniPassOnlineSync.broadcastUserRegistered(window.app.user);
         }
 
         if (window.sound) window.sound.playSuccess();
@@ -2773,9 +2910,12 @@ async function handleAuthSubmitForm(e) {
         window.app.renderProfile();
         window.app.renderAdminDashboard();
 
-        // Đồng bộ profile lên Supabase Cloud
+        // Đồng bộ profile lên Supabase Cloud & Mạng Đa Máy
         if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
             window.UniPassSupabase.upsertProfile(window.app.user);
+        }
+        if (window.UniPassOnlineSync) {
+            window.UniPassOnlineSync.broadcastUserRegistered(window.app.user);
         }
 
         if (window.sound) window.sound.playSuccess();
@@ -3891,6 +4031,10 @@ function switchNavTab(tabName) {
         if (!window.app.isAdminAuthenticated || !window.app.user || window.app.user.email !== ADMIN_CREDENTIALS.email) {
             openAdminAccessDeniedModal();
             return;
+        }
+        // Tự động kéo danh sách tài khoản mới nhất từ Supabase Cloud
+        if (window.app && window.app.syncUsersFromCloud) {
+            window.app.syncUsersFromCloud();
         }
     }
 

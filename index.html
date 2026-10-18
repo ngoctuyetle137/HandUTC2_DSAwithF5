@@ -492,7 +492,7 @@
                 </div>
                 <div class="admin-stat-card">
                     <div class="admin-stat-label">Tài khoản sinh viên đã xác thực</div>
-                    <div class="admin-stat-number">2</div>
+                    <div class="admin-stat-number" id="adminTotalUsers">0</div>
                 </div>
                 <div class="admin-stat-card">
                     <div class="admin-stat-label">Kháng nghị điểm uy tín chờ duyệt</div>
@@ -568,11 +568,16 @@
 
             <!-- Panel 2: Quản Lý Tài Khoản, Cảnh Cáo & Nhắc Nhở -->
             <div class="admin-panel-card">
-                <div class="admin-panel-header">
-                    <div class="admin-panel-title">
-                        <span>👥</span> Danh Sách Tài Khoản Sinh Viên (Cảnh Cáo & Nhắc Nhở)
+                <div class="admin-panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <div class="admin-panel-title">
+                            <span>👥</span> Danh Sách Toàn Bộ Tài Khoản Đã Đăng Ký
+                        </div>
+                        <span style="font-size:12px; color:#64748b;" id="adminUserCountSubtitle">Đang nạp danh sách tài khoản...</span>
                     </div>
-                    <span style="font-size:12px; color:#64748b;">Nhắc nhở hoặc cảnh cáo tài khoản có dấu hiệu bùng hàng / spam</span>
+                    <button type="button" class="btn-outline-chat" style="font-size:11.5px; padding:6px 14px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" onclick="window.app && window.app.syncUsersFromCloud(true)">
+                        <span id="syncUserSpin">🔄</span> Đồng Bộ Tài Khoản Từ Cloud
+                    </button>
                 </div>
 
                 <div style="overflow-x:auto;">

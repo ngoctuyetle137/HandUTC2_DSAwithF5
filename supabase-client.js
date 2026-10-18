@@ -675,6 +675,10 @@
                         console.log('🔔 [Supabase Realtime] Cảnh cáo mới từ Admin:', payload);
                         if (typeof onEventCallback === 'function') onEventCallback('admin_warnings', payload);
                     })
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, payload => {
+                        console.log('🔔 [Supabase Realtime] Tài khoản người dùng thay đổi:', payload);
+                        if (typeof onEventCallback === 'function') onEventCallback('profiles', payload);
+                    })
                     .subscribe((status) => {
                         console.log('📡 [Supabase Realtime Status]:', status);
                     });
