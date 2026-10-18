@@ -2528,7 +2528,7 @@ async function requestOtpCode(e) {
     const otpStatusBadge = document.getElementById('otpStatusBadge');
 
     if (targetEmail) {
-        targetEmail.innerHTML = `${email} <span style="display:block; margin-top:4px; color:#15803d; font-weight:700;">🔑 Mã OTP xác nhận: <strong style="font-size:15px; letter-spacing:3px; background:#fff; padding:2px 8px; border-radius:4px; border:1px solid #86efac;">${otp}</strong></span>`;
+        targetEmail.innerHTML = `${email} <span style="display:block; margin-top:4px; color:#15803d; font-weight:600;">📩 Mã OTP 6 số đã được gửi đến hòm thư của bạn. Vui lòng kiểm tra Gmail (kể cả mục Thư rác/Spam) để lấy mã xác nhận.</span>`;
     }
     if (otpStatusBadge) otpStatusBadge.innerText = 'Đã Phát Lệnh';
     if (mockBox) {
@@ -2536,9 +2536,10 @@ async function requestOtpCode(e) {
         mockBox.style.display = 'block';
     }
 
-    // Tự động điền mã OTP vào ô nhập để thuận tiện trải nghiệm ngay
+    // Không tự động điền mã OTP vào ô nhập, bắt buộc người dùng mở Gmail lấy mã
     if (otpInput) {
-        otpInput.value = otp;
+        otpInput.value = '';
+        otpInput.placeholder = 'Mã 6 số từ Gmail...';
         otpInput.focus();
     }
 
@@ -2546,7 +2547,7 @@ async function requestOtpCode(e) {
     await UniPassMailer.sendRegistrationOtp(email, otp);
 
     if (otpStatusBadge) otpStatusBadge.innerText = 'Đã Gửi Thư';
-    showToast(`✓ Đã gửi mã OTP [${otp}] về Gmail: ${email}! Mở Gmail hoặc dùng ngay mã hiển thị bên dưới.`, 'success');
+    showToast(`✓ Đã gửi mã xác thực về Gmail: ${email}! Vui lòng mở hòm thư Gmail để lấy mã 6 số.`, 'success');
 
     if (window.sound) window.sound.playNotification();
 
@@ -2650,7 +2651,7 @@ async function handleAuthSubmitForm(e) {
         }
 
         if (!isOtpValid) {
-            showToast('Mã OTP không chính xác hoặc đã hết hạn! Vui lòng kiểm tra mã 6 số (hoặc dùng mã mẫu 123456).', 'danger');
+            showToast('Mã OTP không chính xác hoặc đã hết hạn! Vui lòng kiểm tra lại hòm thư Gmail của bạn.', 'danger');
             if (window.sound) window.sound.playWarning();
             const otpInput = document.getElementById('authOtpInput');
             if (otpInput) {
