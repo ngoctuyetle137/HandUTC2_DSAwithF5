@@ -141,7 +141,7 @@
                                        placeholder="Mã 6 số từ Gmail..." maxlength="6" autocomplete="off" style="letter-spacing:4px; font-weight:800; font-size:15px; text-align:center;">
                             </div>
                             <button type="button" class="btn-get-otp" id="sendOtpBtn" onclick="requestOtpCode(event)">
-                                📩 Gửi OTP
+                                 Gửi OTP
                             </button>
                         </div>
                     </div>
@@ -294,14 +294,15 @@
              ========================================== -->
         <div class="hero-search-wrapper" id="heroBannerSection">
             <div class="hero-search-card">
-                <!-- Badges Thuật toán nhỏ gọn -->
+                <!-- Badges Uy Tín & Sinh Viên UTC2 -->
                 <div class="hero-badges-row">
-                    <span class="hero-mini-badge">⚡Nhanh Tiện An toàn dành cho sinh viên</span>
-                    <span class="hero-mini-badge">⚖️ Rẻ,Uy tín,Chân thật</span>
+                    <span class="hero-mini-badge">🎓 100% Sinh Viên ST.UTC2 Xác Thực</span>
+                    <span class="hero-mini-badge">⚡ Nhanh Gọn • Giá Rẻ • Uy Tín</span>
+                    <span class="hero-mini-badge">🛡️ Tránh Lừa Đảo Với TimeMark</span>
                 </div>
 
-                <h2 class="hero-title">Tìm giáo trình, mã môn & đồ dùng UTC2</h2>
-                <p class="hero-subtitle">Hệ thống gợi ý từ khóa hoàn thành tức thì dựa trên tần suất tra cứu thực tế</p>
+                <h2 class="hero-title">Săn giáo trình, laptop & đồ dùng KTX UTC2</h2>
+                <p class="hero-subtitle">Sàn trao đổi & pass đồ uy tín nội bộ Cơ sở 2 - Trường ĐH Giao Thông Vận Tải</p>
 
                 <!-- Ô Tìm Kiếm với nút Tìm kiếm bên trong -->
                 <div class="hero-input-box">
@@ -316,6 +317,16 @@
 
                     <!-- Trie Autocomplete Dropdown -->
                     <div class="autocomplete-dropdown" id="searchAutocompleteDropdown"></div>
+                </div>
+
+                <!-- Gợi ý từ khóa hot của sinh viên -->
+                <div class="hero-quick-tags">
+                    <span class="quick-tag-label">🔥 Gợi ý hot:</span>
+                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Giáo trình')">📚 Giáo trình & Sách</button>
+                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Casio')">🧮 Máy tính Casio</button>
+                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Đồng phục')">👕 Đồng phục UTC2</button>
+                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Nồi cơm')">🍳 Đồ gia dụng KTX</button>
+                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Xe')">🚲 Xe đạp / Xe máy</button>
                 </div>
             </div>
         </div>
@@ -332,18 +343,17 @@
                         <button class="reset-filter-btn" onclick="resetFilters()">Đặt lại</button>
                     </div>
 
-                    <div style="font-size:11.5px; color:#64748b; margin-bottom:12px; background:#eff6ff; padding:8px 10px; border-radius:6px; border:1px solid #bfdbfe; line-height:1.4;">
-                        💡 <strong>Cách lọc:</strong> Tích dấu chọn vào tiêu chí bạn muốn lọc (chỉ lọc những tiêu chí có dấu tích).
+                    <div class="filter-instruction-box">
+                         <strong>Cách lọc:</strong> Tích dấu chọn vào tiêu chí bạn muốn lọc (chỉ lọc những tiêu chí có dấu tích).
                     </div>
 
-                    <!-- 1. Khoảng giá mong muốn (AVL Tree) CÓ DẤU TÍCH -->
+                    <!-- 1. Khoảng giá mong muốn CÓ DẤU TÍCH -->
                     <div class="filter-group-block" id="filterBlockPrice">
                         <div class="filter-section-title">
                             <label class="filter-checkbox-label" for="chkFilterPrice">
                                 <input type="checkbox" id="chkFilterPrice" onchange="toggleFilterCriterion('price')">
                                 <span>Tích để lọc <strong>Khoảng Giá</strong></span>
                             </label>
-                            <span class="mini-tag-info">AVL Tree</span>
                         </div>
                         <div class="filter-criterion-body disabled-criterion" id="filterBodyPrice">
                             <div class="price-range-inputs">
@@ -351,9 +361,6 @@
                                 <input type="text" id="filterPriceMax" value="Đến: 350k" readonly>
                             </div>
                             <input type="range" class="price-slider-bar" id="priceRangeSlider" min="20000" max="650000" step="10000" value="350000">
-                            <div style="font-size:11px; color:#94a3b8; margin-top:4px;">
-                                Lọc cây nhị phân tự cân bằng O(log N + K)
-                            </div>
                         </div>
                     </div>
 
@@ -373,15 +380,15 @@
                                 </label>
                                 <label class="category-radio-item">
                                     <input type="radio" name="catFilter" value="GiaoTrinh" onchange="filterCategory('GiaoTrinh')">
-                                    <span>📚 Giáo trình & Sách học</span>
+                                    <span> Giáo trình & Sách học</span>
                                 </label>
                                 <label class="category-radio-item">
                                     <input type="radio" name="catFilter" value="DoDienTu" onchange="filterCategory('DoDienTu')">
-                                    <span>💻 Thiết bị điện tử, Casio</span>
+                                    <span> Thiết bị điện tử, Casio</span>
                                 </label>
                                 <label class="category-radio-item">
                                     <input type="radio" name="catFilter" value="DoGiaDung" onchange="filterCategory('DoGiaDung')">
-                                    <span>🍳 Đồ dùng sinh viên, KTX</span>
+                                    <span> Đồ dùng sinh viên, KTX</span>
                                 </label>
                             </div>
                         </div>
@@ -423,7 +430,7 @@
             <section class="feed-main-section">
                 <div class="feed-top-bar">
                     <div style="display:flex; align-items:center; gap:12px;">
-                        <button type="button" id="btnToggleFilterMode" class="btn-outline-chat" style="padding:6px 14px; font-size:12.5px; font-weight:700; background:#0284c7; color:#fff;" onclick="toggleSidebarFilter()">
+                        <button type="button" id="btnToggleFilterMode" class="btn-outline-chat" style="padding:6px 14px; font-size:12.5px; font-weight:700; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; border:none; border-radius:8px; box-shadow:0 2px 8px rgba(217,119,6,0.25);" onclick="toggleSidebarFilter()">
                             ⚡ Bộ Lọc: Đang Hiện (Bấm để Ẩn)
                         </button>
                         <div class="feed-count-text" id="feedCountDisplay">
@@ -437,7 +444,7 @@
                             <option value="newest">Mới đăng nhất</option>
                             <option value="priceAsc">Giá thấp đến cao</option>
                             <option value="priceDesc">Giá cao đến thấp</option>
-                            <option value="distance">Gần tôi nhất (KD-Tree)</option>
+                            <option value="distance">Gần tôi nhất (Quanh UTC2)</option>
                         </select>
                     </div>
                 </div>
@@ -456,9 +463,9 @@
              ========================================== -->
         <div class="admin-dashboard-container" id="adminDashboardSection">
             <!-- Header Huy Hiệu Quản Trị Viên Cấp Cao -->
-            <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#ffffff; border-radius:12px; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; box-shadow:0 8px 24px rgba(2, 132, 199, 0.25);">
+            <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color:#ffffff; border-radius:12px; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; box-shadow:0 8px 24px rgba(245, 158, 11, 0.25);">
                 <div style="display:flex; align-items:center; gap:14px;">
-                    <div style="width:46px; height:46px; border-radius:50%; background:#ffffff; color:#0284c7; font-size:22px; font-weight:900; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.1);">👑</div>
+                    <div style="width:46px; height:46px; border-radius:50%; background:#ffffff; color:#d97706; font-size:22px; font-weight:900; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.1);">👑</div>
                     <div>
                         <div style="font-size:16.5px; font-weight:800; letter-spacing:0.3px;">PHÂN HỆ QUẢN TRỊ VIÊN HỆ THỐNG HAND UTC2</div>
                         <div style="font-size:13px; opacity:0.95; margin-top:2px;">
@@ -468,7 +475,7 @@
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span style="background:rgba(255,255,255,0.2); padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700;">🛡️ Toàn Quyền Điều Hành</span>
-                    <button onclick="switchNavTab('home')" style="background:#ffffff; color:#0284c7; border:none; padding:8px 16px; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer;">🛍️ Về Săn Đồ</button>
+                    <button onclick="switchNavTab('home')" style="background:#ffffff; color:#d97706; border:none; padding:8px 16px; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer;">🛍️ Về Săn Đồ</button>
                 </div>
             </div>
 
@@ -542,7 +549,7 @@
             <div class="admin-panel-card">
                 <div class="admin-panel-header">
                     <div class="admin-panel-title">
-                        <span>📦</span> Quản Lý Toàn Bộ Bài Đăng Đã Duyệt (Tin Hoạt Động)
+                        <span></span> Quản Lý Toàn Bộ Bài Đăng Đã Duyệt (Tin Hoạt Động)
                     </div>
                     <span style="font-size:12px; color:#64748b;">Admin có quyền xóa bài đăng vi phạm TimeMark hoặc phá giá</span>
                 </div>
@@ -571,7 +578,7 @@
                 <div class="admin-panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <div>
                         <div class="admin-panel-title">
-                            <span>👥</span> Danh Sách Toàn Bộ Tài Khoản Đã Đăng Ký
+                            <span></span> Danh Sách Toàn Bộ Tài Khoản Đã Đăng Ký
                         </div>
                         <span style="font-size:12px; color:#64748b;" id="adminUserCountSubtitle">Đang nạp danh sách tài khoản...</span>
                     </div>
@@ -603,7 +610,7 @@
             <div class="admin-panel-card">
                 <div class="admin-panel-header">
                     <div class="admin-panel-title">
-                        <span>⚖️</span> Xét Duyệt Khiếu Nại Giao Dịch & Trừ Điểm Uy Tín (Boom Hàng, Hàng Lỗi, Không Xác Nhận)
+                        <span></span> Xét Duyệt Khiếu Nại Giao Dịch & Trừ Điểm Uy Tín (Boom Hàng, Hàng Lỗi, Không Xác Nhận)
                     </div>
                     <span style="font-size:12px; color:#64748b;">Xem xét bằng chứng để trừ điểm uy tín người vi phạm hoặc khôi phục điểm cho sinh viên</span>
                 </div>
@@ -663,7 +670,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
                     <div style="display:flex; align-items:center; gap:14px;">
                         <div style="position:relative; cursor:pointer;" onclick="triggerAvatarUpload()" title="Nhấp để tải ảnh đại diện">
-                            <div class="user-avatar-circle" style="width:62px; height:62px; font-size:24px; border:2.5px solid #0284c7; box-shadow:0 3px 12px rgba(2,132,199,0.25);" id="profileAvatarCircle">U</div>
+                            <div class="user-avatar-circle" style="width:62px; height:62px; font-size:24px; border:2.5px solid #f59e0b; box-shadow:0 3px 12px rgba(245,158,11,0.25);" id="profileAvatarCircle">U</div>
                             <div class="avatar-edit-badge" title="Tải ảnh đại diện">📷</div>
                             <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)">
                         </div>
@@ -684,7 +691,7 @@
                         <button class="btn-outline-chat" style="font-size:12px; padding:8px 14px;" onclick="openReputationRules()">
                             Quy chế uy tín
                         </button>
-                        <button class="apply-filter-btn" style="background:#0284c7; width:auto; font-size:12px; padding:8px 16px;" onclick="openModal('createPostModal')">
+                        <button class="apply-filter-btn" style="background:linear-gradient(135deg, #f59e0b, #d97706); width:auto; font-size:12px; padding:8px 16px;" onclick="openModal('createPostModal')">
                             + Đăng Đồ Pass
                         </button>
                     </div>
@@ -693,12 +700,12 @@
                 <hr style="border:none; border-top:1px solid #e2e8f0; margin:18px 0;">
 
                 <!-- KHUNG THÔNG BÁO HOẠT ĐỘNG CỦA TÀI KHOẢN -->
-                <div class="profile-notif-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                <div class="profile-notif-card" style="background:#ffffff; border:1px solid #fef08a; border-radius:12px; padding:14px 16px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span style="font-size:18px;">🔔</span>
                             <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0;">Thông Báo Hoạt Động Của Bạn</h4>
-                            <span id="profileNotifBadgeCount" style="background:#0284c7; color:#fff; font-size:11px; padding:2px 8px; border-radius:10px; font-weight:700;">0</span>
+                            <span id="profileNotifBadgeCount" style="background:#d97706; color:#fff; font-size:11px; padding:2px 8px; border-radius:10px; font-weight:700;">0</span>
                         </div>
                         <div style="display:flex; gap:6px;">
                             <button class="btn-outline-chat" style="font-size:11px; padding:4px 10px;" onclick="markAllNotificationsAsRead()">✓ Đã đọc hết</button>
@@ -713,7 +720,7 @@
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                     <div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <h4 style="font-size:14px; color:#0284c7; margin:0;">📦 Bài đăng của tôi</h4>
+                            <h4 style="font-size:14px; color:#d97706; margin:0;">📦 Bài đăng của tôi</h4>
                             <span style="font-size:11px; color:#d97706; background:#fffbeb; padding:2px 8px; border-radius:4px; border:1px solid #fef3c7; font-weight:700;">⏳ Tự xóa sau 7 ngày duyệt</span>
                         </div>
                         <div id="myPostsListContainer"></div>
@@ -721,7 +728,7 @@
                     <div id="profileDepositOrdersBlock">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                             <h4 style="font-size:14px; color:#d97706; margin:0;">📜 Đơn đặt cọc & Mua bán</h4>
-                            <span id="profileDepositTotalBadge" style="font-size:11.5px; font-weight:700; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px;">0 đơn</span>
+                            <span id="profileDepositTotalBadge" style="font-size:11.5px; font-weight:700; color:#b45309; background:#fef3c7; padding:2px 8px; border-radius:4px; border:1px solid #fde68a;">0 đơn</span>
                         </div>
                         <div id="purchaseHistoryContainer"></div>
                     </div>
@@ -877,7 +884,7 @@
                     💬 Nhắn tin hẹn gặp
                 </button>
                 <button class="btn-primary-confirm" id="confirmDepositBtn" onclick="confirmDepositOrder()">
-                    🤝 Đặt Cọc & Giữ Chỗ
+                     Đặt Cọc & Giữ Chỗ
                 </button>
             </div>
         </div>
@@ -979,16 +986,16 @@
                     UTC2 - 8924
                 </div>
                 <div id="timemarkEmailSentNotice" style="font-size:11.5px; color:#0369a1; background:#e0f2fe; padding:6px 10px; border-radius:6px; margin-top:6px; line-height:1.4;">
-                    📩 Đã gửi mã xác nhận qua SMTP/Gmail về: <strong id="timemarkSellerEmail">student@st.utc2.edu.vn</strong>
+                     Đã gửi mã xác nhận qua SMTP/Gmail về: <strong id="timemarkSellerEmail">student@st.utc2.edu.vn</strong>
                 </div>
             </div>
 
             <!-- Hướng Dẫn 3 Bước Thực Hiện -->
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; text-align:left; font-size:12px; color:#334155; line-height:1.5; margin-bottom:14px;">
                 <div style="font-weight:700; color:#0f172a; margin-bottom:4px;">📋 Hướng dẫn chụp ảnh xác thực chính chủ:</div>
-                <div>1. ✍️ <strong>Ghi mã ra giấy:</strong> Lấy mẩu giấy trắng, viết rõ mã <strong id="timemarkCodeGuide" style="color:#15803d;">UTC2 - 8924</strong> và ngày giờ hiện tại.</div>
-                <div>2. 📦 <strong>Đặt cạnh món đồ:</strong> Đặt mẩu giấy ngay bên cạnh sản phẩm bạn muốn pass.</div>
-                <div>3. 📷 <strong>Chụp ảnh & Tải lên:</strong> Chụp 1 bức ảnh rõ nét cả món đồ và mẩu giấy ghi mã, sau đó tải lên khung bên dưới.</div>
+                <div>1.  <strong>Ghi mã ra giấy:</strong> Lấy mẩu giấy trắng, viết rõ mã <strong id="timemarkCodeGuide" style="color:#15803d;">UTC2 - 8924</strong> và ngày giờ hiện tại.</div>
+                <div>2.  <strong>Đặt cạnh món đồ:</strong> Đặt mẩu giấy ngay bên cạnh sản phẩm bạn muốn pass.</div>
+                <div>3.  <strong>Chụp ảnh & Tải lên:</strong> Chụp 1 bức ảnh rõ nét cả món đồ và mẩu giấy ghi mã, sau đó tải lên khung bên dưới.</div>
             </div>
 
             <!-- Khung Tải Ảnh Xác Thực TimeMark (Giấy ghi mã OTP + Sản phẩm) -->
@@ -1030,7 +1037,7 @@
                     Hủy
                 </button>
                 <button type="button" class="btn-primary-confirm" style="background:#16a34a; flex:2;" onclick="confirmPublishPostWithProof()">
-                    🚀 Gửi Bài Chờ Admin Phê Duyệt
+                     Gửi Bài Chờ Admin Phê Duyệt
                 </button>
             </div>
             <div style="font-size:11px; color:#64748b; margin-top:8px; text-align:center;">
@@ -1095,7 +1102,7 @@
 
                 <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
                     <button type="submit" class="btn-primary-confirm" style="background:#0284c7; width:100%;">
-                        🛡️ Xác Thực & Vào Quản Trị Admin
+                         Xác Thực & Vào Quản Trị Admin
                     </button>
                     <button type="button" class="btn-outline-chat" style="width:100%;" onclick="closeModal('adminAccessDeniedModal')">
                         Quay Lại Săn Đồ
@@ -1112,7 +1119,7 @@
         <div class="checkout-modal-card" style="max-width:520px;">
             <button class="checkout-close-btn" onclick="closeModal('orderDisputeModal')">✕</button>
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-                <span style="font-size:24px;">🚨</span>
+                <span style="font-size:24px;"></span>
                 <h3 style="font-size:18px; font-weight:800; color:#dc2626; margin:0;">Khiếu Nại Giao Dịch Gửi Admin</h3>
             </div>
             <p style="font-size:12.5px; color:#64748b; margin-bottom:14px; line-height:1.5;">
@@ -1132,10 +1139,10 @@
                         Lý do khiếu nại vi phạm *
                     </label>
                     <select id="disputeReasonSelect" class="feed-sort-select" style="width:100%; padding:10px;">
-                        <option value="BOOM_HANG">🚫 Boom hàng / Bỏ hẹn (Không đến điểm hẹn, không nghe máy, trễ quá 30p)</option>
-                        <option value="HANG_LOI">📦 Hàng lỗi / Gian dối mô tả (Đồ hư hỏng, rách nát, khác ảnh TimeMark)</option>
-                        <option value="KHONG_XAC_NHAN">❌ Không chịu xác nhận giao dịch sau khi đã trao đổi đồ</option>
-                        <option value="HANH_VI_XAU">🤬 Thái độ thô lỗ, ép giá tại điểm hẹn, hành vi không đúng mực</option>
+                        <option value="BOOM_HANG"> Boom hàng / Bỏ hẹn (Không đến điểm hẹn, không nghe máy, trễ quá 30p)</option>
+                        <option value="HANG_LOI"> Hàng lỗi / Gian dối mô tả (Đồ hư hỏng, rách nát, khác ảnh TimeMark)</option>
+                        <option value="KHONG_XAC_NHAN"> Không chịu xác nhận giao dịch sau khi đã trao đổi đồ</option>
+                        <option value="HANH_VI_XAU"> Thái độ thô lỗ, ép giá tại điểm hẹn, hành vi không đúng mực</option>
                     </select>
                 </div>
 
@@ -1187,7 +1194,7 @@
             <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:10px; padding:14px; margin-bottom:14px;">
                 <div style="font-size:13.5px; font-weight:800; color:#15803d; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
                     <span style="display:inline-block; width:9px; height:9px; background:#10b981; border-radius:50%; box-shadow:0 0 8px #10b981;"></span>
-                    🚀 LINK CHẠY ONLINE TOÀN CẦU (4G / WIFI MỌI NƠI)
+                     LINK CHẠY ONLINE TOÀN CẦU (4G / WIFI MỌI NƠI)
                 </div>
                 <div style="font-size:12px; color:#334155; margin-bottom:8px; line-height:1.5;">
                     Trang web đang chạy trực tiếp trên Internet. Mọi thiết bị (Máy A, B, C, D... trên điện thoại/laptop) chỉ cần mở link hoặc quét mã QR là thấy nhau tức thì:
@@ -1195,7 +1202,7 @@
                 <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
                     <input type="text" id="liveOnlineUrlInput" value="https://ngoctuyetle137.github.io/MiTaoLao/" readonly style="flex:1; background:#ffffff; border:1px solid #86efac; border-radius:6px; padding:8px 12px; font-size:13px; font-weight:700; color:#15803d; font-family:monospace;">
                     <button class="apply-filter-btn" style="background:#16a34a; width:auto; padding:8px 14px; margin-top:0;" onclick="navigator.clipboard.writeText('https://ngoctuyetle137.github.io/MiTaoLao/'); showToast('✓ Đã sao chép link Online: https://ngoctuyetle137.github.io/MiTaoLao/', 'success');">
-                        📋 Sao Chép Link
+                         Sao Chép Link
                     </button>
                 </div>
                 <div style="text-align:center;">
@@ -1303,7 +1310,7 @@
 
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <button type="button" class="btn-outline-chat" style="padding:5px 12px; font-size:11.5px; color:#0284c7; border-color:#93c5fd;" onclick="testSmtpConnection()">
-                        🧪 Gửi Thử Email SMTP Ngay
+                         Gửi Thử Email SMTP Ngay
                     </button>
                     <span style="font-size:11px; color:#64748b;">* Xem tệp <code>google_apps_script_mailer.js</code></span>
                 </div>
@@ -1315,26 +1322,26 @@
                     🚀 Lưu & Kết Nối Ngay
                 </button>
                 <button class="apply-filter-btn" style="background:#0284c7; width:auto; padding:9px 14px; margin:0;" onclick="testSupabasePing()">
-                    🧪 Kiểm Tra (Ping)
+                     Kiểm Tra (Ping)
                 </button>
                 <button class="apply-filter-btn" style="background:#64748b; width:auto; padding:9px 14px; margin:0;" onclick="copySupabaseSchemaSql()">
-                    📋 Sao Chép SQL Schema
+                     Sao Chép SQL Schema
                 </button>
                 <button class="apply-filter-btn" style="background:#ef4444; width:auto; padding:9px 12px; margin:0;" onclick="disconnectSupabase()">
-                    ✕ Ngắt Kết Nối
+                     Ngắt Kết Nối
                 </button>
             </div>
 
             <!-- Hướng dẫn nhanh cho dự án ngoctuyetle137 -->
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; font-size:11.5px; color:#475569; line-height:1.6; margin-bottom:10px;">
-                <strong>📘 2 Bước Hoàn Tất Kết Nối Supabase Cloud:</strong><br>
+                <strong> 2 Bước Hoàn Tất Kết Nối Supabase Cloud:</strong><br>
                 1. <strong>Tạo bảng dữ liệu:</strong> Mở <a href="https://supabase.com/dashboard/project/lhlwemmpnrmlskeljniq/sql/new" target="_blank" style="color:#0284c7; font-weight:700;">SQL Editor dự án của bạn</a> ➔ Bấm nút <strong>📋 Sao Chép SQL Schema</strong> ở trên, dán vào và nhấn <strong>RUN</strong>.<br>
                 2. <strong>Lấy API Key:</strong> Mở <a href="https://supabase.com/dashboard/project/lhlwemmpnrmlskeljniq/settings/api" target="_blank" style="color:#0284c7; font-weight:700;">Trang API Keys của bạn</a> ➔ Tìm mục <strong>anon public</strong>, copy chuỗi mã dán vào ô số 2 bên trên rồi bấm <strong>🚀 Lưu & Kết Nối Ngay</strong>.
             </div>
 
             <!-- Hướng dẫn xóa bỏ giới hạn gửi Email OTP -->
             <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px; font-size:11.5px; color:#991b1b; line-height:1.6;">
-                <strong>💡 Cách Khắc Phục Lỗi Hết Lượt Gửi Gmail (3 thư/giờ):</strong><br>
+                <strong> Cách Khắc Phục Lỗi Hết Lượt Gửi Gmail (3 thư/giờ):</strong><br>
                 Gói miễn phí mặc định của Supabase giới hạn 3 thư/giờ. Bạn có 2 cách để gửi không giới hạn:<br>
                 • <strong>Cách 1 (Khuyên dùng):</strong> Mở <a href="https://script.google.com" target="_blank" style="color:#dc2626; font-weight:700;">script.google.com</a> ➔ Tạo mới và dán toàn bộ mã trong file <code>google_apps_script_mailer.js</code> ➔ Bấm Deploy (Web app, Anyone) ➔ Dán URL vào ô số 3 bên trên (Gửi 100-1500 thư/ngày hoàn toàn miễn phí bằng Gmail).<br>
                 • <strong>Cách 2:</strong> Vào <a href="https://supabase.com/dashboard/project/lhlwemmpnrmlskeljniq/settings/auth" target="_blank" style="color:#dc2626; font-weight:700;">Supabase Auth Settings</a> ➔ Bật <em>Enable Custom SMTP</em> (dùng <code>smtp.gmail.com</code> port 587) để Supabase tự gửi thư trực tiếp không giới hạn.

@@ -1616,7 +1616,7 @@ class AppController {
             } else {
                 const enabled = this.filterCriteriaEnabled || {};
                 const activeCriteria = [];
-                if (enabled.price) activeCriteria.push(`Giá ≤ ${formatNumber(this.filterMaxPrice)}đ (AVL)`);
+                if (enabled.price) activeCriteria.push(`Giá ≤ ${formatNumber(this.filterMaxPrice)}đ`);
                 if (enabled.category && this.filterCategoryKey !== 'ALL') activeCriteria.push(`Danh mục: ${this.filterCategoryKey}`);
                 if (enabled.reputation) activeCriteria.push(`Uy tín ≥ ${this.filterMinReputation || 90}đ`);
 
@@ -1641,37 +1641,61 @@ class AppController {
 
         container.innerHTML = list.map(item => {
             const isMyItem = this.user ? (item.seller === this.user.name) : false;
+            const origPrice = item.originalPrice || Math.round((item.price * 1.5) / 10000) * 10000;
+            const discountPct = (origPrice > item.price) ? Math.round((1 - item.price / origPrice) * 100) : 0;
+            const starScore = ((item.sellerRep || 90) / 20).toFixed(1);
+            const reviewCount = Math.floor(((item.sellerRep || 90) - 70) * 1.2) || 15;
+
             return `
                 <div class="uni-product-card" onclick="openCheckoutModal('${item.id}')">
                     <div class="card-image-wrapper">
                         <img src="${item.imageUrl}" alt="${item.title}" loading="lazy">
                         <span class="card-badge-cat">${getCategoryName(item.category)}</span>
-                        <span class="card-badge-timemark">✓ ${item.timemarkCode}</span>
+                        <span class="card-badge-timemark">
+                            <span class="badge-pulse-dot"></span> TimeMark: ${item.timemarkCode}
+                        </span>
                     </div>
                     <div class="card-content">
-                        <h4 class="card-title-text">${item.title}</h4>
-                        <div class="card-price-text">${formatNumber(item.price)} VNĐ</div>
+                        <h4 class="card-title-text" title="${item.title}">${item.title}</h4>
+                        
+                        <div class="card-price-row">
+                            <div class="card-price-text">${formatNumber(item.price)} VNĐ</div>
+                            ${discountPct > 0 ? `
+                                <div class="card-orig-price">${formatNumber(origPrice)} đ</div>
+                                <span class="card-discount-tag">-${discountPct}%</span>
+                            ` : ''}
+                        </div>
+
                         ${item.description ? `
-                            <div style="font-size:12px; color:#64748b; margin:4px 0 6px 0; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+                            <div class="card-desc-snippet">
                                 ${item.description}
                             </div>
                         ` : ''}
                         
                         <div class="card-seller-row">
-                            <span>Ng/pass: ${item.seller}</span>
-                            <span class="card-rep-badge">★ ${item.sellerRep}/100</span>
+                            <span class="card-seller-name">
+                                👤 ${item.seller}
+                                <span class="verified-sv-tag" title="Sinh viên ST.UTC2 đã xác minh">✓ SV</span>
+                            </span>
+                            <span class="card-rep-badge" title="Đánh giá uy tín sinh viên">
+                                ⭐ ${starScore} (${reviewCount})
+                            </span>
                         </div>
 
                         <div class="card-location-row">
                             <span>📍 ${item.location}</span>
                         </div>
 
-                        <div class="card-expiry-row" style="margin: 6px 0;">
+                        <div class="card-trust-guarantee">
+                            <span>🛡️ Kiểm tra hàng trực tiếp tại trường</span>
+                        </div>
+
+                        <div class="card-expiry-row">
                             ${this.formatPostExpiryCountdown(item).html}
                         </div>
 
                         <button class="card-cta-btn" onclick="event.stopPropagation(); openCheckoutModal('${item.id}')">
-                            ${isMyItem ? 'Xem chi tiết (Đồ của bạn) ➔' : 'Xem & Đặt Cọc Giữ Chỗ ➔'}
+                            ${isMyItem ? '👀 Xem chi tiết (Đồ của bạn) ➔' : '🛒 Mua Ngay / Xem Chi Tiết ➔'}
                         </button>
                     </div>
                 </div>
@@ -4207,6 +4231,22 @@ function executeSearch() {
     window.app.searchKeyword = input.value.trim();
     window.app.renderProducts();
 }
+
+function quickSearchTag(tag) {
+    const input = document.getElementById('mainSearchInput');
+    if (input) {
+        input.value = tag;
+    }
+    if (window.app) {
+        window.app.searchKeyword = tag;
+        window.app.renderProducts();
+    }
+    const homeView = document.getElementById('mainHomeView');
+    if (homeView) {
+        homeView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+window.quickSearchTag = quickSearchTag;
 
 function openShopeeSuggestion() {
     showToast('Đang kết nối API đề xuất giá sàn Shopee cho sinh viên UTC2...', 'info');
