@@ -522,7 +522,7 @@ body {
     margin: 12px 0;
     font-size: 12px;
     color: #166534;
-    color: #94a3b8;
+    display: none;
     animation: fadeIn 0.3s ease;
 }
 
@@ -619,7 +619,7 @@ body {
         margin-bottom: 14px;
     }
     .auth-welcome-points {
-        color: #94a3b8;
+        display: none;
     }
     .auth-form-card {
         padding: 24px 18px;
@@ -1026,7 +1026,14 @@ body {
     box-shadow: 0 12px 34px rgba(245, 158, 11, 0.25), 0 0 0 3px rgba(254, 240, 138, 0.6);
 }
 
-.hero-input-icon { display: none !important; }
+.hero-input-icon {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 16px;
+}
 
 .hero-submit-btn {
     position: absolute;
@@ -1104,7 +1111,7 @@ body {
     border-radius: var(--radius-lg);
     box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
     padding: 8px 0;
-    color: #94a3b8;
+    display: none;
     z-index: 1200;
 }
 
@@ -1647,7 +1654,7 @@ body {
     background: rgba(15, 23, 42, 0.65);
     backdrop-filter: blur(8px);
     z-index: 2000;
-    color: #94a3b8;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 20px;
@@ -1996,7 +2003,7 @@ body {
 .file-image-preview-wrap {
     margin-top: 10px;
     position: relative;
-    color: #94a3b8;
+    display: none;
     border-radius: 8px;
     overflow: hidden;
     max-height: 160px;
@@ -2033,7 +2040,7 @@ body {
     border: 1px solid #e2e8f0;
     border-radius: var(--radius-lg);
     padding: 24px;
-    color: #94a3b8;
+    display: none;
     flex-direction: column;
     align-items: center;
     gap: 16px;
@@ -2054,7 +2061,7 @@ body {
     max-width: 1320px;
     margin: 24px auto;
     padding: 0 20px 40px;
-    color: #94a3b8;
+    display: none;
     flex-direction: column;
     gap: 20px;
 }
@@ -2222,7 +2229,7 @@ body {
     border: 1px solid #fef08a;
     border-radius: var(--radius-lg);
     box-shadow: 0 16px 45px rgba(245, 158, 11, 0.22);
-    color: #94a3b8;
+    display: none;
     flex-direction: column;
     z-index: 1500;
     overflow: hidden;
