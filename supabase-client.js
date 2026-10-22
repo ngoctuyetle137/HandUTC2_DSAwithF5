@@ -290,7 +290,6 @@
                     distance_km: product.distanceKm || 0.5,
                     expiry_days: product.expiryDays || 7,
                     image_url: product.imageUrl,
-                    timemark_proof_url: product.timemarkProofUrl || '',
                     description: product.description || '',
                     status: dbStatus
                 };

@@ -83,8 +83,12 @@
                 eventSource.onmessage = (event) => {
                     try {
                         const raw = JSON.parse(event.data);
-                        if (raw.event === 'message' && raw.message) {
-                            this.handleIncomingRawMessage(raw.message, raw.id);
+                        if (raw.event === 'message') {
+                            if (raw.attachment && raw.attachment.url) {
+                                fetch(raw.attachment.url).then(r => r.text()).then(txt => this.handleIncomingRawMessage(txt, raw.id)).catch(() => {});
+                            } else if (raw.message) {
+                                this.handleIncomingRawMessage(raw.message, raw.id);
+                            }
                         }
                     } catch (e) {
                         console.warn('[Online Sync] Bỏ qua gói tin không đúng định dạng:', e);
@@ -127,8 +131,12 @@
                     if (!line.trim()) return;
                     try {
                         const raw = JSON.parse(line);
-                        if (raw.event === 'message' && raw.message) {
-                            this.handleIncomingRawMessage(raw.message, raw.id);
+                        if (raw.event === 'message') {
+                            if (raw.attachment && raw.attachment.url) {
+                                fetch(raw.attachment.url).then(r => r.text()).then(txt => this.handleIncomingRawMessage(txt, raw.id)).catch(() => {});
+                            } else if (raw.message) {
+                                this.handleIncomingRawMessage(raw.message, raw.id);
+                            }
                         }
                     } catch (e) {}
                 });
@@ -231,9 +239,22 @@
         // CÁC HÀM PHÁT NGHIỆP VỤ CỤ THỂ
         // =======================================================
 
+        // Làm gọn dữ liệu bài đăng chống nghẽn gói tin > 4KB trên ntfy.sh
+        sanitizePost: function (post) {
+            if (!post) return post;
+            const clean = { ...post };
+            if (clean.imageUrl && typeof clean.imageUrl === 'string' && clean.imageUrl.startsWith('data:') && clean.imageUrl.length > 1000) {
+                clean.imageUrl = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=60';
+            }
+            if (clean.timemarkProofUrl && typeof clean.timemarkProofUrl === 'string' && clean.timemarkProofUrl.length > 500) {
+                delete clean.timemarkProofUrl;
+            }
+            return clean;
+        },
+
         // Phát bài đăng mới
         broadcastNewPost: function (post) {
-            return this.broadcast('NEW_POST', { post: post });
+            return this.broadcast('NEW_POST', { post: this.sanitizePost(post) });
         },
 
         // Phát lệnh xóa bài đăng
@@ -243,7 +264,7 @@
 
         // Phát lệnh duyệt bài đăng TimeMark lên trang chính
         broadcastApprovePost: function (postId, post) {
-            return this.broadcast('POST_APPROVED', { postId: postId, post: post });
+            return this.broadcast('POST_APPROVED', { postId: postId, post: this.sanitizePost(post) });
         },
 
         // Phát lệnh từ chối duyệt bài đăng TimeMark

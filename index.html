@@ -749,6 +749,25 @@
                 </div>
                 <button class="checkout-close-btn" style="position:static; width:28px; height:28px; background:rgba(255,255,255,0.2); color:#fff;" onclick="closeChatWindow()">✕</button>
             </div>
+            <!-- THANH TIM KIEM GMAIL (@st.utc2.edu.vn) HOAC TEN TAI KHOAN DE NHAN TIN TRUC TIEP -->
+            <div class="chat-search-wrap" style="padding:10px 12px; background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+                <div style="position:relative; display:flex; gap:6px;">
+                    <input type="text" id="chatUserSearchInput" 
+                           placeholder="🔍 Tìm Gmail (VD: 6651071065@st.utc2.edu.vn)..." 
+                           style="flex:1; padding:8px 11px; font-size:12.5px; border:1.5px solid #cbd5e1; border-radius:8px; outline:none; transition:border-color 0.2s;" 
+                           onfocus="this.style.borderColor='#0284c7'" 
+                           onblur="this.style.borderColor='#cbd5e1'" 
+                           oninput="handleChatUserSearch(this.value)" 
+                           onkeydown="if(event.key==='Enter') handleChatUserSearchSubmit(this.value)">
+                    <button type="button" 
+                            style="padding:0 12px; background:#0284c7; color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;" 
+                            onclick="handleChatUserSearchSubmit(document.getElementById('chatUserSearchInput').value)">
+                        Tìm
+                    </button>
+                </div>
+                <!-- Khung ket qua tim kiem Gmail -->
+                <div id="chatSearchResultsBox" style="display:none; margin-top:8px; max-height:210px; overflow-y:auto; border-radius:8px; background:#fff; border:1.5px solid #0284c7; box-shadow:0 6px 16px rgba(2,132,199,0.15);"></div>
+            </div>
             <div class="chat-inbox-list" id="chatInboxList">
                 <!-- Danh sách tài khoản được render động bởi JavaScript -->
             </div>
