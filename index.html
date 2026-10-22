@@ -221,6 +221,9 @@
                 <button class="nav-item-btn" data-tab="game" onclick="switchNavTab('game')">
                     <span></span> Kéo Thả Săn Xu
                 </button>
+                <button class="nav-item-btn" style="background:#0284c7; color:#fff; font-weight:700; border-radius:6px; padding:6px 12px;" onclick="openCppDsaModal()">
+                    <span></span> C++ DSA Engine
+                </button>
                 <button class="nav-item-btn admin-tab" data-tab="admin" onclick="switchNavTab('admin')">
                     <span></span> Quản Trị Admin
                 </button>
@@ -239,16 +242,16 @@
 
                 <!-- Nút Chuông Thông Báo Hoạt Động (Ô thông báo) -->
                 <div class="notification-bell-wrapper" style="position:relative;">
-                    <button class="notification-bell-btn" id="btnNotificationBell" title="Thông Báo Hoạt Động" onclick="toggleNotificationDropdown()">
-                        🔔
+                    <button class="notification-bell-btn" id="btnNotificationBell" title="Thông Báo Hoạt Động" onclick="toggleNotificationDropdown()" style="font-size:12px; font-weight:700; color:#78350f;">
+                        TB
                         <span class="badge-count" id="unreadNotifBadge" style="display:none; position:absolute; top:-3px; right:-3px; padding:1px 5px; font-size:10px;">0</span>
                     </button>
 
                     <!-- Dropdown Box Thông Báo Hoạt Động -->
                     <div class="notification-dropdown-menu" id="notificationDropdownMenu" style="display:none;">
                         <div class="notification-dropdown-header">
-                            <div style="font-weight:800; font-size:13.5px; display:flex; align-items:center; gap:6px;">
-                                <span>🔔</span> Thông Báo Hoạt Động
+                            <div style="font-weight:800; font-size:13.5px;">
+                                Thông Báo Hoạt Động
                             </div>
                             <div style="display:flex; gap:6px;">
                                 <button class="notif-header-btn" onclick="markAllNotificationsAsRead()" title="Đánh dấu tất cả đã đọc">Đã đọc</button>
@@ -261,7 +264,7 @@
                         </div>
                         <div class="notification-dropdown-footer">
                             <span id="notifTotalCountText" style="color:#64748b; font-size:11px;">0 thông báo</span>
-                            <button onclick="switchNavTab('profile'); toggleNotificationDropdown();" style="background:none; border:none; color:#0284c7; font-size:11.5px; cursor:pointer; font-weight:700;">Xem trong Cá Nhân ➔</button>
+                            <button onclick="switchNavTab('profile'); toggleNotificationDropdown();" style="background:none; border:none; color:#0284c7; font-size:11.5px; cursor:pointer; font-weight:700;">Xem trong Cá Nhân</button>
                         </div>
                     </div>
                 </div>
@@ -276,7 +279,7 @@
                     <div class="user-avatar-circle" id="userAvatarText">U</div>
                     <div style="font-size:12px; line-height:1.2;">
                         <div id="navUserName" style="font-weight:700;">Sinh viên UTC2</div>
-                        <div style="color:var(--gold); font-size:11px;">🪙 <span id="navUserCoins">20</span> Xu</div>
+                        <div style="color:var(--gold); font-size:11px;"><span id="navUserCoins">20</span> Xu</div>
                     </div>
                 </div>
 
@@ -296,37 +299,36 @@
             <div class="hero-search-card">
                 <!-- Badges Uy Tín & Sinh Viên UTC2 -->
                 <div class="hero-badges-row">
-                    <span class="hero-mini-badge">🎓 100% Sinh Viên ST.UTC2 Xác Thực</span>
-                    <span class="hero-mini-badge">⚡ Nhanh Gọn • Giá Rẻ • Uy Tín</span>
-                    <span class="hero-mini-badge">🛡️ Tránh Lừa Đảo Với TimeMark</span>
+                    <span class="hero-mini-badge">Sinh viên ST.UTC2 xác thực</span>
+                    <span class="hero-mini-badge">Nhanh gọn • Giá rẻ • Tiện lợi</span>
+                    <span class="hero-mini-badge">Bảo đảm TimeMark</span>
                 </div>
 
                 <h2 class="hero-title">Săn giáo trình, laptop & đồ dùng KTX UTC2</h2>
-                <p class="hero-subtitle">Sàn trao đổi & pass đồ uy tín nội bộ Cơ sở 2 - Trường ĐH Giao Thông Vận Tải</p>
+                <p class="hero-subtitle">Sàn trao đổi & pass đồ nội bộ Cơ sở 2 - Trường ĐH Giao Thông Vận Tải</p>
 
                 <!-- Ô Tìm Kiếm với nút Tìm kiếm bên trong -->
                 <div class="hero-input-box">
-                    <span class="hero-input-icon">🔍</span>
-                    <input type="search" id="mainSearchInput" name="site_search_query" class="hero-search-input" 
-                           placeholder="Thử gõ: VL101, casio, toán, c++, nồi cơm, máy sấy, lap trinh..." 
+                    <input type="text" id="mainSearchInput" name="site_search_query" class="hero-search-input" 
+                           placeholder="Nhập tên giáo trình, máy tính casio, đồ dùng, mã môn..." 
                            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" 
-                           role="searchbox" readonly onfocus="this.removeAttribute('readonly');">
-                    <button class="hero-submit-btn" onclick="executeSearch()">
-                        Tìm kiếm ➔
+                           role="searchbox" onkeydown="if(event.key==='Enter') executeSearch()">
+                    <button type="button" class="hero-submit-btn" onclick="executeSearch()">
+                        Tìm kiếm
                     </button>
 
                     <!-- Trie Autocomplete Dropdown -->
                     <div class="autocomplete-dropdown" id="searchAutocompleteDropdown"></div>
                 </div>
 
-                <!-- Gợi ý từ khóa hot của sinh viên -->
+                <!-- Gợi ý từ khóa của sinh viên -->
                 <div class="hero-quick-tags">
-                    <span class="quick-tag-label">🔥 Gợi ý hot:</span>
-                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Giáo trình')">📚 Giáo trình & Sách</button>
-                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Casio')">🧮 Máy tính Casio</button>
-                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Đồng phục')">👕 Đồng phục UTC2</button>
-                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Nồi cơm')">🍳 Đồ gia dụng KTX</button>
-                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Xe')">🚲 Xe đạp / Xe máy</button>
+                    <span class="quick-tag-label">Gợi ý tìm kiếm:</span>
+                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Giáo trình')">Giáo trình & Sách</button>
+                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Casio')">Máy tính Casio</button>
+                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Đồng phục')">Đồng phục UTC2</button>
+                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Nồi cơm')">Đồ gia dụng KTX</button>
+                    <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Xe')">Xe đạp & Xe máy</button>
                 </div>
             </div>
         </div>
@@ -421,7 +423,7 @@
 
                     <!-- Nút áp dụng bộ lọc -->
                     <button class="apply-filter-btn" onclick="applyFilters()">
-                        ✓ Áp dụng bộ lọc
+                        Áp dụng bộ lọc
                     </button>
                 </div>
             </aside>
@@ -431,7 +433,7 @@
                 <div class="feed-top-bar">
                     <div style="display:flex; align-items:center; gap:12px;">
                         <button type="button" id="btnToggleFilterMode" class="btn-outline-chat" style="padding:6px 14px; font-size:12.5px; font-weight:700; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; border:none; border-radius:8px; box-shadow:0 2px 8px rgba(217,119,6,0.25);" onclick="toggleSidebarFilter()">
-                            ⚡ Bộ Lọc: Đang Hiện (Bấm để Ẩn)
+                            Bộ Lọc: Đang Hiện (Bấm để Ẩn)
                         </button>
                         <div class="feed-count-text" id="feedCountDisplay">
                             Hiển thị <strong>5 món đồ</strong> sẵn sàng pass
@@ -465,7 +467,7 @@
             <!-- Header Huy Hiệu Quản Trị Viên Cấp Cao -->
             <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color:#ffffff; border-radius:12px; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; box-shadow:0 8px 24px rgba(245, 158, 11, 0.25);">
                 <div style="display:flex; align-items:center; gap:14px;">
-                    <div style="width:46px; height:46px; border-radius:50%; background:#ffffff; color:#d97706; font-size:22px; font-weight:900; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.1);">👑</div>
+                    <div style="width:46px; height:46px; border-radius:50%; background:#ffffff; color:#d97706; font-size:14px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.1);">ADMIN</div>
                     <div>
                         <div style="font-size:16.5px; font-weight:800; letter-spacing:0.3px;">PHÂN HỆ QUẢN TRỊ VIÊN HỆ THỐNG HAND UTC2</div>
                         <div style="font-size:13px; opacity:0.95; margin-top:2px;">
@@ -474,8 +476,8 @@
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="background:rgba(255,255,255,0.2); padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700;">🛡️ Toàn Quyền Điều Hành</span>
-                    <button onclick="switchNavTab('home')" style="background:#ffffff; color:#d97706; border:none; padding:8px 16px; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer;">🛍️ Về Săn Đồ</button>
+                    <span style="background:rgba(255,255,255,0.2); padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700;">Toàn Quyền Điều Hành</span>
+                    <button onclick="switchNavTab('home')" style="background:#ffffff; color:#d97706; border:none; padding:8px 16px; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer;">Về Săn Đồ</button>
                 </div>
             </div>
 
@@ -515,13 +517,13 @@
             <div class="admin-panel-card" style="border: 2px solid #0284c7; box-shadow: 0 4px 16px rgba(2,132,199,0.12);">
                 <div class="admin-panel-header" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 14px 18px; border-bottom: 1px solid #bae6fd;">
                     <div class="admin-panel-title" style="color: #0369a1;">
-                        <span>🛡️</span> Phê Duyệt Bài Đăng Chờ Duyệt (Kiểm Tra Mã OTP & Ảnh TimeMark)
+                        Phê Duyệt Bài Đăng Chờ Duyệt (Kiểm Tra Mã OTP & Ảnh TimeMark)
                         <span id="adminPendingBadge" style="background:#ef4444; color:#fff; font-size:11px; padding:2px 8px; border-radius:12px; margin-left:8px; font-weight:800;">0 bài chờ</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span style="font-size:12px; color:#0369a1; font-weight:600;">Soi ảnh giấy ghi mã OTP TimeMark để duyệt bài</span>
                         <button type="button" onclick="adminApproveAllPendingPosts()" style="background:#16a34a; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; box-shadow:0 2px 6px rgba(22,163,74,0.3);">
-                            ⚡ Duyệt Nhanh Tất Cả Bài Chờ
+                            Duyệt Nhanh Tất Cả Bài Chờ
                         </button>
                     </div>
                 </div>
@@ -583,7 +585,7 @@
                         <span style="font-size:12px; color:#64748b;" id="adminUserCountSubtitle">Đang nạp danh sách tài khoản...</span>
                     </div>
                     <button type="button" class="btn-outline-chat" style="font-size:11.5px; padding:6px 14px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" onclick="window.app && window.app.syncUsersFromCloud(true)">
-                        <span id="syncUserSpin">🔄</span> Đồng Bộ Tài Khoản Từ Cloud
+                        <span id="syncUserSpin"></span> Đồng Bộ Tài Khoản Từ Cloud
                     </button>
                 </div>
 
@@ -640,7 +642,7 @@
         <div class="game-tab-view" id="gameSectionView">
             <div style="text-align:center;">
                 <h2 style="font-size:24px; font-weight:800; color:#0284c7;">
-                    🎮 CHƠI GAME NHẬN THƯỞNG
+                    CHƠI GAME NHẬN THƯỞNG
                 </h2>
                 <p style="font-size:13.5px; color:#64748b; margin-top:4px;">
                     Chơi game phá gạch: Đạt <strong>trên 1000 điểm</strong> nhận ngay <strong>10 xu</strong>. 
@@ -654,10 +656,10 @@
 
             <div style="display:flex; gap:12px;">
                 <button class="apply-filter-btn" style="background:#0284c7; width:auto; padding:10px 24px;" onclick="if(window.game) window.game.startGame()">
-                    ▶ Bắt Đầu Chơi / Chơi Lại
+                    Bắt Đầu Chơi / Chơi Lại
                 </button>
                 <button class="btn-outline-chat" style="padding:10px 20px;" onclick="switchNavTab('home')">
-                    🛍 Quay Lại Mua Đồ
+                    Quay Lại Mua Đồ
                 </button>
             </div>
         </div>
@@ -671,18 +673,18 @@
                     <div style="display:flex; align-items:center; gap:14px;">
                         <div style="position:relative; cursor:pointer;" onclick="triggerAvatarUpload()" title="Nhấp để tải ảnh đại diện">
                             <div class="user-avatar-circle" style="width:62px; height:62px; font-size:24px; border:2.5px solid #f59e0b; box-shadow:0 3px 12px rgba(245,158,11,0.25);" id="profileAvatarCircle">U</div>
-                            <div class="avatar-edit-badge" title="Tải ảnh đại diện">📷</div>
+                            <div class="avatar-edit-badge" title="Tải ảnh đại diện">Sửa</div>
                             <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)">
                         </div>
                         <div>
                             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">
                                 <h3 id="profileFullName" style="font-size:18px; color:#0f172a; margin:0;">Sinh viên UTC2</h3>
-                                <button type="button" class="btn-change-avatar-text" onclick="triggerAvatarUpload()">📷 Đổi ảnh đại diện</button>
+                                <button type="button" class="btn-change-avatar-text" onclick="triggerAvatarUpload()">Đổi ảnh đại diện</button>
                                 <button type="button" class="btn-remove-avatar-text" id="btnRemoveAvatar" style="display:none;" onclick="removeUserAvatar()">Gỡ ảnh</button>
                             </div>
                             <div style="font-size:12.5px; color:#64748b;" id="profileEmail">sinhvien@st.utc2.edu.vn</div>
                             <div style="margin-top:4px; font-size:12.5px; color:#16a34a; font-weight:700;">
-                                🛡 Điểm Uy Tín: <span id="profileRepScore">95</span>/100
+                                Điểm Uy Tín: <span id="profileRepScore">95</span>/100
                             </div>
                         </div>
                     </div>
@@ -703,13 +705,12 @@
                 <div class="profile-notif-card" style="background:#ffffff; border:1px solid #fef08a; border-radius:12px; padding:14px 16px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-size:18px;">🔔</span>
                             <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0;">Thông Báo Hoạt Động Của Bạn</h4>
                             <span id="profileNotifBadgeCount" style="background:#d97706; color:#fff; font-size:11px; padding:2px 8px; border-radius:10px; font-weight:700;">0</span>
                         </div>
                         <div style="display:flex; gap:6px;">
-                            <button class="btn-outline-chat" style="font-size:11px; padding:4px 10px;" onclick="markAllNotificationsAsRead()">✓ Đã đọc hết</button>
-                            <button class="btn-outline-chat" style="font-size:11px; padding:4px 10px; color:#ef4444; border-color:#fca5a5;" onclick="clearAllUserNotifications()">🗑 Xóa hết</button>
+                            <button class="btn-outline-chat" style="font-size:11px; padding:4px 10px;" onclick="markAllNotificationsAsRead()">Đã đọc hết</button>
+                            <button class="btn-outline-chat" style="font-size:11px; padding:4px 10px; color:#ef4444; border-color:#fca5a5;" onclick="clearAllUserNotifications()">Xóa hết</button>
                         </div>
                     </div>
                     <div id="profileNotificationsListContainer" style="max-height:240px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
@@ -720,14 +721,14 @@
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                     <div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <h4 style="font-size:14px; color:#d97706; margin:0;">📦 Bài đăng của tôi</h4>
-                            <span style="font-size:11px; color:#d97706; background:#fffbeb; padding:2px 8px; border-radius:4px; border:1px solid #fef3c7; font-weight:700;">⏳ Tự xóa sau 7 ngày duyệt</span>
+                            <h4 style="font-size:14px; color:#d97706; margin:0;">Bài đăng của tôi</h4>
+                            <span style="font-size:11px; color:#d97706; background:#fffbeb; padding:2px 8px; border-radius:4px; border:1px solid #fef3c7; font-weight:700;">Tự xóa sau 7 ngày duyệt</span>
                         </div>
                         <div id="myPostsListContainer"></div>
                     </div>
                     <div id="profileDepositOrdersBlock">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <h4 style="font-size:14px; color:#d97706; margin:0;">📜 Đơn đặt cọc & Mua bán</h4>
+                            <h4 style="font-size:14px; color:#d97706; margin:0;">Đơn đặt cọc & Mua bán</h4>
                             <span id="profileDepositTotalBadge" style="font-size:11.5px; font-weight:700; color:#b45309; background:#fef3c7; padding:2px 8px; border-radius:4px; border:1px solid #fde68a;">0 đơn</span>
                         </div>
                         <div id="purchaseHistoryContainer"></div>
@@ -745,7 +746,7 @@
         <div id="chatConversationsView" class="chat-view-panel">
             <div class="chat-header">
                 <div>
-                    <h4 style="font-size:14px; font-weight:700; margin:0;">💬 Hộp Thư Tin Nhắn</h4>
+                    <h4 style="font-size:14px; font-weight:700; margin:0;">Hộp Thư Tin Nhắn</h4>
                     <div class="chat-partner-sub" id="chatInboxSubtitle">Tất cả tài khoản liên hệ trao đổi đồ</div>
                 </div>
                 <button class="checkout-close-btn" style="position:static; width:28px; height:28px; background:rgba(255,255,255,0.2); color:#fff;" onclick="closeChatWindow()">✕</button>
@@ -791,13 +792,13 @@
             <div class="checkout-image-preview">
                 <img id="modalProductImage" src="" alt="Sản phẩm">
                 <span class="checkout-image-timemark" id="modalProductTimeMark">
-                    ✓ Xác minh TimeMark: UTC2 - 8924
+                    Xác minh TimeMark: UTC2 - 8924
                 </span>
             </div>
 
             <div class="checkout-tags-row">
                 <span class="tag-blue" id="modalProductCategory">Giáo trình</span>
-                <span class="tag-green">✓ Đã kiểm duyệt ảnh thật</span>
+                <span class="tag-green">Đã kiểm duyệt ảnh thật</span>
                 <span class="tag-orange" id="modalProductExpiry">Hết hạn sau: 6 ngày</span>
             </div>
 
@@ -810,7 +811,7 @@
 
             <!-- Mô tả chi tiết món đồ -->
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; margin-bottom:14px;">
-                <div style="font-size:11.5px; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:4px;">📝 Mô tả chi tiết sản phẩm:</div>
+                <div style="font-size:11.5px; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:4px;">Mô tả chi tiết sản phẩm:</div>
                 <div id="modalProductDescription" style="font-size:13px; color:#334155; line-height:1.5; white-space:pre-line;">
                     Món đồ được đăng pass trực tiếp tại campus UTC2.
                 </div>
@@ -823,7 +824,7 @@
                 </div>
                 <div class="checkout-info-row">
                     <span>Điểm uy tín người bán:</span>
-                    <span id="modalSellerRep" style="color:#16a34a; font-weight:700;">★ 98/100</span>
+                    <span id="modalSellerRep" style="color:#16a34a; font-weight:700;">98/100</span>
                 </div>
                 <div class="checkout-info-row">
                     <span>Địa điểm hẹn giao nhận:</span>
@@ -835,7 +836,7 @@
             <div class="checkout-deposit-box">
                 <div class="deposit-box-header">
                     <span class="deposit-title">
-                        🛡 Đặt cọc chống bùng hẹn (OOP Strategy)
+                        Đặt cọc chống bùng hẹn (OOP Strategy)
                     </span>
                     <span class="deposit-pill">10% cọc (Uy tín cao)</span>
                 </div>
@@ -857,7 +858,7 @@
                 <label class="coin-discount-checkbox-row">
                     <input type="checkbox" id="useCoinDiscountCheckbox" checked onchange="updateCheckoutCalculations()">
                     <span id="coinDiscountLabelText">
-                        🪙 Dùng 30% số xu hiện có để giảm giá mặt hàng
+                        Dùng 30% số xu hiện có để giảm giá mặt hàng
                     </span>
                 </label>
 
@@ -881,10 +882,10 @@
 
             <div class="checkout-actions-row">
                 <button class="btn-outline-chat" onclick="openChatFromModal()">
-                    💬 Nhắn tin hẹn gặp
+                    Nhắn tin hẹn gặp
                 </button>
                 <button class="btn-primary-confirm" id="confirmDepositBtn" onclick="confirmDepositOrder()">
-                     Đặt Cọc & Giữ Chỗ
+                    Đặt Cọc & Giữ Chỗ
                 </button>
             </div>
         </div>
@@ -1348,6 +1349,251 @@
             </div>
         </div>
     </div>
+
+        <!-- ==========================================
+         MODAL TRUNG TÂM THUẬT TOÁN C++ (DSA CORE ENGINE)
+         Được xây dựng chuẩn C++17 theo đặc tả doPasss.docx
+         ========================================== -->
+    <div class="checkout-modal-overlay" id="cppDsaEngineModal">
+        <div class="checkout-modal-card" style="max-width:850px; max-height:90vh; overflow-y:auto; padding:24px;">
+            <button class="checkout-close-btn" onclick="closeModal('cppDsaEngineModal')">✕</button>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px; border-bottom:1px solid #e2e8f0; padding-bottom:12px;">
+                <div>
+                    <h3 style="font-size:19px; font-weight:800; color:#0f172a; margin:0 0 4px 0;">
+                        TRUNG TÂM THUẬT TOÁN C++ (DSA CORE ENGINE)
+                    </h3>
+                    <div style="font-size:12.5px; color:#64748b;">
+                        Mô-đun Cấu trúc Dữ liệu & Giải thuật C++17 độc lập theo đặc tả đồ án <code>doPasss.docx</code>
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn-outline-chat" style="padding:6px 12px; font-size:12px; font-weight:700; color:#0284c7; border-color:#0284c7;" onclick="downloadCppSource()">
+                        Tải Tệp C++ (.cpp)
+                    </button>
+                    <button type="button" class="apply-filter-btn" style="background:#16a34a; width:auto; padding:6px 14px; margin:0; font-size:12px; font-weight:700;" onclick="copyCppSourceCode()">
+                        Sao Chép Code C++
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Navigation bên trong Modal -->
+            <div style="display:flex; gap:8px; border-bottom:2px solid #e2e8f0; margin-bottom:16px;">
+                <button type="button" class="auth-tab-btn active" id="tabCppDemoBtn" onclick="switchCppModalTab('demo')" style="padding:8px 16px; font-size:13px; font-weight:700;">
+                    Mô Phỏng Trực Tiếp (Live Demo)
+                </button>
+                <button type="button" class="auth-tab-btn" id="tabCppSourceBtn" onclick="switchCppModalTab('source')" style="padding:8px 16px; font-size:13px; font-weight:700;">
+                    Mã Nguồn C++ (dsa_core_engine.cpp)
+                </button>
+                <button type="button" class="auth-tab-btn" id="tabCppArchBtn" onclick="switchCppModalTab('arch')" style="padding:8px 16px; font-size:13px; font-weight:700;">
+                    Bảng Độ Phức Tạp & Đặc Tả
+                </button>
+                <button type="button" class="auth-tab-btn" id="tabCppCompileBtn" onclick="switchCppModalTab('compile')" style="padding:8px 16px; font-size:13px; font-weight:700;">
+                    Biên Dịch & Chạy .exe
+                </button>
+            </div>
+
+            <!-- TAB 1: MÔ PHỎNG TRỰC TIẾP -->
+            <div id="cppTabContentDemo" style="display:block;">
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:12px; margin-bottom:16px; font-size:12.5px; color:#166534;">
+                    <strong>Nguyên lý kết hợp C++:</strong> Toàn bộ dữ liệu sản phẩm trên trang Web được liên kết và xử lý trực tiếp bởi các cấu trúc dữ liệu C++ chuẩn: Cây tiền tố Trie kết hợp Max-Heap cho tìm kiếm, Cây AVL cho lọc giá, và Thuật toán Dijkstra tìm đường trong Campus UTC2.
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:16px;">
+                    <!-- Demo 1: Trie Autocomplete -->
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+                        <div style="font-weight:700; color:#0f172a; font-size:13px; margin-bottom:6px;">
+                            1. C++ Trie + Max-Heap Autocomplete O(k)
+                        </div>
+                        <p style="font-size:11.5px; color:#64748b; margin-bottom:8px;">
+                            Truy xuất Top từ khóa phổ biến được cache sẵn tại nút tiền tố mà không cần duyệt cây con.
+                        </p>
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="text" id="cppDemoPrefixInput" class="hero-search-input" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; box-shadow:none;" value="casio" placeholder="Nhập: casio, giao, c++, vl101...">
+                            <button type="button" class="btn-outline-chat" style="padding:6px 12px; font-size:12px; font-weight:700;" onclick="runCppTrieDemo()">
+                                Chạy Thử
+                            </button>
+                        </div>
+                        <div id="cppTrieDemoResult" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:8px 10px; font-size:12px; min-height:60px; font-family:monospace; color:#334155;">
+                            Bấm "Chạy Thử" để xem kết quả C++ Trie.
+                        </div>
+                    </div>
+
+                    <!-- Demo 2: AVL Tree Range Query -->
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+                        <div style="font-weight:700; color:#0f172a; font-size:13px; margin-bottom:6px;">
+                            2. C++ AVL Tree Lọc Khoảng Giá O(log N + K)
+                        </div>
+                        <p style="font-size:11.5px; color:#64748b; margin-bottom:8px;">
+                            Cây BST tự cân bằng theo Price, duyệt In-order để lấy nhanh danh sách trong khoảng [Min, Max].
+                        </p>
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="number" id="cppDemoMinPrice" class="hero-search-input" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; box-shadow:none;" value="30000" placeholder="Min">
+                            <input type="number" id="cppDemoMaxPrice" class="hero-search-input" style="padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; box-shadow:none;" value="150000" placeholder="Max">
+                            <button type="button" class="btn-outline-chat" style="padding:6px 12px; font-size:12px; font-weight:700;" onclick="runCppAvlDemo()">
+                                Lọc AVL
+                            </button>
+                        </div>
+                        <div id="cppAvlDemoResult" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:8px 10px; font-size:12px; min-height:60px; font-family:monospace; color:#334155;">
+                            Bấm "Lọc AVL" để duyệt cây C++ AVL.
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+                    <div style="font-weight:700; color:#0f172a; font-size:13px; margin-bottom:6px;">
+                        3. C++ Dijkstra Tìm Đường Đi Ngắn Nhất Campus UTC2 O((V+E)log V)
+                    </div>
+                    <p style="font-size:11.5px; color:#64748b; margin-bottom:8px;">
+                        Tính toán lộ trình đi bộ ngắn nhất giữa các tòa nhà trong khuôn viên Cơ sở 2 để 2 bạn hẹn gặp trao đồ.
+                    </p>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                        <span style="font-size:12px; color:#475569;">Từ:</span>
+                        <select id="cppDijkstraStart" class="feed-sort-select" style="padding:6px 10px; font-size:12px;">
+                            <option value="Cong 1 Man Thien">Cổng 1 Man Thiện</option>
+                            <option value="Toa A1 - Hieu Bo">Tòa A1 - Hiệu Bộ</option>
+                            <option value="Thu Vien & Tu Hoc">Thư Viện & Tự Học</option>
+                        </select>
+                        <span style="font-size:12px; color:#475569;">Đến:</span>
+                        <select id="cppDijkstraEnd" class="feed-sort-select" style="padding:6px 10px; font-size:12px;">
+                            <option value="KTX Co May UTC2">KTX Cỏ May UTC2</option>
+                            <option value="San Bong Da & TDTT">Sân Bóng Đá & TDTT</option>
+                            <option value="Khu E - Xuong Thuc Hanh">Khu E - Xưởng Thực Hành</option>
+                            <option value="Can Tin Sinh Vien">Căn Tin Sinh Viên</option>
+                        </select>
+                        <button type="button" class="apply-filter-btn" style="width:auto; padding:6px 14px; margin:0; font-size:12px;" onclick="runCppDijkstraDemo()">
+                            Tìm Đường C++
+                        </button>
+                    </div>
+                    <div id="cppDijkstraDemoResult" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:8px 10px; font-size:12px; font-family:monospace; color:#334155;">
+                        Chọn điểm và bấm "Tìm Đường C++".
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: MÃ NGUỒN C++ -->
+            <div id="cppTabContentSource" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <span style="font-size:12px; color:#64748b;">Tệp mã nguồn: <code>c:\withAI\Lần N\dsa_core_engine.cpp</code> (Chuẩn C++17)</span>
+                    <button type="button" class="btn-outline-chat" style="padding:4px 10px; font-size:11.5px;" onclick="copyCppSourceCode()">
+                        Sao Chép Toàn Bộ Mã
+                    </button>
+                </div>
+                <div style="background:#0f172a; color:#f8fafc; border-radius:8px; padding:14px; font-family:Consolas, 'Courier New', monospace; font-size:12px; line-height:1.5; max-height:420px; overflow:auto;" id="cppSourceCodeContainer">
+                    Đang nạp mã nguồn C++...
+                </div>
+            </div>
+
+            <!-- TAB 3: BẢNG ĐẶC TẢ & ĐỘ PHỨC TẠP THEO FILE WORD -->
+            <div id="cppTabContentArch" style="display:none;">
+                <table class="admin-table" style="font-size:12px;">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Tính Năng Hệ Thống</th>
+                            <th>Cấu Trúc Dữ Liệu & Giải Thuật C++</th>
+                            <th>Độ Phức Tạp</th>
+                            <th>Mục Đích Thực Tế</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>1</strong></td>
+                            <td>Tìm kiếm Autocomplete</td>
+                            <td><strong>Trie (Cây tiền tố) + Max-Heap</strong></td>
+                            <td><code>O(k)</code></td>
+                            <td>Gõ từ khóa lấy ngay Top 5 gợi ý được cache sẵn tại nút tiền tố</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2</strong></td>
+                            <td>Lọc khoảng giá linh hoạt</td>
+                            <td><strong>AVL Tree (BST Tự Cân Bằng)</strong></td>
+                            <td><code>O(log N + K)</code></td>
+                            <td>Khóa là Price, duyệt In-order lấy danh sách sản phẩm trong [Min, Max]</td>
+                        </tr>
+                        <tr>
+                            <td><strong>3</strong></td>
+                            <td>Lọc giá theo tầng cố định</td>
+                            <td><strong>Segment Tree</strong></td>
+                            <td><code>O(1)</code></td>
+                            <td>Truy vấn theo 4 phân đoạn: ≤50k, 50-200k, 200-500k, >500k</td>
+                        </tr>
+                        <tr>
+                            <td><strong>4</strong></td>
+                            <td>Đề xuất đồ tương đồng</td>
+                            <td><strong>Graph (Đồ thị vô hướng) + BFS</strong></td>
+                            <td><code>O(V + E)</code></td>
+                            <td>Duyệt các đỉnh lân cận có trọng số tương đồng cao nhất</td>
+                        </tr>
+                        <tr>
+                            <td><strong>5</strong></td>
+                            <td>Vị trí láng giềng gần nhất</td>
+                            <td><strong>2D KD-Tree (K-d Tree)</strong></td>
+                            <td><code>O(log N)</code></td>
+                            <td>Lập chỉ mục 2 chiều tọa độ Campus UTC2, tìm điểm gần nhất</td>
+                        </tr>
+                        <tr>
+                            <td><strong>6</strong></td>
+                            <td>Đường đi ngắn nhất Campus</td>
+                            <td><strong>Dijkstra Algorithm</strong></td>
+                            <td><code>O((V+E)log V)</code></td>
+                            <td>Tìm lộ trình đi bộ ngắn nhất giữa các tòa nhà trong trường</td>
+                        </tr>
+                        <tr>
+                            <td><strong>7</strong></td>
+                            <td>Tin nhắn thời gian thực</td>
+                            <td><strong>Message Queue (FIFO)</strong></td>
+                            <td><code>O(1)</code></td>
+                            <td>Hàng đợi xử lý tuần tự tin nhắn trao đổi đồ giữa 2 bạn sinh viên</td>
+                        </tr>
+                        <tr>
+                            <td><strong>8</strong></td>
+                            <td>Hoàn tác thao tác bài đăng</td>
+                            <td><strong>Undo/Redo Stack (LIFO)</strong></td>
+                            <td><code>O(1)</code></td>
+                            <td>Ngăn xếp lưu vết thao tác, hỗ trợ hoàn tác và xem thông báo mới nhất</td>
+                        </tr>
+                        <tr>
+                            <td><strong>9</strong></td>
+                            <td>Xác thực phiên đăng nhập</td>
+                            <td><strong>Hash Table (Separate Chaining)</strong></td>
+                            <td><code>O(1)</code></td>
+                            <td>Quản lý Session Token in-memory, kiểm tra quyền hạn tức thì</td>
+                        </tr>
+                        <tr>
+                            <td><strong>10</strong></td>
+                            <td>Bảng tin và xóa bài</td>
+                            <td><strong>Doubly Linked List (DLL)</strong></td>
+                            <td><code>O(1)</code></td>
+                            <td>Hỗ trợ Infinite Scroll và tự động xóa bài sau khi pass thành công</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TAB 4: BIÊN DỊCH & CHẠY .EXE -->
+            <div id="cppTabContentCompile" style="display:none;">
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px; font-size:12.5px; line-height:1.6;">
+                    <h4 style="margin:0 0 8px 0; color:#0f172a; font-size:14px;">Hướng Dẫn Chạy Demo C++ Báo Cáo Giảng Viên:</h4>
+                    
+                    <p style="margin:0 0 10px 0;"><strong>Cách 1 (Nhanh nhất):</strong> Bấm đúp vào tệp <code>chay_dsa_engine_cpp.bat</code> trong thư mục dự án để khởi động giao diện dòng lệnh tương tác.</p>
+                    
+                    <p style="margin:0 0 10px 0;"><strong>Cách 2 (Lệnh Terminal g++):</strong> Mở PowerShell / CMD trong thư mục dự án và chạy lệnh:</p>
+                    <pre style="background:#0f172a; color:#38bdf8; padding:10px 14px; border-radius:6px; font-family:monospace; margin:0 0 12px 0;">g++ -std=c++17 -O2 dsa_core_engine.cpp -o dsa_core_engine.exe
+.\dsa_core_engine.exe</pre>
+
+                    <p style="margin:0 0 10px 0;"><strong>Cách 3 (Dùng IDE):</strong> Có thể mở tệp <code>dsa_core_engine.cpp</code> trực tiếp trong Dev-C++, Code::Blocks, CLion, hoặc Visual Studio và nhấn <strong>F9 / F5 (Build & Run)</strong> để chạy báo cáo trực tiếp cho thầy cô.</p>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+                <button type="button" class="btn-outline-chat" onclick="closeModal('cppDsaEngineModal')">
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toastContainer"></div>

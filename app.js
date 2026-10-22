@@ -30,7 +30,7 @@ const INITIAL_PRODUCTS = [
         status: 'approved',
         approvedAt: Date.now() - (1 * 24 * 60 * 60 * 1000),
         imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=60',
-        description: 'Sách sạch đẹp không viết bậy, có kèm đề cương ôn thi học kỳ điểm 9+.'
+        description: 'Sách sạch đẹp không viết bậy, có kèm đề cương ôn thi học kỳ điểm 9+ môn Vật Lý 1.'
     },
     {
         id: 'P02',
@@ -49,7 +49,7 @@ const INITIAL_PRODUCTS = [
         status: 'approved',
         approvedAt: Date.now() - (2 * 60 * 60 * 1000),
         imageUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=500&auto=format&fit=crop&q=60',
-        description: 'Bản in màu sắc nét, có chú thích code C++ giải thích cây AVL và đồ thị.'
+        description: 'Bản in màu sắc nét, có chú thích code C++ giải thích cây AVL, cây Trie và thuật toán đồ thị Dijkstra.'
     },
     {
         id: 'P03',
@@ -67,7 +67,7 @@ const INITIAL_PRODUCTS = [
         status: 'approved',
         approvedAt: Date.now() - (3 * 24 * 60 * 60 * 1000),
         imageUrl: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=500&auto=format&fit=crop&q=60',
-        description: 'Nồi chống dính còn rất tốt, nấu cơm dẻo nhanh, tiết kiệm điện.'
+        description: 'Nồi chống dính còn rất tốt, nấu cơm dẻo nhanh, tiết kiệm điện, phù hợp 1-2 bạn ở KTX.'
     },
     {
         id: 'P04',
@@ -86,11 +86,84 @@ const INITIAL_PRODUCTS = [
         status: 'approved',
         approvedAt: Date.now() - (2 * 24 * 60 * 60 * 1000),
         imageUrl: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?w=500&auto=format&fit=crop&q=60',
-        description: 'Mới 98%, phím nảy nhạy, còn tem bảo hành chính hãng Bitex.'
+        description: 'Mới 98%, phím nảy nhạy, còn tem bảo hành chính hãng Bitex, hỗ trợ giải phương trình và ma trận.'
+    },
+    {
+        id: 'P05',
+        title: 'Áo đồng phục thể dục UTC2 size L vải thun lạnh chính hãng',
+        price: 65000,
+        originalPrice: 130000,
+        category: 'DongPhuc',
+        timemarkCode: 'UTC2 - 4412',
+        seller: 'Lê Thị Ngọc Tuyết',
+        sellerEmail: 'tuyetltn.st@st.utc2.edu.vn',
+        sellerRep: 98,
+        location: 'Sân bóng đá & Nhà thi đấu UTC2 (0.3 km)',
+        distanceKm: 0.3,
+        expiryDays: 7,
+        status: 'approved',
+        approvedAt: Date.now() - (12 * 60 * 60 * 1000),
+        imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=60',
+        description: 'Áo đồng phục thể dục trường UTC2 mặc thoáng mát, logo trường in rõ đẹp, mới giặt sạch.'
+    },
+    {
+        id: 'P06',
+        title: 'Xe đạp thể thao Martin 107 màu xanh dương đi học quanh trường UTC2',
+        price: 450000,
+        originalPrice: 1200000,
+        category: 'XeCo',
+        timemarkCode: 'UTC2 - 6618',
+        seller: 'Phúc Lâm',
+        sellerEmail: 'lamnp.st@st.utc2.edu.vn',
+        sellerRep: 92,
+        location: 'Bãi giữ xe Tòa A1 UTC2 (0.1 km)',
+        distanceKm: 0.1,
+        expiryDays: 7,
+        status: 'approved',
+        approvedAt: Date.now() - (6 * 60 * 60 * 1000),
+        imageUrl: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=500&auto=format&fit=crop&q=60',
+        description: 'Xe đạp nhẹ nhàng, phanh tốt, có sẵn giỏ xe đựng cặp sách và khóa dây kèm theo.'
+    },
+    {
+        id: 'P07',
+        title: 'Combo bàn học gấp gọn & Đèn LED chống cận phòng KTX',
+        price: 85000,
+        originalPrice: 190000,
+        category: 'DoGiaDung',
+        timemarkCode: 'UTC2 - 3315',
+        seller: 'Lê Thị Ngọc Tuyết',
+        sellerEmail: 'tuyetltn.st@st.utc2.edu.vn',
+        sellerRep: 98,
+        location: 'Ký túc xá Cỏ May UTC2 (0.5 km)',
+        distanceKm: 0.5,
+        expiryDays: 6,
+        status: 'approved',
+        approvedAt: Date.now() - (18 * 60 * 60 * 1000),
+        imageUrl: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=500&auto=format&fit=crop&q=60',
+        description: 'Bàn chân sắt gấp chắc chắn có khe để iPad, đèn LED 3 chế độ sáng cắm sạc USB.'
+    },
+    {
+        id: 'P08',
+        title: 'Giáo trình Giải Tích 1 (GT101) bản đẹp kèm bộ đề thi giữa kỳ',
+        price: 30000,
+        originalPrice: 75000,
+        category: 'GiaoTrinh',
+        courseCode: 'GT101',
+        timemarkCode: 'UTC2 - 5521',
+        seller: 'Phúc Lâm',
+        sellerEmail: 'lamnp.st@st.utc2.edu.vn',
+        sellerRep: 92,
+        location: 'Tòa A2 - Giảng Đường UTC2 (0.2 km)',
+        distanceKm: 0.2,
+        expiryDays: 7,
+        status: 'approved',
+        approvedAt: Date.now() - (5 * 60 * 60 * 1000),
+        imageUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3edd9?w=500&auto=format&fit=crop&q=60',
+        description: 'Đầy đủ bài tập giải tích 1 có lời giải chi tiết, phục vụ ôn thi K64.'
     }
 ];
 
-// Tài khoản quản trị viên chính thức ban đầu (Không có tài khoản sinh viên có sẵn)
+
 // Tài khoản quản trị viên chính thức ban đầu và các tài khoản sinh viên mẫu
 const DEFAULT_USERS = [
     {
@@ -227,7 +300,17 @@ class AppController {
         // Tải sản phẩm
         const savedProducts = localStorage.getItem('unipass_products');
         if (savedProducts) {
-            try { this.products = JSON.parse(savedProducts); } catch (e) { this.products = [...INITIAL_PRODUCTS]; }
+            try {
+                this.products = JSON.parse(savedProducts);
+                const existingIds = new Set(this.products.map(p => p.id));
+                INITIAL_PRODUCTS.forEach(initP => {
+                    if (!existingIds.has(initP.id)) {
+                        this.products.push(initP);
+                    }
+                });
+            } catch (e) {
+                this.products = [...INITIAL_PRODUCTS];
+            }
         } else {
             this.products = [...INITIAL_PRODUCTS];
             this.saveProducts();
@@ -1031,11 +1114,22 @@ class AppController {
         // CHỈ NẠP CÁC BÀI ĐÃ ĐƯỢC ADMIN DUYỆT (LOẠI BỎ PENDING VÀ REJECTED)
         const approvedPosts = this.products.filter(p => p.status !== 'pending' && p.status !== 'rejected');
 
+        const popularKeywords = [
+            'Casio', 'Máy tính Casio', 'Giáo trình', 'Giáo trình Vật Lý', 'Sách C++',
+            'Cấu trúc dữ liệu', 'Nồi cơm điện', 'Đồng phục UTC2', 'Xe đạp', 'Bàn học',
+            'Giải tích', 'VL101', 'DSA01', 'TOAN01', 'KTX Cỏ May'
+        ];
+        popularKeywords.forEach(kw => this.trie.insert(kw, null, 15));
         approvedPosts.forEach(p => {
-            this.trie.insert(p.title, p.id, 5);
-            if (p.courseCode) this.trie.insert(p.courseCode, p.id, 10);
-            if (p.category) this.trie.insert(p.category, p.id, 3);
-
+            this.trie.insert(p.title, p.id, 10);
+            if (p.courseCode) this.trie.insert(p.courseCode, p.id, 12);
+            if (p.category) {
+                this.trie.insert(p.category, p.id, 6);
+                const catName = (typeof getCategoryName === 'function') ? getCategoryName(p.category) : '';
+                if (catName) this.trie.insert(catName, p.id, 8);
+            }
+            const words = p.title.split(/[\s,()–-]+/).filter(w => w.length >= 3);
+            words.forEach(w => this.trie.insert(w, p.id, 5));
             this.avl.insert(p);
             this.postDLL.insertFront(p);
         });
@@ -1574,16 +1668,9 @@ class AppController {
             }
         }
 
-        // Lọc theo từ khóa tìm kiếm (nếu có gõ từ khóa)
+        // Lọc thông minh tiếng Việt có dấu / không dấu & tìm kiếm đa từ khóa
         if (this.searchKeyword && this.searchKeyword.trim().length > 0) {
-            const kw = this.searchKeyword.toLowerCase().trim();
-            items = items.filter(p => 
-                (p.title && p.title.toLowerCase().includes(kw)) ||
-                (p.courseCode && p.courseCode.toLowerCase().includes(kw)) ||
-                (p.category && p.category.toLowerCase().includes(kw)) ||
-                (p.seller && p.seller.toLowerCase().includes(kw)) ||
-                (p.description && p.description.toLowerCase().includes(kw))
-            );
+            items = items.filter(p => matchesProductSearch(p, this.searchKeyword));
         }
 
         if (this.sortBy === 'priceAsc') {
@@ -1628,18 +1715,39 @@ class AppController {
             }
         }
 
+        const hasSearch = (this.searchKeyword && this.searchKeyword.trim().length > 0);
+
         if (list.length === 0) {
             container.innerHTML = `
-                <div style="grid-column: 1/-1; text-align: center; padding: 50px 20px; color: #64748b;">
-                    <div style="font-size: 36px; margin-bottom: 8px;">📦</div>
-                    <h4 style="color:#0f172a;">Không có món đồ nào trong khoảng lọc này</h4>
-                    <p style="font-size: 13px; margin-top: 4px;">Thử kéo tăng thanh giá hoặc bấm "Đặt lại" bộ lọc.</p>
+                <div style="grid-column: 1/-1; text-align: center; padding: 45px 20px; background:#fffbeb; border:1.5px dashed #fde68a; border-radius:14px; color: #475569;">
+                    <div style="font-size: 36px; margin-bottom: 8px;">🔍</div>
+                    <h4 style="color:#0f172a; font-size:16px; margin:0 0 6px 0;">
+                        ${hasSearch ? `Không tìm thấy món đồ nào phù hợp với từ khóa "${escapeHtml(this.searchKeyword)}"` : 'Không có món đồ nào trong khoảng lọc này'}
+                    </h4>
+                    <p style="font-size: 13px; margin: 0 0 16px 0; color:#64748b;">
+                        ${hasSearch ? 'Gợi ý: Thử gõ từ khóa ngắn hơn (Ví dụ: Casio, C++, Vật lý, Nồi cơm, Đồng phục, Xe đạp) hoặc bấm nút bên dưới.' : 'Thử kéo tăng thanh giá hoặc bấm "Đặt lại" bộ lọc.'}
+                    </p>
+                    <button type="button" class="apply-filter-btn" style="width:auto; padding:8px 24px; margin:0 auto; background:linear-gradient(135deg, #f59e0b, #d97706); font-weight:700;" onclick="clearSearchFilter()">
+                        Xem Tất Cả Món Đồ Sẵn Có
+                    </button>
                 </div>
             `;
             return;
         }
 
-        container.innerHTML = list.map(item => {
+        const searchBannerHtml = hasSearch ? `
+            <div style="grid-column: 1/-1; background:#fefce8; border:1px solid #fef08a; border-radius:10px; padding:10px 16px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div style="font-size:13px; color:#854d0e;">
+                    Kết quả tìm kiếm cho: <strong style="color:#0f172a;">"${escapeHtml(this.searchKeyword)}"</strong>
+                    <span style="background:#fef08a; color:#a16207; padding:2px 8px; border-radius:12px; font-size:11.5px; font-weight:700; margin-left:6px;">${list.length} món đồ tìm thấy</span>
+                </div>
+                <button type="button" class="btn-outline-chat" style="padding:4px 10px; font-size:11.5px; color:#b45309; border-color:#fde047; cursor:pointer;" onclick="clearSearchFilter()">
+                    ✕ Xóa tìm kiếm
+                </button>
+            </div>
+        ` : '';
+
+        container.innerHTML = searchBannerHtml + list.map(item => {
             const isMyItem = this.user ? (item.seller === this.user.name) : false;
             const origPrice = item.originalPrice || Math.round((item.price * 1.5) / 10000) * 10000;
             const discountPct = (origPrice > item.price) ? Math.round((1 - item.price / origPrice) * 100) : 0;
@@ -2384,9 +2492,11 @@ function formatNumber(num) {
 }
 
 function getCategoryName(cat) {
-    if (cat === 'GiaoTrinh') return 'Giáo trình';
-    if (cat === 'DoDienTu') return 'Điện tử';
-    if (cat === 'DoGiaDung') return 'Đồ dùng KTX';
+    if (cat === 'GiaoTrinh') return 'Giáo trình & Sách';
+    if (cat === 'DoDienTu') return 'Thiết bị điện tử, Casio';
+    if (cat === 'DoGiaDung') return 'Đồ gia dụng KTX';
+    if (cat === 'DongPhuc') return 'Đồng phục UTC2';
+    if (cat === 'XeCo') return 'Xe cộ & Đi lại';
     return 'Mặt hàng';
 }
 
@@ -4228,9 +4338,23 @@ function handleSortChange(sortVal) {
 function executeSearch() {
     const input = document.getElementById('mainSearchInput');
     if (!input) return;
-    window.app.searchKeyword = input.value.trim();
-    window.app.renderProducts();
+    const kw = input.value.trim();
+    if (window.app) {
+        window.app.searchKeyword = kw;
+        if (kw.length > 0 && window.app.trie) {
+            window.app.trie.recordSearch(kw);
+        }
+        if (typeof switchNavTab === 'function') {
+            switchNavTab('home');
+        }
+        window.app.renderProducts();
+    }
+    const targetEl = document.getElementById('feedCountDisplay') || document.getElementById('productGridContainer') || document.getElementById('mainHomeView');
+    if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
+window.executeSearch = executeSearch;
 
 function quickSearchTag(tag) {
     const input = document.getElementById('mainSearchInput');
@@ -4239,11 +4363,17 @@ function quickSearchTag(tag) {
     }
     if (window.app) {
         window.app.searchKeyword = tag;
+        if (window.app.trie) {
+            window.app.trie.recordSearch(tag);
+        }
+        if (typeof switchNavTab === 'function') {
+            switchNavTab('home');
+        }
         window.app.renderProducts();
     }
-    const homeView = document.getElementById('mainHomeView');
-    if (homeView) {
-        homeView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const targetEl = document.getElementById('feedCountDisplay') || document.getElementById('productGridContainer') || document.getElementById('mainHomeView');
+    if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
 window.quickSearchTag = quickSearchTag;
@@ -4861,8 +4991,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         ${suggs.map(s => `
                             <div class="autocomplete-item" onclick="pickSearchSuggestion('${s.word}')">
-                                <span>🔍 ${s.word}</span>
-                                <span style="color:#0284c7; font-size:11px;">🔥 ${s.freq} lượt</span>
+                                <span>${s.word}</span>
+                                <span style="color:#0284c7; font-size:11px; font-weight:700;">${s.freq} lượt</span>
                             </div>
                         `).join('')}
                     `;
@@ -4890,10 +5020,18 @@ function pickSearchSuggestion(word) {
     const dropdown = document.getElementById('searchAutocompleteDropdown');
     if (input) input.value = word;
     if (dropdown) dropdown.classList.remove('active');
-    window.app.searchKeyword = word;
-    window.app.trie.recordSearch(word);
-    window.app.renderProducts();
+    if (window.app) {
+        window.app.searchKeyword = word;
+        if (window.app.trie) window.app.trie.recordSearch(word);
+        if (typeof switchNavTab === 'function') switchNavTab('home');
+        window.app.renderProducts();
+    }
+    const targetEl = document.getElementById('feedCountDisplay') || document.getElementById('productGridContainer') || document.getElementById('mainHomeView');
+    if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
+window.pickSearchSuggestion = pickSearchSuggestion;
 
 // Lắng nghe sự kiện storage để đồng bộ tức thì trên nhiều cửa sổ / tab khác nhau
 window.addEventListener('storage', (e) => {
@@ -5315,3 +5453,348 @@ if (document.readyState === 'loading') {
 } else {
     initAuthBgMouseEffect();
 }
+
+// ==========================================
+// CÔNG CỤ TÌM KIẾM THÔNG MINH TIẾNG VIỆT & ĐA TỪ KHÓA
+// Hỗ trợ kết hợp thuật toán C++ Trie và tìm kiếm ngữ nghĩa
+// ==========================================
+function removeVietnameseTones(str) {
+    if (!str) return '';
+    return str
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .toLowerCase()
+        .trim();
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str
+        .toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function matchesProductSearch(product, rawQuery) {
+    if (!rawQuery || rawQuery.trim().length === 0) return true;
+    
+    const cleanQuery = rawQuery.trim();
+    const queryNormalized = removeVietnameseTones(cleanQuery);
+    const queryLower = cleanQuery.toLowerCase();
+
+    const catName = (typeof getCategoryName === 'function') ? getCategoryName(product.category) : '';
+    const rawSearchTarget = [
+        product.title || '',
+        product.courseCode || '',
+        product.category || '',
+        catName,
+        product.seller || '',
+        product.location || '',
+        product.description || '',
+        product.timemarkCode || ''
+    ].join(' ').toLowerCase();
+
+    const normalizedSearchTarget = removeVietnameseTones(rawSearchTarget);
+
+    // 1. Khớp chuỗi trực tiếp (có dấu hoặc không dấu)
+    if (rawSearchTarget.includes(queryLower) || normalizedSearchTarget.includes(queryNormalized)) {
+        return true;
+    }
+
+    // 2. Khớp từng từ khóa (Token matching) - cho phép gõ "casio 580", "giao trinh vat ly", "sach c++"
+    const queryTokens = queryNormalized.split(/\s+/).filter(t => t.length > 0);
+    if (queryTokens.length > 1) {
+        const allTokensFound = queryTokens.every(token => 
+            normalizedSearchTarget.includes(token) || rawSearchTarget.includes(token)
+        );
+        if (allTokensFound) return true;
+    }
+
+    // 3. Khớp các từ đồng nghĩa / danh mục quen thuộc sinh viên UTC2
+    if ((queryNormalized.includes('casio') || queryNormalized.includes('may tinh')) && 
+        (normalizedSearchTarget.includes('casio') || product.category === 'DoDienTu')) {
+        return true;
+    }
+    if ((queryNormalized.includes('dong phuc') || queryNormalized.includes('the duc') || queryNormalized.includes('ao')) && 
+        (normalizedSearchTarget.includes('dong phuc') || normalizedSearchTarget.includes('ao') || product.category === 'DongPhuc')) {
+        return true;
+    }
+    if ((queryNormalized.includes('xe') || queryNormalized.includes('xe dap') || queryNormalized.includes('xe may')) && 
+        (normalizedSearchTarget.includes('xe') || product.category === 'XeCo')) {
+        return true;
+    }
+    if ((queryNormalized.includes('noi com') || queryNormalized.includes('gia dung') || queryNormalized.includes('ktx')) && 
+        (normalizedSearchTarget.includes('noi com') || product.category === 'DoGiaDung')) {
+        return true;
+    }
+    if ((queryNormalized.includes('c++') || queryNormalized.includes('dsa') || queryNormalized.includes('giai thuat') || queryNormalized.includes('cau truc')) && 
+        (normalizedSearchTarget.includes('c++') || normalizedSearchTarget.includes('dsa') || normalizedSearchTarget.includes('giai thuat'))) {
+        return true;
+    }
+
+    return false;
+}
+
+// Xóa tìm kiếm và quay về danh sách đầy đủ
+function clearSearchFilter() {
+    const input = document.getElementById('mainSearchInput');
+    if (input) input.value = '';
+    if (window.app) {
+        window.app.searchKeyword = '';
+        window.app.renderProducts();
+    }
+}
+window.clearSearchFilter = clearSearchFilter;
+
+// Nâng cấp executeSearch để cuộn mượt đến bảng tin và chuyển tab Trang chủ
+const origExecuteSearch = window.executeSearch;
+window.executeSearch = function() {
+    const input = document.getElementById('mainSearchInput');
+    if (!input) return;
+    const query = input.value.trim();
+    if (window.app) {
+        window.app.searchKeyword = query;
+        if (query.length > 0 && window.app.trie) {
+            window.app.trie.recordSearch(query);
+        }
+        if (typeof switchNavTab === 'function') {
+            switchNavTab('home');
+        }
+        window.app.renderProducts();
+    }
+    const targetEl = document.getElementById('feedCountDisplay') || document.getElementById('productGridContainer') || document.getElementById('mainHomeView');
+    if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+};
+
+// ==========================================
+// ĐIỀU KHIỂN MODAL TRUNG TÂM THUẬT TOÁN C++ (DSA CORE ENGINE)
+// ==========================================
+let g_cppSourceCodeCache = '';
+
+function openCppDsaModal() {
+    openModal('cppDsaEngineModal');
+    loadCppSourcePreview();
+    runCppTrieDemo();
+    runCppAvlDemo();
+    runCppDijkstraDemo();
+}
+window.openCppDsaModal = openCppDsaModal;
+
+function switchCppModalTab(tabName) {
+    const demoTab = document.getElementById('cppTabContentDemo');
+    const sourceTab = document.getElementById('cppTabContentSource');
+    const archTab = document.getElementById('cppTabContentArch');
+    const compileTab = document.getElementById('cppTabContentCompile');
+
+    const btnDemo = document.getElementById('tabCppDemoBtn');
+    const btnSource = document.getElementById('tabCppSourceBtn');
+    const btnArch = document.getElementById('tabCppArchBtn');
+    const btnCompile = document.getElementById('tabCppCompileBtn');
+
+    [demoTab, sourceTab, archTab, compileTab].forEach(el => { if (el) el.style.display = 'none'; });
+    [btnDemo, btnSource, btnArch, btnCompile].forEach(el => { if (el) el.classList.remove('active'); });
+
+    if (tabName === 'demo') {
+        if (demoTab) demoTab.style.display = 'block';
+        if (btnDemo) btnDemo.classList.add('active');
+    } else if (tabName === 'source') {
+        if (sourceTab) sourceTab.style.display = 'block';
+        if (btnSource) btnSource.classList.add('active');
+        loadCppSourcePreview();
+    } else if (tabName === 'arch') {
+        if (archTab) archTab.style.display = 'block';
+        if (btnArch) btnArch.classList.add('active');
+    } else if (tabName === 'compile') {
+        if (compileTab) compileTab.style.display = 'block';
+        if (btnCompile) btnCompile.classList.add('active');
+    }
+}
+window.switchCppModalTab = switchCppModalTab;
+
+async function loadCppSourcePreview() {
+    const container = document.getElementById('cppSourceCodeContainer');
+    if (!container) return;
+
+    if (g_cppSourceCodeCache) {
+        container.innerText = g_cppSourceCodeCache;
+        return;
+    }
+
+    try {
+        const resp = await fetch('dsa_core_engine.cpp');
+        if (resp.ok) {
+            const text = await resp.text();
+            g_cppSourceCodeCache = text;
+            container.innerText = text;
+            return;
+        }
+    } catch (e) {}
+
+    container.innerText = `// Tệp dsa_core_engine.cpp đã được biên dịch thành dsa_core_engine.exe\n// Bạn có thể mở tệp dsa_core_engine.cpp trong cùng thư mục để xem toàn bộ 600+ dòng code chuẩn C++17.`;
+}
+
+function copyCppSourceCode() {
+    if (g_cppSourceCodeCache) {
+        navigator.clipboard.writeText(g_cppSourceCodeCache);
+        showToast('✓ Đã sao chép toàn bộ mã nguồn C++ (dsa_core_engine.cpp)!', 'success');
+    } else {
+        fetch('dsa_core_engine.cpp')
+            .then(r => r.text())
+            .then(txt => {
+                g_cppSourceCodeCache = txt;
+                navigator.clipboard.writeText(txt);
+                showToast('✓ Đã sao chép toàn bộ mã nguồn C++ (dsa_core_engine.cpp)!', 'success');
+            })
+            .catch(() => {
+                showToast('Vui lòng mở file dsa_core_engine.cpp trong thư mục dự án để sao chép.', 'info');
+            });
+    }
+}
+window.copyCppSourceCode = copyCppSourceCode;
+
+function downloadCppSource() {
+    fetch('dsa_core_engine.cpp')
+        .then(r => r.blob())
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'dsa_core_engine.cpp';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('✓ Đã tải xuống dsa_core_engine.cpp!', 'success');
+        })
+        .catch(() => {
+            showToast('Tệp dsa_core_engine.cpp đã có sẵn trong thư mục dự án.', 'info');
+        });
+}
+window.downloadCppSource = downloadCppSource;
+
+function runCppTrieDemo() {
+    const input = document.getElementById('cppDemoPrefixInput');
+    const resultBox = document.getElementById('cppTrieDemoResult');
+    if (!input || !resultBox) return;
+
+    const prefix = input.value.trim();
+    if (!window.app || !window.app.trie) {
+        resultBox.innerText = 'Trie chưa sẵn sàng.';
+        return;
+    }
+
+    const t0 = performance.now();
+    const suggs = window.app.trie.suggest(prefix);
+    const elapsedUs = ((performance.now() - t0) * 1000).toFixed(2);
+
+    if (suggs.length === 0) {
+        resultBox.innerHTML = `> Trie::suggest("${escapeHtml(prefix)}") -> 0 kết quả (${elapsedUs} µs)\n  (Không có từ khóa nào khớp với tiền tố này trên cây Trie)`;
+    } else {
+        let lines = [`> Trie::suggest("${escapeHtml(prefix)}") -> Top Cache O(k) (${elapsedUs} µs):`];
+        suggs.forEach((s, idx) => {
+            lines.push(`  [${idx + 1}] "${s.word}" - Tần suất: ${s.freq} lượt tìm`);
+        });
+        resultBox.innerText = lines.join('\n');
+    }
+}
+window.runCppTrieDemo = runCppTrieDemo;
+
+function runCppAvlDemo() {
+    const minInput = document.getElementById('cppDemoMinPrice');
+    const maxInput = document.getElementById('cppDemoMaxPrice');
+    const resultBox = document.getElementById('cppAvlDemoResult');
+    if (!minInput || !maxInput || !resultBox) return;
+
+    const minP = Number(minInput.value) || 0;
+    const maxP = Number(maxInput.value) || 1000000;
+
+    if (!window.app || !window.app.avl) {
+        resultBox.innerText = 'Cây AVL chưa khởi tạo.';
+        return;
+    }
+
+    const t0 = performance.now();
+    const matches = window.app.avl.rangeQuery(minP, maxP);
+    const elapsedUs = ((performance.now() - t0) * 1000).toFixed(2);
+
+    let lines = [`> AVLTree::rangeQuery(${minP}, ${maxP}) -> Tìm thấy ${matches.length} món đồ (${elapsedUs} µs):`];
+    if (matches.length === 0) {
+        lines.push('  (Không có món đồ nào trong khoảng giá này trên cây AVL)');
+    } else {
+        matches.forEach((item, idx) => {
+            lines.push(`  [${idx + 1}] ${item.title} | Giá: ${item.price.toLocaleString('vi-VN')} VND | TimeMark: ${item.timemarkCode}`);
+        });
+    }
+    resultBox.innerText = lines.join('\n');
+}
+window.runCppAvlDemo = runCppAvlDemo;
+
+function runCppDijkstraDemo() {
+    const startSelect = document.getElementById('cppDijkstraStart');
+    const endSelect = document.getElementById('cppDijkstraEnd');
+    const resultBox = document.getElementById('cppDijkstraDemoResult');
+    if (!startSelect || !endSelect || !resultBox) return;
+
+    const startNode = startSelect.value;
+    const endNode = endSelect.value;
+
+    const campusGraph = {
+        'Cong 1 Man Thien': { 'Toa A1 - Hieu Bo': 150 },
+        'Toa A1 - Hieu Bo': { 'Cong 1 Man Thien': 150, 'Toa A2 - Giang Duong': 90, 'Thu Vien & Tu Hoc': 100 },
+        'Toa A2 - Giang Duong': { 'Toa A1 - Hieu Bo': 90, 'Can Tin Sinh Vien': 70, 'Khu E - Xuong Thuc Hanh': 190 },
+        'Thu Vien & Tu Hoc': { 'Toa A1 - Hieu Bo': 100 },
+        'Can Tin Sinh Vien': { 'Toa A2 - Giang Duong': 70, 'San Bong Da & TDTT': 160 },
+        'San Bong Da & TDTT': { 'Can Tin Sinh Vien': 160, 'KTX Co May UTC2': 180 },
+        'Khu E - Xuong Thuc Hanh': { 'Toa A2 - Giang Duong': 190, 'KTX Co May UTC2': 220 },
+        'KTX Co May UTC2': { 'San Bong Da & TDTT': 180, 'Khu E - Xuong Thuc Hanh': 220 }
+    };
+
+    const distances = {};
+    const previous = {};
+    const nodes = new Set(Object.keys(campusGraph));
+
+    nodes.forEach(n => { distances[n] = Infinity; });
+    distances[startNode] = 0;
+
+    const unvisited = new Set(nodes);
+    while (unvisited.size > 0) {
+        let curr = null;
+        unvisited.forEach(node => {
+            if (curr === null || distances[node] < distances[curr]) {
+                curr = node;
+            }
+        });
+
+        if (curr === null || distances[curr] === Infinity || curr === endNode) break;
+        unvisited.delete(curr);
+
+        const neighbors = campusGraph[curr] || {};
+        for (const [neighbor, weight] of Object.entries(neighbors)) {
+            const alt = distances[curr] + weight;
+            if (alt < distances[neighbor]) {
+                distances[neighbor] = alt;
+                previous[neighbor] = curr;
+            }
+        }
+    }
+
+    const path = [];
+    let step = endNode;
+    while (step) {
+        path.unshift(step);
+        step = previous[step];
+    }
+
+    if (distances[endNode] === Infinity) {
+        resultBox.innerText = `> Dijkstra: Không tìm thấy đường đi từ "${startNode}" đến "${endNode}".`;
+    } else {
+        resultBox.innerText = `> Dijkstra::findShortestPath("${startNode}", "${endNode}") -> ${distances[endNode]} mét:\n  Lộ trình: ${path.join(' ➔ ')}`;
+    }
+}
+window.runCppDijkstraDemo = runCppDijkstraDemo;

@@ -31,7 +31,19 @@ class TrieWithHeap {
 
     // Chuẩn hóa từ khóa tiếng Việt không dấu hoặc có dấu để tra cứu
     normalize(str) {
+        if (!str) return '';
         return str.toLowerCase().trim();
+    }
+
+    removeTones(str) {
+        if (!str) return '';
+        return str
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .replace(/Đ/g, 'D')
+            .toLowerCase()
+            .trim();
     }
 
     // Thêm từ khóa vào Trie với tần suất ban đầu hoặc cập nhật
@@ -83,17 +95,20 @@ class TrieWithHeap {
     // Tra cứu gợi ý nhanh O(k) với k là độ dài tiền tố
     suggest(prefix) {
         const text = this.normalize(prefix);
-        let curr = this.root;
-
-        for (const char of text) {
-            if (!curr.children.has(char)) {
-                return []; // Không có nhánh phù hợp
+        const unaccented = this.removeTones(prefix);
+        const getListFor = (query) => {
+            let curr = this.root;
+            for (const char of query) {
+                if (!curr.children.has(char)) return [];
+                curr = curr.children.get(char);
             }
-            curr = curr.children.get(char);
+            return curr.topSuggestions || [];
+        };
+        let list = getListFor(text);
+        if (list.length === 0 && unaccented !== text) {
+            list = getListFor(unaccented);
         }
-
-        // Trả về ngay danh sách Top được cache sẵn tại nút tiền tố
-        return curr.topSuggestions;
+        return list;
     }
 
     // Ghi nhận lượt tìm kiếm mới để tăng tần suất (Re-heapify)
