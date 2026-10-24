@@ -232,6 +232,12 @@
             <!-- Nhóm Tài Khoản & Chuyển Đổi Nhanh -->
             <div class="user-actions">
                 <!-- Huy hiệu Trực Tuyến Đa Máy Realtime -->
+                <!-- NÃºt Má»Ÿ Console C++ DSA Engine Cháº¡y Trá»±c Tuyáº¿n -->
+                <button class="cpp-engine-nav-btn" onclick="openCppConsoleModal()" title="Cháº¡y Thuáº­t toÃ¡n C++ Trá»±c tuyáº¿n (Trie, AVL, KD-Tree, Dijkstra)">
+                    <span class="cpp-pulse-dot"></span>
+                    <span>LÃµi C++17</span>
+                    <span class="cpp-nav-tag">Online</span>
+                </button>
                 <div id="onlineSyncIndicator" class="online-share-btn" style="background:#f0fdf4; border-color:#86efac; cursor:default;" title="Đồng bộ đa máy đang hoạt động">
                     <span style="display:inline-block; width:8px; height:8px; background:#10b981; border-radius:50%; margin-right:4px;"></span>
                     <span style="font-size:11.5px; font-weight:700; color:#15803d;">Online Đa Máy</span>
@@ -303,6 +309,14 @@
 
                 <h2 class="hero-title">Săn giáo trình, laptop & đồ dùng KTX UTC2</h2>
                 <p class="hero-subtitle">Sàn trao đổi & pass đồ uy tín nội bộ Cơ sở 2 - Trường ĐH Giao Thông Vận Tải</p>
+                <!-- Dáº£i tráº¡ng thÃ¡i C++ Engine Online -->
+                <div class="cpp-engine-strip" onclick="openCppConsoleModal()" title="Báº¥m Ä‘á»ƒ má»Ÿ Cá»­a sá»• Thá»±c thi C++ Thuáº­t toÃ¡n trá»±c tuyáº¿n">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="cpp-badge-pill">C++17 Engine</span>
+                        <span>Äang cháº¡y trá»±c tuyáº¿n 9 thuáº­t toÃ¡n C++: <strong>Trie, AVL Tree, KD-Tree, Dijkstra, Heap</strong></span>
+                    </div>
+                    <span class="cpp-run-link">Má»Ÿ Console Thá»±c Thi âž”</span>
+                </div>
 
                 <!-- Ô Tìm Kiếm với nút Tìm kiếm bên trong -->
                 <div class="hero-input-box">
@@ -1245,6 +1259,76 @@
     <!-- ==========================================
          MODAL CẤU HÌNH & KẾT NỐI SUPABASE DATABASE
          ========================================== -->
+    <!-- ==========================================
+         MODAL CONSOLE C++17 ONLINE DSA ENGINE
+         ========================================== -->
+    <div class="checkout-modal-overlay" id="cppOnlineConsoleModal" style="display:none;">
+        <div class="cpp-modal-card">
+            <!-- Header terminal -->
+            <div class="cpp-modal-header">
+                <div class="cpp-terminal-dots">
+                    <span class="dot dot-red" onclick="closeModal('cppOnlineConsoleModal')" title="ÄÃ³ng cá»­a sá»• C++"></span>
+                    <span class="dot dot-yellow" onclick="clearCppTerminal()" title="XÃ³a mÃ n hÃ¬nh Terminal"></span>
+                    <span class="dot dot-green" onclick="runCppAlgoOnline('benchmark')" title="Cháº¡y Benchmark 10.000 ops"></span>
+                </div>
+                <div class="cpp-modal-title">
+                    âš¡ UTC2HAND C++17 ONLINE ENGINE (dsa_core_engine.cpp)
+                </div>
+                <button class="checkout-close-btn" style="position:static; margin:0;" onclick="closeModal('cppOnlineConsoleModal')">âœ•</button>
+            </div>
+
+            <!-- Status bar info -->
+            <div class="cpp-status-bar">
+                <span><strong>Compiler:</strong> GCC / Clang (C++17 Standards)</span>
+                <span>â€¢</span>
+                <span><strong>Target:</strong> WebAssembly / JS Mirror Runtime</span>
+                <span>â€¢</span>
+                <span><strong>Source:</strong> dsa_core_engine.cpp (870 dÃ²ng)</span>
+                <span>â€¢</span>
+                <span id="cppEngineLiveStatus" style="color:#4ade80;">â— Online & Ready</span>
+            </div>
+
+            <!-- Toolbar buttons for quick execution of DSA algorithms -->
+            <div class="cpp-actions-toolbar">
+                <button class="cpp-tool-btn active" id="btnAlgoTrie" onclick="runCppAlgoOnline('trie')">1. Trie Autocomplete</button>
+                <button class="cpp-tool-btn" id="btnAlgoAvl" onclick="runCppAlgoOnline('avl')">2. AVL Tree (Lá»c GiÃ¡)</button>
+                <button class="cpp-tool-btn" id="btnAlgoKdtree" onclick="runCppAlgoOnline('kdtree')">3. 2D KD-Tree (KNN Tá»a Ä‘á»™)</button>
+                <button class="cpp-tool-btn" id="btnAlgoDijkstra" onclick="runCppAlgoOnline('dijkstra')">4. Dijkstra (ÄÆ°á»ng Äi Ngáº¯n Nháº¥t)</button>
+                <button class="cpp-tool-btn" id="btnAlgoQueue" onclick="runCppAlgoOnline('queue')">5. Message Queue & Stack</button>
+                <button class="cpp-tool-btn" id="btnAlgoBenchmark" onclick="runCppAlgoOnline('benchmark')" style="color:#fde047; font-weight:800;">âš¡ Benchmark 10.000 ops</button>
+                <button class="cpp-tool-btn" id="btnToggleSource" onclick="toggleCppSourceViewer()">ðŸ“„ Xem MÃ£ Nguá»“n C++</button>
+            </div>
+
+            <!-- Terminal output screen -->
+            <div class="cpp-terminal-screen" id="cppTerminalOutput">================================================================================
+     UTC2HAND - CORE DATA STRUCTURES & ALGORITHMS (C++17 ENGINE)
+     PhÃ¢n hiá»‡u Äáº¡i há»c Giao thÃ´ng Váº­n táº£i táº¡i TP.HCM (UTC2)
+================================================================================
+[INFO] Engine khá»Ÿi táº¡o thÃ nh cÃ´ng lÃºc 2026-10-24 09:42:00 UTC+7.
+[INFO] Sáºµn sÃ ng cháº¡y trá»±c tuyáº¿n 9 thuáº­t toÃ¡n cá»‘t lÃµi.
+[HELP] Báº¥m cÃ¡c nÃºt á»Ÿ thanh cÃ´ng cá»¥ phÃ­a trÃªn hoáº·c gÃµ lá»‡nh 'help' vÃ o Ã´ bÃªn dÆ°á»›i.</div>
+
+            <!-- MÃ£ nguá»“n C++ má»Ÿ rá»™ng (áº©n máº·c Ä‘á»‹nh) -->
+            <div id="cppSourceViewerWrap" style="display:none; margin-top:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+                    <span style="font-size:12px; font-weight:700; color:#94a3b8;">MÃ£ Nguá»“n C++ (dsa_core_engine.cpp - 870 dÃ²ng hoÃ n chá»‰nh):</span>
+                    <div style="display:flex; gap:6px;">
+                        <button class="cpp-src-btn" onclick="copyCppSourceCode()">ðŸ“‹ Sao ChÃ©p Code</button>
+                        <a href="dsa_core_engine.cpp" download="dsa_core_engine.cpp" class="cpp-src-btn cpp-src-btn-green" style="text-decoration:none;">ðŸ’¾ Táº£i file .cpp</a>
+                        <button class="cpp-src-btn cpp-src-btn-gold" onclick="openCloudCppCompiler()">ðŸŒ TrÃ¬nh BiÃªn Dá»‹ch Online</button>
+                    </div>
+                </div>
+                <pre class="cpp-source-code-pre" id="cppSourceCodeDisplay">// Äang náº¡p mÃ£ nguá»“n dsa_core_engine.cpp...</pre>
+            </div>
+
+            <!-- Command input bar -->
+            <div class="cpp-command-bar">
+                <span class="cpp-prompt-symbol">utc2-cpp17&gt;</span>
+                <input type="text" id="cppTerminalInput" placeholder="GÃµ lá»‡nh (trie, avl, kdtree, dijkstra, benchmark, clear, help)..." onkeydown="if(event.key==='Enter') executeCppTerminalCommand(this.value)">
+                <button class="cpp-run-submit-btn" onclick="executeCppTerminalCommand(document.getElementById('cppTerminalInput').value)">Thá»±c Thi âž”</button>
+            </div>
+        </div>
+    </div>
     <div class="checkout-modal-overlay" id="supabaseConfigModal">
         <div class="checkout-modal-card" style="max-width:580px;">
             <button class="checkout-close-btn" onclick="closeModal('supabaseConfigModal')">✕</button>

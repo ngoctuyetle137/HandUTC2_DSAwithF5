@@ -2648,3 +2648,312 @@ body {
     display: inline-block;
     animation: spin 1s linear infinite;
 }
+
+/* ===================================================================
+   C++17 ONLINE ENGINE & CHAT INCOMING LIVE NOTIFICATIONS
+   =================================================================== */
+
+/* Hiá»‡u á»©ng rung vÃ  chá»›p sÃ¡ng khung chat khi cÃ³ tin nháº¯n má»›i */
+@keyframes chatIncomingPulse {
+    0% { transform: scale(1); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+    30% { transform: scale(1.025); box-shadow: 0 0 25px rgba(2, 132, 199, 0.45); }
+    70% { transform: scale(0.995); box-shadow: 0 0 15px rgba(2, 132, 199, 0.3); }
+    100% { transform: scale(1); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+}
+
+.chat-incoming-pulse {
+    animation: chatIncomingPulse 0.6s ease-out;
+}
+
+@keyframes bubblePopIn {
+    0% { opacity: 0; transform: translateY(8px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.msg-bubble {
+    animation: bubblePopIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* NÃºt LÃµi C++ DSA Engine trÃªn thanh Ä‘iá»u hÆ°á»›ng */
+.cpp-engine-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    border: 1.5px solid #86efac;
+    color: #065f46;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 11.5px;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.12);
+}
+
+.cpp-engine-nav-btn:hover {
+    background: #dcfce7;
+    border-color: #4ade80;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.cpp-pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #10b981;
+    animation: pulseDot 1.5s infinite;
+}
+
+.cpp-nav-tag {
+    background: #059669;
+    color: #ffffff;
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+/* Dáº£i tráº¡ng thÃ¡i C++ trÃªn banner tÃ¬m kiáº¿m */
+.cpp-engine-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cpp-engine-strip:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    transform: translateY(-1px);
+}
+
+.cpp-badge-pill {
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.cpp-run-link {
+    color: #0284c7;
+    font-weight: 700;
+    font-size: 11.5px;
+    white-space: nowrap;
+}
+
+/* C++ Terminal Modal Styles */
+.cpp-modal-card {
+    max-width: 820px;
+    width: 95%;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 14px;
+    border: 1px solid #334155;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+    padding: 16px 20px 20px 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.cpp-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #1e293b;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+.cpp-terminal-dots {
+    display: flex;
+    gap: 6px;
+}
+
+.cpp-terminal-dots .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.dot-red { background: #ef4444; }
+.dot-yellow { background: #f59e0b; }
+.dot-green { background: #10b981; }
+
+.cpp-modal-title {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #f8fafc;
+    font-family: Consolas, 'Courier New', monospace;
+    letter-spacing: 0.5px;
+}
+
+.cpp-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 11px;
+    color: #94a3b8;
+    background: #1e293b;
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    font-family: Consolas, 'Courier New', monospace;
+    flex-wrap: wrap;
+}
+
+.cpp-actions-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.cpp-tool-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+
+.cpp-tool-btn:hover {
+    background: #334155;
+    color: #ffffff;
+    border-color: #64748b;
+}
+
+.cpp-tool-btn.active {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+}
+
+.cpp-terminal-screen {
+    background: #020617;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 14px;
+    height: 320px;
+    overflow-y: auto;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: #38bdf8;
+    white-space: pre-wrap;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+}
+
+.cpp-terminal-screen::-webkit-scrollbar {
+    width: 6px;
+}
+.cpp-terminal-screen::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 3px;
+}
+
+.cpp-command-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin-top: 10px;
+}
+
+.cpp-prompt-symbol {
+    color: #4ade80;
+    font-family: Consolas, 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 12.5px;
+}
+
+.cpp-command-bar input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #f8fafc;
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 12.5px;
+}
+
+.cpp-run-submit-btn {
+    background: #0284c7;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.cpp-run-submit-btn:hover {
+    background: #0369a1;
+}
+
+.cpp-source-code-pre {
+    background: #020617;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 12px;
+    max-height: 240px;
+    overflow-y: auto;
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: #e2e8f0;
+}
+
+.cpp-src-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.cpp-src-btn:hover {
+    background: #334155;
+    color: #fff;
+}
+
+.cpp-src-btn-green {
+    background: #064e3b;
+    border-color: #059669;
+    color: #6ee7b7;
+}
+
+.cpp-src-btn-gold {
+    background: #78350f;
+    border-color: #d97706;
+    color: #fde68a;
+}

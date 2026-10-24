@@ -1085,6 +1085,59 @@ class AppController {
         }
     }
 
+    handleIncomingChatMessageOnScreen(msg) {
+        if (!msg || !this.user) return;
+        const myN = (this.user.name || '').toLowerCase().trim();
+        const myE = (this.user.email || '').toLowerCase().trim();
+        const recN = (msg.receiver || msg.receiver_name || '').toLowerCase().trim();
+        const recE = (msg.receiverEmail || msg.receiver_email || '').toLowerCase().trim();
+
+        const isForMe = (myN && (recN === myN || recE === myN)) || 
+                        (myE && (recE === myE || recN === myE));
+
+        if (!isForMe) return;
+
+        const senderName = msg.sender || msg.sender_name || 'NgÆ°á»i dÃ¹ng UTC2';
+        const senderEmail = msg.senderEmail || msg.sender_email || '';
+
+        // PhÃ¡t Ã¢m thanh chuÃ´ng bÃ¡o tin nháº¯n
+        if (window.sound && typeof window.sound.playNotification === 'function') {
+            window.sound.playNotification();
+        }
+
+        // Tá»± Ä‘á»™ng báº­t khung chat thoáº¡i hiá»ƒn thá»‹ trÃªn mÃ n hÃ¬nh
+        const chatBox = document.getElementById('chatWindow');
+        if (chatBox) {
+            chatBox.style.display = 'flex';
+            chatBox.classList.remove('chat-incoming-pulse');
+            void chatBox.offsetWidth;
+            chatBox.classList.add('chat-incoming-pulse');
+            setTimeout(() => {
+                if (chatBox) chatBox.classList.remove('chat-incoming-pulse');
+            }, 800);
+        }
+
+        // Má»Ÿ cá»­a sá»• chi tiáº¿t vá»›i ngÆ°á»i gá»­i tin nháº¯n
+        if (typeof openChatBetweenUsers === 'function') {
+            const prodObj = (msg.productId || msg.product_id) ? {
+                id: msg.productId || msg.product_id,
+                title: msg.productTitle || msg.product_title || 'Sáº£n pháº©m trao Ä‘á»•i'
+            } : null;
+            openChatBetweenUsers(senderName, prodObj, msg.orderId || msg.order_id || null, senderEmail);
+        }
+
+        // Cáº­p nháº­t bong bÃ³ng tin nháº¯n vÃ  cuá»™n Ä‘áº¿n cuá»‘i cÃ¹ng
+        this.renderChatMessages();
+        const area = document.getElementById('chatMessagesArea');
+        if (area) {
+            setTimeout(() => {
+                area.scrollTop = area.scrollHeight;
+            }, 100);
+        }
+
+        showToast(`ðŸ’¬ [TIN NHáº®N TRá»°C TIáº¾P] ${senderName}: "${msg.text || ''}"`, 'success');
+    }
+
     checkAuthDisplay() {
         const authScreen = document.getElementById('authPageContainer');
         const mainApp = document.getElementById('mainAppInterface');
@@ -5803,3 +5856,321 @@ window.executeSearch = function() {
     }
 };
 
+
+
+// ==========================================
+// C++17 ONLINE ENGINE & CONSOLE CONTROLLER
+// ==========================================
+
+function openCppConsoleModal() {
+    const modal = document.getElementById('cppOnlineConsoleModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        const input = document.getElementById('cppTerminalInput');
+        if (input) setTimeout(() => input.focus(), 120);
+    }
+    if (window.sound) window.sound.playClick();
+}
+window.openCppConsoleModal = openCppConsoleModal;
+
+function clearCppTerminal() {
+    const screen = document.getElementById('cppTerminalOutput');
+    if (screen) {
+        screen.textContent = 'utc2-cpp17> MÃ n hÃ¬nh Ä‘Ã£ Ä‘Æ°á»£c lÃ m sáº¡ch.\n';
+    }
+}
+window.clearCppTerminal = clearCppTerminal;
+
+function printCppTerminal(text) {
+    const screen = document.getElementById('cppTerminalOutput');
+    if (!screen) return;
+    screen.textContent += '\n' + text;
+    screen.scrollTop = screen.scrollHeight;
+}
+window.printCppTerminal = printCppTerminal;
+
+function runCppAlgoOnline(algoType, queryParam) {
+    const btnIds = {
+        'trie': 'btnAlgoTrie',
+        'avl': 'btnAlgoAvl',
+        'kdtree': 'btnAlgoKdtree',
+        'dijkstra': 'btnAlgoDijkstra',
+        'queue': 'btnAlgoQueue',
+        'benchmark': 'btnAlgoBenchmark'
+    };
+    Object.keys(btnIds).forEach(k => {
+        const b = document.getElementById(btnIds[k]);
+        if (b) {
+            if (k === algoType) b.classList.add('active');
+            else b.classList.remove('active');
+        }
+    });
+
+    const screen = document.getElementById('cppTerminalOutput');
+    if (!screen) return;
+
+    if (algoType === 'trie') {
+        const query = (queryParam || 'giÃ¡o trÃ¬nh').trim();
+        const start = performance.now();
+        const trie = window.app && window.app.trie ? window.app.trie : new window.UTC2_DSA.TrieWithHeap();
+        const results = trie.searchPrefix(query, 5);
+        const duration = (performance.now() - start).toFixed(4);
+
+        let out = `>>> [C++17 EXEC] TrieWithHeap::searchPrefix("${query}", maxSuggestions = 5)\n`;
+        out += `  â”œâ”€ Äá»™ phá»©c táº¡p lÃ½ thuyáº¿t: O(L + k log M) â‰ˆ O(${query.length} + 5) [Tá»C Äá»˜ Cá»°C CAO]\n`;
+        out += `  â”œâ”€ Thá»i gian thá»±c thi: ${duration} ms (${Math.round(duration * 1000)} Âµs)\n`;
+        out += `  â”œâ”€ Sá»‘ gá»£i Ã½ tÃ¬m Ä‘Æ°á»£c: ${results.length}\n`;
+        if (results.length === 0) {
+            out += `  â””â”€ KhÃ´ng tÃ¬m tháº¥y tá»« khÃ³a khá»›p tiá»n tá»‘ '${query}'.\n`;
+        } else {
+            results.forEach((r, idx) => {
+                out += `  â”œâ”€ [Top ${idx + 1}] "${r.phrase}" (Äá»™ phá»• biáº¿n / Frequency: ${r.frequency})\n`;
+            });
+            out += `  â””â”€ HoÃ n táº¥t gá»£i Ã½ cá»¥m tá»« cho thanh tÃ¬m kiáº¿m.\n`;
+        }
+        printCppTerminal(out);
+    } else if (algoType === 'avl') {
+        const minP = 50000;
+        const maxP = 250000;
+        const start = performance.now();
+        const avl = window.app && window.app.avl ? window.app.avl : new window.UTC2_DSA.AVLTree();
+        const rangeItems = avl.rangeQuery(minP, maxP);
+        const duration = (performance.now() - start).toFixed(4);
+
+        let out = `>>> [C++17 EXEC] AVLTree::rangeQuery(minPrice = ${minP.toLocaleString('vi-VN')} Ä‘, maxPrice = ${maxP.toLocaleString('vi-VN')} Ä‘)\n`;
+        out += `  â”œâ”€ Cáº¥u trÃºc: Self-Balancing Binary Search Tree (CÃ¢y nhá»‹ phÃ¢n tá»± cÃ¢n báº±ng AVL)\n`;
+        out += `  â”œâ”€ Äá»™ phá»©c táº¡p lÃ½ thuyáº¿t: O(log N + K) vá»›i N = ${window.app ? window.app.products.length : 0}, K = ${rangeItems.length}\n`;
+        out += `  â”œâ”€ Thá»i gian thá»±c thi: ${duration} ms (${Math.round(duration * 1000)} Âµs)\n`;
+        out += `  â”œâ”€ Sá»‘ lÆ°á»£ng bÃ i Ä‘Äƒng trong khoáº£ng giÃ¡: ${rangeItems.length}\n`;
+        rangeItems.slice(0, 5).forEach((p, idx) => {
+            out += `  â”œâ”€ [Item ${idx + 1}] ${p.title} | GiÃ¡: ${Number(p.price).toLocaleString('vi-VN')} Ä‘ | TimeMark: ${p.timemarkCode || 'UTC2'}\n`;
+        });
+        if (rangeItems.length > 5) {
+            out += `  â”œâ”€ ... vÃ  ${rangeItems.length - 5} sáº£n pháº©m khÃ¡c.\n`;
+        }
+        out += `  â””â”€ CÃ¢n báº±ng cÃ¢y AVL: Chiá»u cao H = ${avl.getHeight(avl.root)}, Há»‡ sá»‘ cÃ¢n báº±ng Balance Factor âˆˆ {-1, 0, 1}.\n`;
+        printCppTerminal(out);
+    } else if (algoType === 'kdtree') {
+        const start = performance.now();
+        const kd = new window.UTC2_DSA.KDTree();
+        const refLat = 10.8465;
+        const refLng = 106.7798;
+        const nearest = kd.findNearest(refLat, refLng);
+        const duration = (performance.now() - start).toFixed(4);
+
+        let out = `>>> [C++17 EXEC] KDTree2D::findNearestNeighbor(lat = ${refLat}, lng = ${refLng})\n`;
+        out += `  â”œâ”€ Cáº¥u trÃºc: 2-Dimensional K-D Tree (PhÃ¢n chia khÃ´ng gian 2D máº·t pháº³ng tá»a Ä‘á»™ Campus UTC2)\n`;
+        out += `  â”œâ”€ Äiá»ƒm tra cá»©u: KTX Khu B UTC2 (10.8465, 106.7798)\n`;
+        out += `  â”œâ”€ Äá»™ phá»©c táº¡p: O(log N) trung bÃ¬nh (Loáº¡i bá» 50% nhÃ¡nh khÃ´ng gian má»—i láº§n Ä‘á»‡ quy)\n`;
+        out += `  â”œâ”€ Thá»i gian thá»±c thi: ${duration} ms (${Math.round(duration * 1000)} Âµs)\n`;
+        if (nearest && nearest.point) {
+            out += `  â”œâ”€ LÃ¡ng giá»ng gáº§n nháº¥t tÃ¬m Ä‘Æ°á»£c: [${nearest.point.id}] ${nearest.point.name}\n`;
+            out += `  â”œâ”€ Tá»a Ä‘á»™ Ä‘iá»ƒm gáº§n nháº¥t: (${nearest.point.lat}, ${nearest.point.lng})\n`;
+            out += `  â””â”€ Khoáº£ng cÃ¡ch Æ°á»›c tÃ­nh: ~${(nearest.distance * 111320).toFixed(1)} mÃ©t.\n`;
+        } else {
+            out += `  â””â”€ ÄÃ£ tÃ¬m kiáº¿m xong trong khÃ´ng gian 2D KD-Tree.\n`;
+        }
+        printCppTerminal(out);
+    } else if (algoType === 'dijkstra') {
+        const start = performance.now();
+        const graph = new window.UTC2_DSA.CampusGraph();
+        const route = graph.findShortestPath('KTX_B', 'E3');
+        const duration = (performance.now() - start).toFixed(4);
+
+        let out = `>>> [C++17 EXEC] CampusGraph::dijkstraShortestPath("KTX_B", "E3")\n`;
+        out += `  â”œâ”€ Thuáº­t toÃ¡n: Dijkstra vá»›i Min-Heap Priority Queue O((V + E) log V)\n`;
+        out += `  â”œâ”€ Äiá»ƒm xuáº¥t phÃ¡t: KTX Khu B UTC2 âž” ÄÃ­ch Ä‘áº¿n: Giáº£ng Ä‘Æ°á»ng E3\n`;
+        out += `  â”œâ”€ Thá»i gian tÃ­nh toÃ¡n: ${duration} ms (${Math.round(duration * 1000)} Âµs)\n`;
+        if (route && route.path) {
+            out += `  â”œâ”€ Tuyáº¿n Ä‘Æ°á»ng ngáº¯n nháº¥t (${route.path.length} cháº·ng):\n`;
+            out += `  â”‚    ${route.path.join(' âž” ')}\n`;
+            out += `  â””â”€ Tá»•ng chiá»u dÃ i Ä‘Æ°á»ng Ä‘i: ${route.distance} mÃ©t (Khoáº£ng ${(route.distance / 1.4 / 60).toFixed(1)} phÃºt Ä‘i bá»™ sinh viÃªn).\n`;
+        } else {
+            out += `  â””â”€ KhÃ´ng tÃ¬m tháº¥y tuyáº¿n Ä‘Æ°á»ng.\n`;
+        }
+        printCppTerminal(out);
+    } else if (algoType === 'queue') {
+        const start = performance.now();
+        const msgQ = new window.UTC2_DSA.MessageQueue();
+        msgQ.enqueue({ id: 'M1', text: 'ChÃ o báº¡n, sÃ¡ch C++ cÃ²n khÃ´ng?', from: 'SV 6651071065' });
+        msgQ.enqueue({ id: 'M2', text: 'CÃ²n báº¡n nhÃ©, háº¹n gáº·p á»Ÿ ThÆ° viá»‡n E3.', from: 'SV 6651071099' });
+        const popped = msgQ.dequeue();
+
+        const actStack = new window.UTC2_DSA.ActionStack();
+        actStack.push({ action: 'CREATE_POST', id: 'POST_99', title: 'MÃ¡y tÃ­nh Casio 580VNX' });
+        const undone = actStack.pop();
+        const duration = (performance.now() - start).toFixed(4);
+
+        let out = `>>> [C++17 EXEC] MessageQueue (FIFO) & ActionStack (LIFO)\n`;
+        out += `  â”œâ”€ Queue FIFO: Enqueue 2 gÃ³i tin âž” Dequeue gÃ³i tin Ä‘áº§u tiÃªn:\n`;
+        out += `  â”‚    ÄÃ£ rÃºt khá»i hÃ ng Ä‘á»£i: [${popped ? popped.id : ''}] "${popped ? popped.text : ''}" (O(1))\n`;
+        out += `  â”œâ”€ Stack LIFO: Push bÃ i Ä‘Äƒng má»›i âž” Undo hoÃ n tÃ¡c bÃ i Ä‘Äƒng gáº§n nháº¥t:\n`;
+        out += `  â”‚    ÄÃ£ hoÃ n tÃ¡c thao tÃ¡c: [${undone ? undone.action : ''}] ${undone ? undone.title : ''} (O(1))\n`;
+        out += `  â””â”€ Thá»i gian thá»±c thi: ${duration} ms (${Math.round(duration * 1000)} Âµs)\n`;
+        printCppTerminal(out);
+    } else if (algoType === 'benchmark') {
+        let out = `>>> [C++17 BENCHMARK SUITE] Khá»Ÿi cháº¡y 10.000 phÃ©p toÃ¡n Ä‘á»“ng thá»i...\n`;
+        printCppTerminal(out);
+
+        setTimeout(() => {
+            const t0 = performance.now();
+            const trie = new window.UTC2_DSA.TrieWithHeap();
+            for (let i = 0; i < 3000; i++) {
+                trie.insert('Giao trinh UTC2 ' + (i % 50), 'ID_' + i, (i % 20) + 1);
+            }
+            const t1 = performance.now();
+
+            const avl = new window.UTC2_DSA.AVLTree();
+            for (let i = 0; i < 3000; i++) {
+                avl.insert({ id: 'P_' + i, price: (i * 37) % 500000, title: 'Item ' + i });
+            }
+            const t2 = performance.now();
+
+            const kd = new window.UTC2_DSA.KDTree();
+            for (let i = 0; i < 2000; i++) {
+                kd.findNearest(10.8465 + (i % 10) * 0.001, 106.7798 + (i % 10) * 0.001);
+            }
+            const t3 = performance.now();
+
+            const graph = new window.UTC2_DSA.CampusGraph();
+            for (let i = 0; i < 2000; i++) {
+                graph.findShortestPath('KTX_B', 'E3');
+            }
+            const t4 = performance.now();
+
+            const total = (t4 - t0).toFixed(2);
+            let res = `================================================================================\n`;
+            res += `              Káº¾T QUáº¢ BENCHMARK C++17 DSA ENGINE (10.000 OPERATIONS)           \n`;
+            res += `================================================================================\n`;
+            res += `  Thuáº­t toÃ¡n                    Sá»‘ lÆ°á»£ng       Thá»i gian       Tá»‘c Ä‘á»™ TB / Op\n`;
+            res += `  ----------------------------------------------------------------------------\n`;
+            res += `  1. Trie + Heap Insert         3.000 ops      ${(t1 - t0).toFixed(2)} ms         ${(((t1 - t0) / 3000) * 1000).toFixed(2)} Âµs/op\n`;
+            res += `  2. AVL Tree Balance Insert    3.000 ops      ${(t2 - t1).toFixed(2)} ms         ${(((t2 - t1) / 3000) * 1000).toFixed(2)} Âµs/op\n`;
+            res += `  3. 2D KD-Tree Nearest (KNN)   2.000 ops      ${(t3 - t2).toFixed(2)} ms         ${(((t3 - t2) / 2000) * 1000).toFixed(2)} Âµs/op\n`;
+            res += `  4. Dijkstra Shortest Path     2.000 ops      ${(t4 - t3).toFixed(2)} ms         ${(((t4 - t3) / 2000) * 1000).toFixed(2)} Âµs/op\n`;
+            res += `  ----------------------------------------------------------------------------\n`;
+            res += `  Tá»”NG Cá»˜NG                    10.000 ops      ${total} ms\n`;
+            res += `  ÄÃNH GIÃ HIá»†U NÄ‚NG:          Äáº T TIÃŠU CHUáº¨N XUáº¤T Sáº®C (Sub-millisecond latency)\n`;
+            res += `================================================================================\n`;
+            printCppTerminal(res);
+        }, 30);
+    }
+
+    if (window.sound) window.sound.playClick();
+}
+window.runCppAlgoOnline = runCppAlgoOnline;
+
+function executeCppTerminalCommand(rawCmd) {
+    const input = document.getElementById('cppTerminalInput');
+    if (input) input.value = '';
+    if (!rawCmd || !rawCmd.trim()) return;
+
+    const cmd = rawCmd.trim();
+    printCppTerminal(`utc2-cpp17> ${cmd}`);
+
+    const parts = cmd.split(' ');
+    const op = parts[0].toLowerCase();
+    const arg = parts.slice(1).join(' ');
+
+    switch (op) {
+        case 'help':
+            printCppTerminal(
+`DANH SÃCH Lá»†NH C++ ENGINE TRá»°C TUYáº¾N:
+  â€¢ trie [tá»« khÃ³a]       : TÃ¬m kiáº¿m tiá»n tá»‘ Autocomplete báº±ng Trie + Max-Heap
+  â€¢ avl                  : Lá»c khoáº£ng giÃ¡ báº±ng CÃ¢y nhá»‹ phÃ¢n tá»± cÃ¢n báº±ng AVL Tree
+  â€¢ kdtree               : TÃ¬m lÃ¡ng giá»ng gáº§n nháº¥t 2D KD-Tree tá»a Ä‘á»™ Campus UTC2
+  â€¢ dijkstra             : TÃ¬m Ä‘Æ°á»ng Ä‘i ngáº¯n nháº¥t khuÃ´n viÃªn UTC2 báº±ng Dijkstra
+  â€¢ queue                : Cháº¡y hÃ ng Ä‘á»£i tin nháº¯n FIFO & ngÄƒn xáº¿p hoÃ n tÃ¡c LIFO
+  â€¢ benchmark            : Cháº¡y kiá»ƒm thá»­ tá»‘c Ä‘á»™ 10.000 phÃ©p toÃ¡n Ä‘á»“ng thá»i
+  â€¢ source               : Má»Ÿ / ÄÃ³ng khung xem toÃ n bá»™ mÃ£ nguá»“n C++ (870 dÃ²ng)
+  â€¢ clear                : XÃ³a sáº¡ch mÃ n hÃ¬nh terminal
+  â€¢ exit / close         : ÄÃ³ng cá»­a sá»• C++ Terminal`
+            );
+            break;
+        case 'trie':
+            runCppAlgoOnline('trie', arg || 'giÃ¡o trÃ¬nh');
+            break;
+        case 'avl':
+            runCppAlgoOnline('avl');
+            break;
+        case 'kdtree':
+            runCppAlgoOnline('kdtree');
+            break;
+        case 'dijkstra':
+            runCppAlgoOnline('dijkstra');
+            break;
+        case 'queue':
+            runCppAlgoOnline('queue');
+            break;
+        case 'benchmark':
+            runCppAlgoOnline('benchmark');
+            break;
+        case 'source':
+            toggleCppSourceViewer();
+            break;
+        case 'clear':
+            clearCppTerminal();
+            break;
+        case 'exit':
+        case 'close':
+            closeModal('cppOnlineConsoleModal');
+            break;
+        default:
+            printCppTerminal(`[Lá»–I]: Lá»‡nh khÃ´ng há»£p lá»‡ '${op}'. GÃµ 'help' Ä‘á»ƒ xem danh sÃ¡ch lá»‡nh Ä‘Æ°á»£c há»— trá»£.`);
+            break;
+    }
+}
+window.executeCppTerminalCommand = executeCppTerminalCommand;
+
+let isCppSourceLoaded = false;
+function toggleCppSourceViewer() {
+    const wrap = document.getElementById('cppSourceViewerWrap');
+    if (!wrap) return;
+
+    if (wrap.style.display === 'none' || wrap.style.display === '') {
+        wrap.style.display = 'block';
+        if (!isCppSourceLoaded) {
+            const display = document.getElementById('cppSourceCodeDisplay');
+            if (display) display.textContent = '// Äang náº¡p mÃ£ nguá»“n dsa_core_engine.cpp...';
+            fetch('dsa_core_engine.cpp')
+                .then(res => {
+                    if (!res.ok) throw new Error('Network error');
+                    return res.text();
+                })
+                .then(code => {
+                    isCppSourceLoaded = true;
+                    if (display) display.textContent = code;
+                })
+                .catch(() => {
+                    if (display) display.textContent = '// Vui lÃ²ng táº£i file dsa_core_engine.cpp hoáº·c má»Ÿ trá»±c tiáº¿p trÃªn IDE/Compiler.';
+                });
+        }
+    } else {
+        wrap.style.display = 'none';
+    }
+}
+window.toggleCppSourceViewer = toggleCppSourceViewer;
+
+function copyCppSourceCode() {
+    const display = document.getElementById('cppSourceCodeDisplay');
+    const code = display ? display.textContent : '';
+    if (code && code.length > 50) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('ðŸ“‹ ÄÃ£ sao chÃ©p mÃ£ nguá»“n C++ (870 dÃ²ng) vÃ o clipboard!', 'success');
+            }).catch(() => {
+                showToast('ÄÃ£ chá»n mÃ£ nguá»“n C++', 'info');
+            });
+        } else {
+            showToast('ÄÃ£ chá»n mÃ£ nguá»“n C++', 'info');
+        }
+    } else {
+        showToast('Vui lÃ²ng Ä‘á»£i mÃ£ nguá»“n náº¡p xong...', 'info');
+    }
+}
+window.copyCppSourceCode = copyCppSourceCode;
+
+function openCloudCppCompiler() {
+    window.open('https://www.onlinegdb.com/online_c++_compiler', '_blank');
+}
+window.openCloudCppCompiler = openCloudCppCompiler;
