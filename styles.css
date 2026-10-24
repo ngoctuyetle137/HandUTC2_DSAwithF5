@@ -2957,3 +2957,65 @@ body {
     border-color: #d97706;
     color: #fde68a;
 }
+/* ===================================================================
+   MESSENGER STYLE INCOMING CONVERSATIONS & UNREAD BADGES
+   =================================================================== */
+.chat-inbox-item.unread {
+    background: #f0f9ff !important;
+    border: 1.5px solid #0284c7 !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.18) !important;
+    position: relative;
+}
+
+.chat-inbox-item.unread:hover {
+    background: #e0f2fe !important;
+    border-color: #0369a1 !important;
+}
+
+.chat-inbox-item.unread .chat-inbox-name {
+    font-weight: 800 !important;
+    color: #0369a1 !important;
+}
+
+.chat-inbox-item.unread .chat-inbox-snippet {
+    font-weight: 700 !important;
+    color: #0284c7 !important;
+}
+
+.messenger-new-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-left: 6px;
+    letter-spacing: 0.3px;
+    box-shadow: 0 1px 4px rgba(2, 132, 199, 0.4);
+    animation: pulseDot 1.5s infinite;
+}
+
+.messenger-unread-dot {
+    width: 9px;
+    height: 9px;
+    background: #0284c7;
+    border-radius: 50%;
+    margin-left: 6px;
+    flex-shrink: 0;
+    display: inline-block;
+    box-shadow: 0 0 6px #0284c7;
+}
+
+@keyframes navChatPulse {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.15); box-shadow: 0 0 10px rgba(2, 132, 199, 0.5); }
+    60% { transform: scale(0.98); }
+    100% { transform: scale(1); }
+}
+
+.nav-chat-pulse {
+    animation: navChatPulse 0.8s ease-in-out 3;
+}

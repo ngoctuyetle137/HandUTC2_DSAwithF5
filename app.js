@@ -1,4 +1,4 @@
-/**
+﻿/**
  * UniPass UTC2 / UTC2Hand - App Controller
  * Phục vụ chuẩn giao diện & tính năng:
  * 1. Chat thực thụ giữa các tài khoản sinh viên.
@@ -350,6 +350,14 @@ class AppController {
 
         // Tự động dọn dẹp tin nhắn của các đơn hàng đã hoàn tất thành công từ trước
         this.cleanupCompletedOrdersChats();
+
+        // Khởi tạo danh sách ID tin nhắn đã đọc (Messenger Flow)
+        const savedReadIds = localStorage.getItem('unipass_read_message_ids');
+        try {
+            this.readMessageIds = new Set(savedReadIds ? JSON.parse(savedReadIds) : []);
+        } catch (e) {
+            this.readMessageIds = new Set();
+        }
 
         // Tải thông báo người dùng
         const savedNotifs = localStorage.getItem('unipass_user_notifications');
@@ -710,8 +718,7 @@ class AppController {
                     const isForMe = (myN && recN === myN) || (myE && recE === myE) || (myE && recN === myE);
 
                     if (isForMe) {
-                        if (window.sound) window.sound.playNotification();
-                        showToast(`💬 Tin nhắn mới từ ${newM.sender_name}: "${newM.text}"`, 'success');
+                        this.handleIncomingChatMessageOnScreen(newM);
                     }
                 }
             } else if (payload.eventType === 'DELETE') {
@@ -914,8 +921,7 @@ class AppController {
                 const isForMe = (myN && recN === myN) || (myE && recE === myE) || (myE && recN === myE);
 
                 if (isForMe) {
-                    if (window.sound) window.sound.playNotification();
-                    showToast(`💬 [TIN NHẮN MỚI] ${msg.sender}: "${msg.text}"`, 'success');
+                    this.handleIncomingChatMessageOnScreen(msg);
                 }
             }
         });
@@ -1094,45 +1100,63 @@ class AppController {
 
         if (!isForMe) return;
 
-        const senderName = msg.sender || msg.sender_name || 'NgÆ°á»i dÃ¹ng UTC2';
+        const senderName = msg.sender || msg.sender_name || 'Người dùng UTC2';
         const senderEmail = msg.senderEmail || msg.sender_email || '';
 
-        // PhÃ¡t Ã¢m thanh chuÃ´ng bÃ¡o tin nháº¯n
+        // Phát âm thanh chuông báo tin nhắn
         if (window.sound && typeof window.sound.playNotification === 'function') {
             window.sound.playNotification();
         }
 
-        // Tá»± Ä‘á»™ng báº­t khung chat thoáº¡i hiá»ƒn thá»‹ trÃªn mÃ n hÃ¬nh
         const chatBox = document.getElementById('chatWindow');
-        if (chatBox) {
-            chatBox.style.display = 'flex';
-            chatBox.classList.remove('chat-incoming-pulse');
-            void chatBox.offsetWidth;
-            chatBox.classList.add('chat-incoming-pulse');
-            setTimeout(() => {
-                if (chatBox) chatBox.classList.remove('chat-incoming-pulse');
-            }, 800);
-        }
+        const convView = document.getElementById('chatConversationsView');
+        const detailView = document.getElementById('chatDetailView');
 
-        // Má»Ÿ cá»­a sá»• chi tiáº¿t vá»›i ngÆ°á»i gá»­i tin nháº¯n
-        if (typeof openChatBetweenUsers === 'function') {
-            const prodObj = (msg.productId || msg.product_id) ? {
-                id: msg.productId || msg.product_id,
-                title: msg.productTitle || msg.product_title || 'Sáº£n pháº©m trao Ä‘á»•i'
-            } : null;
-            openChatBetweenUsers(senderName, prodObj, msg.orderId || msg.order_id || null, senderEmail);
-        }
+        // Kiểm tra xem hiện tại Machine B có đang mở đúng phòng chat chi tiết với người gửi không
+        const curPartnerName = (this.currentChatPartner || '').toLowerCase().trim();
+        const curPartnerEmail = (this.currentChatPartnerEmail || '').toLowerCase().trim();
+        const sndN = senderName.toLowerCase().trim();
+        const sndE = senderEmail.toLowerCase().trim();
 
-        // Cáº­p nháº­t bong bÃ³ng tin nháº¯n vÃ  cuá»™n Ä‘áº¿n cuá»‘i cÃ¹ng
-        this.renderChatMessages();
-        const area = document.getElementById('chatMessagesArea');
-        if (area) {
-            setTimeout(() => {
-                area.scrollTop = area.scrollHeight;
-            }, 100);
-        }
+        const isChattingWithSender = detailView && detailView.style.display !== 'none' && (
+            (curPartnerEmail && (curPartnerEmail === sndE || curPartnerEmail === sndN)) ||
+            (curPartnerName && (curPartnerName === sndN || curPartnerName === sndE))
+        );
 
-        showToast(`ðŸ’¬ [TIN NHáº®N TRá»°C TIáº¾P] ${senderName}: "${msg.text || ''}"`, 'success');
+        if (isChattingWithSender) {
+            // Đang mở đúng cuộc trò chuyện -> hiển thị ngay tin nhắn và đánh dấu đã đọc
+            if (msg.id && this.readMessageIds) {
+                this.readMessageIds.add(msg.id);
+                try {
+                    localStorage.setItem('unipass_read_message_ids', JSON.stringify(Array.from(this.readMessageIds)));
+                } catch (e) {}
+            }
+            this.renderChatMessages();
+            const area = document.getElementById('chatMessagesArea');
+            if (area) {
+                setTimeout(() => { area.scrollTop = area.scrollHeight; }, 100);
+            }
+            this.updateChatUnreadBadge();
+        } else {
+            // CHUẨN MESSENGER: Mở khung chat ở danh sách cuộc trò chuyện (Inbox)
+            // Hiển thị cuộc trò chuyện với huy hiệu Mới, máy B bấm vào mới xem được nội dung tin nhắn
+            if (chatBox) {
+                chatBox.style.display = 'flex';
+                chatBox.classList.remove('chat-incoming-pulse');
+                void chatBox.offsetWidth;
+                chatBox.classList.add('chat-incoming-pulse');
+                setTimeout(() => {
+                    if (chatBox) chatBox.classList.remove('chat-incoming-pulse');
+                }, 800);
+            }
+
+            if (convView) convView.style.display = 'flex';
+            if (detailView) detailView.style.display = 'none';
+
+            this.renderChatInbox();
+            this.updateChatUnreadBadge();
+            showToast(`💬 [MESSENGER] ${senderName} vừa gửi tin nhắn! Bấm vào cuộc trò chuyện để xem chi tiết.`, 'info');
+        }
     }
 
     checkAuthDisplay() {
@@ -1277,21 +1301,72 @@ class AppController {
 
     updateChatUnreadBadge() {
         const badge = document.getElementById('unreadChatBadge');
+        const navBtn = document.querySelector('.nav-item-btn[data-tab="messages"]') || 
+                       document.querySelector('button[onclick*="openChatBetweenUsers"]') || 
+                       document.querySelector('button[data-tab="messages"]');
+
         if (!badge) return;
         if (!this.user) {
             badge.style.display = 'none';
             badge.innerText = '0';
+            if (navBtn) navBtn.classList.remove('nav-chat-pulse');
             return;
         }
 
-        const incoming = this.chatMessages.filter(m => m.receiver === this.user.name);
-        const count = incoming.length;
+        const myName = (this.user.name || '').toLowerCase();
+        const myEmail = (this.user.email || '').toLowerCase();
+
+        const unreadIncoming = this.chatMessages.filter(m => {
+            const recN = (m.receiver || '').toLowerCase();
+            const recE = (m.receiverEmail || '').toLowerCase();
+            const isForMe = (myEmail && recE === myEmail) || (myName && recN === myName) || (myEmail && recN === myEmail);
+            return isForMe && m.id && (!this.readMessageIds || !this.readMessageIds.has(m.id));
+        });
+
+        const count = unreadIncoming.length;
 
         if (count > 0) {
             badge.style.display = 'inline-block';
-            badge.innerText = count;
+            badge.innerText = count > 99 ? '99+' : count;
+            if (navBtn) navBtn.classList.add('nav-chat-pulse');
         } else {
             badge.style.display = 'none';
+            badge.innerText = '0';
+            if (navBtn) navBtn.classList.remove('nav-chat-pulse');
+        }
+    }
+
+    markConversationAsRead(partnerName, partnerEmail) {
+        if (!this.user || (!partnerName && !partnerEmail)) return;
+        const myName = (this.user.name || '').toLowerCase();
+        const myEmail = (this.user.email || '').toLowerCase();
+        const pName = (partnerName || '').toLowerCase();
+        const pEmail = (partnerEmail || '').toLowerCase();
+
+        let modified = false;
+        this.chatMessages.forEach(m => {
+            const recN = (m.receiver || '').toLowerCase();
+            const recE = (m.receiverEmail || '').toLowerCase();
+            const isForMe = (myEmail && recE === myEmail) || (myName && recN === myName) || (myEmail && recN === myEmail);
+            if (!isForMe) return;
+
+            const sndN = (m.sender || '').toLowerCase();
+            const sndE = (m.senderEmail || '').toLowerCase();
+            const isFromPartner = (pEmail && (sndE === pEmail || sndN === pEmail)) || 
+                                  (pName && (sndN === pName || sndE === pName));
+
+            if (isFromPartner && m.id && (!this.readMessageIds || !this.readMessageIds.has(m.id))) {
+                if (!this.readMessageIds) this.readMessageIds = new Set();
+                this.readMessageIds.add(m.id);
+                modified = true;
+            }
+        });
+
+        if (modified) {
+            try {
+                localStorage.setItem('unipass_read_message_ids', JSON.stringify(Array.from(this.readMessageIds)));
+            } catch (e) {}
+            this.updateChatUnreadBadge();
         }
     }
 
@@ -2245,8 +2320,31 @@ class AppController {
             return;
         }
 
-        // Sắp xếp cuộc trò chuyện có tin nhắn mới nhất lên đầu
-        conversations.sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
+        // Tính số tin nhắn chưa đọc cho từng cuộc trò chuyện (Messenger Flow)
+        conversations.forEach(c => {
+            const pN = (c.partnerName || '').toLowerCase();
+            const pE = (c.partnerEmail || '').toLowerCase();
+            const unread = this.chatMessages.filter(m => {
+                const recN = (m.receiver || '').toLowerCase();
+                const recE = (m.receiverEmail || '').toLowerCase();
+                const isForMe = (myEmail && recE === myEmail) || (myName && recN === myName) || (myEmail && recN === myEmail);
+                if (!isForMe) return false;
+
+                const sndN = (m.sender || '').toLowerCase();
+                const sndE = (m.senderEmail || '').toLowerCase();
+                const isFromPartner = (pE && (sndE === pE || sndN === pE)) || (pN && (sndN === pN || sndE === pN));
+                return isFromPartner && m.id && (!this.readMessageIds || !this.readMessageIds.has(m.id));
+            }).length;
+            c.unreadCount = unread;
+            c.isUnread = unread > 0;
+        });
+
+        // Sắp xếp kiểu Messenger: Tin nhắn chưa đọc lên ĐẦU TIÊN, sau đó mới đến thời gian mới nhất
+        conversations.sort((a, b) => {
+            if (a.isUnread && !b.isUnread) return -1;
+            if (!a.isUnread && b.isUnread) return 1;
+            return (b.lastTimestamp || 0) - (a.lastTimestamp || 0);
+        });
 
         listEl.innerHTML = conversations.map(c => {
             const partnerUser = this.registeredUsers.find(u => u.name === c.partnerName);
@@ -2259,6 +2357,11 @@ class AppController {
             const timeStr = c.lastMessage && c.lastMessage.time ? c.lastMessage.time : '';
             const prodTag = c.productTitle ? `📦 ${c.productTitle}` : '';
             const roleTagHtml = c.roleTag ? `<span style="background:#e0f2fe; color:#0369a1; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:600; margin-left:6px;">${c.roleTag}</span>` : '';
+            const emailSubtitle = c.partnerEmail ? `<span style="font-size:11px; color:#64748b; font-weight:normal;">(${c.partnerEmail})</span>` : '';
+
+            const unreadClass = c.isUnread ? 'unread' : '';
+            const unreadPillHtml = c.isUnread ? `<span class="messenger-new-pill">Mới (${c.unreadCount})</span>` : '';
+            const unreadDotHtml = c.isUnread ? `<span class="messenger-unread-dot" title="Tin nhắn chưa đọc"></span>` : '';
 
             const safePartner = c.partnerName.replace(/'/g, "\\'");
             const safePartnerEmail = (c.partnerEmail || '').replace(/'/g, "\\'");
@@ -2267,12 +2370,15 @@ class AppController {
             const safeOrderId = c.orderId || '';
 
             return `
-                <div class="chat-inbox-item" onclick="openChatBetweenUsers('${safePartner}', { id: '${safeProductId}', title: '${safeProductTitle}' }, '${safeOrderId}', '${safePartnerEmail}')">
+                <div class="chat-inbox-item ${unreadClass}" onclick="openChatBetweenUsers('${safePartner}', { id: '${safeProductId}', title: '${safeProductTitle}' }, '${safeOrderId}', '${safePartnerEmail}')">
                     <div class="chat-inbox-avatar">${partnerAvatarHtml}</div>
                     <div class="chat-inbox-info">
                         <div class="chat-inbox-top">
-                            <div class="chat-inbox-name">${c.partnerName} ${emailSubtitle} ${roleTagHtml}</div>
-                            <div class="chat-inbox-time">${timeStr}</div>
+                            <div class="chat-inbox-name">${c.partnerName} ${emailSubtitle} ${unreadPillHtml} ${roleTagHtml}</div>
+                            <div style="display:flex; align-items:center;">
+                                <div class="chat-inbox-time">${timeStr}</div>
+                                ${unreadDotHtml}
+                            </div>
                         </div>
                         ${prodTag ? `<div class="chat-inbox-product">${prodTag}</div>` : ''}
                         <div class="chat-inbox-snippet">${lastTxt}</div>
@@ -3416,6 +3522,11 @@ function openChatBetweenUsers(targetPartnerName = null, product = null, orderId 
         window.app.currentChatPartnerEmail = resolvedEmail;
         window.app.currentChatProduct = product || null;
         window.app.currentChatOrderId = orderId || null;
+
+        // Đánh dấu đã đọc toàn bộ tin nhắn từ đối tác này (Messenger Flow)
+        if (window.app && typeof window.app.markConversationAsRead === 'function') {
+            window.app.markConversationAsRead(resolvedName, resolvedEmail);
+        }
 
         if (convView) convView.style.display = 'none';
         if (detailView) detailView.style.display = 'flex';
