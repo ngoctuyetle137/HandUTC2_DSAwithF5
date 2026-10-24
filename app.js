@@ -535,13 +535,24 @@ class AppController {
                 console.log(`✅ [Supabase] Đã nạp ${cloudProducts.length} sản phẩm từ Cloud (Kèm ${localOnly.length} bài cục bộ)`);
             }
 
-            // Tải tin nhắn từ Supabase
+            // Tải tin nhắn từ Supabase và hợp nhất bảo toàn 100% tin nhắn đã có
             const cloudMessages = await window.UniPassSupabase.getChatMessages();
             if (cloudMessages && Array.isArray(cloudMessages) && cloudMessages.length > 0) {
-                this.chatMessages = cloudMessages;
+                const existingMap = new Map();
+                this.chatMessages.forEach(m => {
+                    if (m && m.id) existingMap.set(m.id, m);
+                });
+                cloudMessages.forEach(cm => {
+                    if (cm && cm.id && !existingMap.has(cm.id)) {
+                        existingMap.set(cm.id, cm);
+                    }
+                });
+                this.chatMessages = Array.from(existingMap.values());
+                this.saveChats();
                 this.renderChatMessages();
+                this.renderChatInbox();
                 this.updateChatUnreadBadge();
-                console.log(`✅ [Supabase] Đã nạp ${cloudMessages.length} tin nhắn từ Cloud`);
+                console.log(`✅ [Supabase] Đã hợp nhất ${this.chatMessages.length} tin nhắn (Cloud + Local)`);
             }
 
             // Tải đơn cọc từ Supabase
@@ -963,25 +974,11 @@ class AppController {
             }
         });
 
-        // 4c. Nhận tín hiệu xóa tin nhắn sau khi đơn hàng hoàn thành từ máy khác
+        // 4c. Nhận tín hiệu đồng bộ tin nhắn (Bảo lưu toàn bộ lịch sử cuộc trò chuyện)
         window.UniPassOnlineSync.on('CHAT_DELETED', (data) => {
-            if (!data) return;
-            console.log('📡 [Online Sync] Nhận tín hiệu tự động xóa tin nhắn khi hoàn tất đơn hàng:', data);
-            this.chatMessages = this.chatMessages.filter(m => {
-                if (data.productId && m.productId === data.productId) return false;
-                if (data.orderId && m.orderId === data.orderId) return false;
-                if ((m.sender === data.buyer && m.receiver === data.seller) || 
-                    (m.sender === data.seller && m.receiver === data.buyer)) {
-                    return false;
-                }
-                return true;
-            });
-            this.saveChats();
-            this.renderChatMessages();
-            this.updateChatUnreadBadge();
+            console.log('📡 [Online Sync] Giữ nguyên toàn bộ lịch sử cuộc trò chuyện.');
         });
 
-        // 4c. Nhận khiếu nại giao dịch mới từ sinh viên gửi Admin
         window.UniPassOnlineSync.on('NEW_DISPUTE', (dispute) => {
             if (!dispute || !dispute.id) return;
             const exists = this.adminDisputes.some(d => d.id === dispute.id);
@@ -1219,29 +1216,10 @@ class AppController {
         }
     }
 
-    // Tự động dọn dẹp các tin nhắn của các đơn hàng đã hoàn tất thành công (Bảo vệ quyền riêng tư)
+    // Bảo lưu vĩnh viễn toàn bộ lịch sử tin nhắn cuộc trò chuyện giữa các tài khoản
     cleanupCompletedOrdersChats() {
-        if (!this.depositOrders || this.depositOrders.length === 0 || !this.chatMessages || this.chatMessages.length === 0) return;
-        const completedOrders = this.depositOrders.filter(o => o.status === 'completed');
-        if (completedOrders.length === 0) return;
-
-        const initialCount = this.chatMessages.length;
-        completedOrders.forEach(o => {
-            this.chatMessages = this.chatMessages.filter(m => {
-                if (o.productId && m.productId === o.productId) return false;
-                if (m.orderId && m.orderId === o.id) return false;
-                if ((m.sender === o.buyer && m.receiver === o.seller) || 
-                    (m.sender === o.seller && m.receiver === o.buyer)) {
-                    return false;
-                }
-                return true;
-            });
-        });
-
-        if (this.chatMessages.length !== initialCount) {
-            console.log(`🧹 [UniPassApp] Đã tự động dọn dẹp ${initialCount - this.chatMessages.length} tin nhắn của các đơn đã hoàn thành.`);
-            this.saveChats();
-        }
+        // Không xóa bất kỳ tin nhắn nào khi hoàn tất đơn hàng hoặc đăng xuất
+        return;
     }
 
     saveOrders() {
@@ -2042,9 +2020,9 @@ class AppController {
                         `;
                     } else if (o.status === 'completed') {
                         actionButtonsHtml += `
-                            <span style="font-size:11px; color:#15803d; font-weight:700; background:#f0fdf4; padding:3px 8px; border-radius:4px; border:1px solid #bbf7d0;">
-                                🔒 Lịch sử tin nhắn đã tự động xóa bảo mật
-                            </span>
+                            <button class="btn-outline-chat" style="font-size:11px; padding:5px 9px; width:auto; margin:0; color:#0284c7; border-color:#93c5fd;" onclick="openChatBetweenUsers('${counterpartName}', { id: '${o.productId}', title: '${o.productTitle}' }, '${o.id}')">
+                                💬 Xem Lại Tin Nhắn Trao Đổi
+                            </button>
                         `;
                     }
 
@@ -2181,10 +2159,12 @@ class AppController {
                 if (o.status !== 'completed' && o.status !== 'closed_penalized') {
                     let partnerName = null;
                     let roleText = '';
-                    if (o.seller === myName) {
+                    const oSeller = (o.seller || '').toLowerCase();
+                    const oBuyer = (o.buyer || '').toLowerCase();
+                    if (oSeller === myName || (o.sellerEmail && o.sellerEmail.toLowerCase() === myEmail)) {
                         partnerName = o.buyer;
                         roleText = 'Người mua đặt cọc';
-                    } else if (o.buyer === myName) {
+                    } else if (oBuyer === myName || (o.buyerEmail && o.buyerEmail.toLowerCase() === myEmail)) {
                         partnerName = o.seller;
                         roleText = 'Người bán';
                     }
@@ -2349,36 +2329,29 @@ class AppController {
             (isPartner(m.sender, m.senderEmail) && isMe(m.receiver, m.receiverEmail))
         );
 
-        // Kiểm tra xem giữa 2 bạn có đơn hàng nào đã hoàn thành hay không
-        const completedOrder = this.depositOrders.find(o => 
-            o.status === 'completed' &&
-            ((o.buyer === this.user.name && o.seller === partnerName) ||
-             (o.seller === this.user.name && o.buyer === partnerName))
-        );
-
         if (conversation.length === 0) {
-            if (completedOrder) {
-                area.innerHTML = `
-                    <div style="text-align:center; padding:22px 14px; background:#f0fdf4; border:1.5px dashed #86efac; border-radius:12px; margin:20px 8px;">
-                        <span style="font-size:32px; display:block; margin-bottom:8px;">🤝🔒</span>
-                        <strong style="color:#15803d; font-size:13.5px; display:block; margin-bottom:4px;">Giao dịch "${completedOrder.productTitle}" đã hoàn tất thành công!</strong>
-                        <div style="font-size:12px; color:#475569; line-height:1.5;">
-                            Theo chính sách bảo vệ quyền riêng tư sinh viên UTC2, lịch sử tin nhắn cuộc trò chuyện đã <strong>tự động xóa hoàn toàn</strong> sau khi đơn hàng hoàn thành.
-                        </div>
-                    </div>
-                `;
-            } else {
-                area.innerHTML = `
-                    <div style="text-align:center; color:#94a3b8; font-size:12.5px; margin-top:30px;">
-                        Chưa có tin nhắn nào giữa <strong>${this.user.name}</strong> và <strong>${partnerName}</strong>.<br>
-                        Hãy gõ tin nhắn bên dưới để bắt đầu trao đổi đồ!
-                    </div>
-                `;
-            }
+            area.innerHTML = `
+                <div style="text-align:center; color:#94a3b8; font-size:12.5px; margin-top:30px;">
+                    Chưa có tin nhắn nào giữa <strong>${this.user.name}</strong> và <strong>${partnerName}</strong>.<br>
+                    Hãy gõ tin nhắn bên dưới để bắt đầu trao đổi đồ!
+                </div>
+            `;
             return;
         }
 
-        // Hiển thị thanh thông tin sản phẩm đang trao đổi nếu có
+        const completedOrder = this.depositOrders.find(o => 
+            o.status === 'completed' &&
+            (((o.buyer || '').toLowerCase() === myName && (o.seller || '').toLowerCase() === pName) ||
+             ((o.seller || '').toLowerCase() === myName && (o.buyer || '').toLowerCase() === pName))
+        );
+        let completedNoticeHtml = '';
+        if (completedOrder) {
+            completedNoticeHtml = `
+                <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:6px 10px; font-size:11.5px; color:#15803d; margin-bottom:10px; text-align:center; font-weight:700;">
+                    🤝 Giao dịch "${completedOrder.productTitle}" đã hoàn tất thành công. Lịch sử cuộc trò chuyện vẫn được bảo lưu an toàn.
+                </div>
+            `;
+        }
         let productNoticeHtml = '';
         const currentProd = this.currentChatProduct || (conversation[conversation.length - 1].productTitle ? { title: conversation[conversation.length - 1].productTitle } : null);
         if (currentProd && currentProd.title) {
@@ -2389,7 +2362,7 @@ class AppController {
             `;
         }
 
-        area.innerHTML = productNoticeHtml + conversation.map(m => {
+        area.innerHTML = completedNoticeHtml + productNoticeHtml + conversation.map(m => {
             const isMeMsg = isMe(m.sender, m.senderEmail);
             return `
                 <div class="msg-bubble ${isMeMsg ? 'sent' : 'received'}">
@@ -3068,11 +3041,22 @@ async function handleAuthSubmitForm(e) {
         window.app.generatedOtp = null;
 
         window.app.isLoggedIn = true;
+        localStorage.setItem('unipass_current_user', JSON.stringify(newUser));
+        
+        // Náº¡p láº¡i toÃ n bá»™ tin nháº¯n tá»« localStorage Ä‘á»ƒ Ä‘áº£m báº£o cuá»™c trÃ² chuyá»‡n trÆ°á»›c Ä‘Ã³ cÃ²n nguyÃªn váº¹n
+        const savedChats = localStorage.getItem('unipass_shared_messages');
+        if (savedChats) {
+            try { window.app.chatMessages = JSON.parse(savedChats); } catch (e) {}
+        }
+        
         window.app.checkAuthDisplay();
         window.app.updateUserUI();
         window.app.renderProducts();
         window.app.renderProfile();
         window.app.renderAdminDashboard();
+        window.app.renderChatInbox();
+        window.app.renderChatMessages();
+        window.app.updateChatUnreadBadge();
 
         // Đồng bộ profile lên Supabase Cloud & Mạng Đa Máy
         if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
@@ -3132,11 +3116,22 @@ async function handleAuthSubmitForm(e) {
         // Đăng nhập thành công
         window.app.user = existingUser;
         window.app.isLoggedIn = true;
+        localStorage.setItem('unipass_current_user', JSON.stringify(existingUser));
+        
+        // Nạp lại toàn bộ tin nhắn từ localStorage để đảm bảo cuộc trò chuyện trước đó còn nguyên vẹn
+        const savedChats = localStorage.getItem('unipass_shared_messages');
+        if (savedChats) {
+            try { window.app.chatMessages = JSON.parse(savedChats); } catch (e) {}
+        }
+        
         window.app.checkAuthDisplay();
         window.app.updateUserUI();
         window.app.renderProducts();
         window.app.renderProfile();
         window.app.renderAdminDashboard();
+        window.app.renderChatInbox();
+        window.app.renderChatMessages();
+        window.app.updateChatUnreadBadge();
 
         // Đồng bộ profile lên Supabase Cloud & Mạng Đa Máy
         if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
@@ -3180,10 +3175,20 @@ function quickLoginDemoUser(userKey) {
 
     window.app.user = found;
     window.app.isLoggedIn = true;
+    localStorage.setItem('unipass_current_user', JSON.stringify(found));
+    
+    const savedChats = localStorage.getItem('unipass_shared_messages');
+    if (savedChats) {
+        try { window.app.chatMessages = JSON.parse(savedChats); } catch (e) {}
+    }
+    
     window.app.checkAuthDisplay();
     window.app.updateUserUI();
     window.app.renderProducts();
     window.app.renderProfile();
+    window.app.renderChatInbox();
+    window.app.renderChatMessages();
+    window.app.updateChatUnreadBadge();
 
     if (userKey === 'admin') {
         switchNavTab('admin');
@@ -3200,6 +3205,8 @@ function logoutToAuthScreen() {
         window.app.currentChatPartnerEmail = null;
         window.app.currentChatProduct = null;
         window.app.currentChatOrderId = null;
+        // Báº£o lÆ°u vÄ©nh viá»…n toÃ n bá»™ tin nháº¯n cuá»™c trÃ² chuyá»‡n trÆ°á»›c Ä‘Ã³
+        window.app.saveChats();
     }
     const searchInput = document.getElementById('chatUserSearchInput');
     const searchResults = document.getElementById('chatSearchResultsBox');
@@ -4186,37 +4193,10 @@ function confirmTradeComplete(orderId, role) {
             }
         }
 
-        // TỰ ĐỘNG XÓA TIN NHẮN CUỘC TRÒ CHUYỆN LIÊN QUAN ĐẾN ĐƠN HÀNG (BẢO VỆ RIÊNG TƯ THEO doPasss.docx)
-        const buyerName = order.buyer;
-        const sellerName = order.seller;
-        const pId = order.productId;
-
-        window.app.chatMessages = window.app.chatMessages.filter(m => {
-            if (pId && m.productId === pId) return false;
-            if (m.orderId && m.orderId === order.id) return false;
-            if ((m.sender === buyerName && m.receiver === sellerName) || 
-                (m.sender === sellerName && m.receiver === buyerName)) {
-                return false;
-            }
-            return true;
-        });
+        // Bảo lưu 100% toàn bộ lịch sử cuộc trò chuyện giữa người mua và người bán
         window.app.saveChats();
         window.app.renderChatMessages();
-
-        // Đồng bộ xóa tin nhắn trên Supabase Cloud
-        if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
-            window.UniPassSupabase.deleteChatMessagesForOrder(pId, buyerName, sellerName);
-        }
-
-        // Phát sóng xóa tin nhắn đa máy qua Realtime Sync
-        if (window.UniPassOnlineSync) {
-            window.UniPassOnlineSync.broadcastDeleteChat({
-                orderId: order.id,
-                productId: pId,
-                buyer: buyerName,
-                seller: sellerName
-            });
-        }
+        window.app.renderChatInbox();
 
         window.app.saveOrders();
 
