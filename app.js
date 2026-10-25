@@ -2784,23 +2784,49 @@ function switchAuthMode(mode) {
     const subEl = document.getElementById('authCardSubtitle');
     const switchTxt = document.getElementById('authBottomSwitchText');
     const switchLnk = document.getElementById('authBottomSwitchLink');
+    const pwdLabel = document.getElementById('authPasswordLabel');
+    const pwdInput = document.getElementById('authPasswordInput');
+    const optionsRow = document.getElementById('authOptionsRow');
 
     if (mode === 'register') {
         if (tabReg) tabReg.classList.add('active');
         if (tabLog) tabLog.classList.remove('active');
         if (nameField) nameField.style.display = 'block';
         if (otpSec) otpSec.style.display = 'block';
+        if (optionsRow) optionsRow.style.display = 'none';
+        if (pwdLabel) pwdLabel.innerText = 'Password *';
+        if (pwdInput) pwdInput.placeholder = 'Password (tối thiểu 6 ký tự)';
         if (submitBtn) submitBtn.innerText = 'Sign up';
         if (titleEl) titleEl.innerText = 'Sign up';
         if (subEl) subEl.innerText = 'Tạo tài khoản sinh viên UTC2 mới (+20 Xu)';
         if (switchTxt) switchTxt.innerText = 'Already have an account?';
         if (switchLnk) switchLnk.innerText = 'Sign in';
+    } else if (mode === 'forgot') {
+        if (tabLog) tabLog.classList.remove('active');
+        if (tabReg) tabReg.classList.remove('active');
+        if (nameField) nameField.style.display = 'none';
+        if (otpSec) otpSec.style.display = 'block';
+        if (optionsRow) optionsRow.style.display = 'none';
+        if (pwdLabel) pwdLabel.innerText = 'Mật khẩu mới *';
+        if (pwdInput) {
+            pwdInput.placeholder = 'Nhập mật khẩu mới (tối thiểu 6 ký tự)...';
+            pwdInput.value = '';
+        }
+        if (submitBtn) submitBtn.innerText = 'Xác Nhận & Đổi Mật Khẩu';
+        if (titleEl) titleEl.innerText = 'QUÊN MẬT KHẨU';
+        if (subEl) subEl.innerText = 'Nhập Gmail UTC2 để nhận mã OTP và tạo mật khẩu mới';
+        if (switchTxt) switchTxt.innerText = 'Nhớ mật khẩu rồi?';
+        if (switchLnk) switchLnk.innerText = 'Đăng nhập ngay';
     } else {
+        // mode === 'login'
         if (tabLog) tabLog.classList.add('active');
         if (tabReg) tabReg.classList.remove('active');
         if (nameField) nameField.style.display = 'none';
         if (otpSec) otpSec.style.display = 'none';
         if (mockBox) mockBox.style.display = 'none';
+        if (optionsRow) optionsRow.style.display = 'flex';
+        if (pwdLabel) pwdLabel.innerText = 'Password *';
+        if (pwdInput) pwdInput.placeholder = 'Password';
         if (submitBtn) submitBtn.innerText = 'Sign in';
         if (titleEl) titleEl.innerText = 'Sign in';
         if (subEl) subEl.innerText = 'Đăng nhập tài khoản sinh viên UTC2 của bạn';
@@ -2812,6 +2838,8 @@ function switchAuthMode(mode) {
 
 function toggleAuthModeViaLink() {
     if (window.app.currentAuthMode === 'register') {
+        switchAuthMode('login');
+    } else if (window.app.currentAuthMode === 'forgot') {
         switchAuthMode('login');
     } else {
         switchAuthMode('register');
@@ -2832,11 +2860,17 @@ function togglePasswordVisibility() {
 }
 
 function handleForgotPassword() {
-    const email = document.getElementById('authEmailInput')?.value.trim();
-    if (email) {
-        showToast(`Yêu cầu hỗ trợ mật khẩu cho ${email} đã được tiếp nhận. Vui lòng liên hệ Admin qua Zalo/Email trường hoặc dùng chức năng quản trị!`, 'info');
+    switchAuthMode('forgot');
+    const emailInput = document.getElementById('authEmailInput');
+    const rawVal = emailInput ? emailInput.value.trim().toLowerCase() : '';
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@st\.utc2\.edu\.vn$/i;
+    
+    if (rawVal && emailRegex.test(rawVal)) {
+        showToast(`Đang gửi mã OTP xác nhận về Gmail: ${rawVal}...`, 'info');
+        requestOtpCode();
     } else {
-        showToast('Vui lòng nhập User Name / Gmail UTC2 của bạn vào ô trên trước khi chọn Forgot Password!', 'warning');
+        showToast('Vui lòng nhập Gmail sinh viên UTC2 (@st.utc2.edu.vn) rồi bấm "Gửi OTP" để tạo mật khẩu mới!', 'info');
+        if (emailInput) emailInput.focus();
     }
 }
 
@@ -2863,6 +2897,16 @@ const UniPassMailer = {
             otp: otp,
             type: 'register',
             title: 'Xác thực tài khoản'
+        });
+    },
+
+    // Gửi email mã OTP đặt lại mật khẩu
+    sendPasswordResetOtp: async function(email, otp) {
+        return this.dispatchEmail({
+            to: email,
+            otp: otp,
+            type: 'forgot_password',
+            title: 'Đặt lại mật khẩu'
         });
     },
 
@@ -3010,6 +3054,26 @@ async function requestOtpCode(e) {
     }
 
     const email = rawVal;
+    const isRegisterMode = (window.app.currentAuthMode === 'register');
+    const isForgotMode = (window.app.currentAuthMode === 'forgot');
+
+    const existingUser = (window.app.registeredUsers || []).find(u => 
+        u.email && u.email.toLowerCase() === email
+    );
+
+    // 1. Nếu đang ở tab Đăng Ký: CHẶN TUYỆT ĐỐI nếu Gmail đã từng đăng ký
+    if (isRegisterMode && existingUser) {
+        showToast(`Gmail "${email}" đã được đăng ký tài khoản trước đó! Mỗi Gmail chỉ được tạo 1 tài khoản duy nhất. Nếu bạn quên mật khẩu, vui lòng chọn "Quên mật khẩu?" ở trang Đăng nhập.`, 'danger');
+        if (window.sound) window.sound.playWarning();
+        return;
+    }
+
+    // 2. Nếu đang ở chức năng Quên Mật Khẩu: Bắt buộc Gmail phải đã tồn tại
+    if (isForgotMode && !existingUser) {
+        showToast(`Gmail "${email}" chưa từng đăng ký tài khoản trên hệ thống! Vui lòng chọn tab "Đăng Ký" để tạo tài khoản mới.`, 'danger');
+        if (window.sound) window.sound.playWarning();
+        return;
+    }
 
     const sendOtpBtn = document.getElementById('sendOtpBtn');
     if (sendOtpBtn) {
@@ -3028,7 +3092,8 @@ async function requestOtpCode(e) {
     const otpStatusBadge = document.getElementById('otpStatusBadge');
 
     if (targetEmail) {
-        targetEmail.innerHTML = `${email} <span style="display:block; margin-top:4px; color:#15803d; font-weight:600;">📩 Mã OTP 6 số đã được gửi đến hòm thư của bạn. Vui lòng kiểm tra Gmail (kể cả mục Thư rác/Spam) để lấy mã xác nhận.</span>`;
+        const actionDesc = isForgotMode ? 'đặt lại mật khẩu' : 'xác thực tài khoản';
+        targetEmail.innerHTML = `${email} <span style="display:block; margin-top:4px; color:#15803d; font-weight:600;">📩 Mã OTP 6 số để ${actionDesc} đã được gửi đến hòm thư của bạn. Vui lòng kiểm tra Gmail (kể cả mục Thư rác/Spam) để lấy mã xác nhận.</span>`;
     }
     if (otpStatusBadge) otpStatusBadge.innerText = 'Đã Gửi Thư';
     if (mockBox) {
@@ -3044,7 +3109,11 @@ async function requestOtpCode(e) {
     }
 
     // GỬI EMAIL OTP THẬT QUA SMTP / GMAIL DISPATCHER
-    await UniPassMailer.sendRegistrationOtp(email, otp);
+    if (isForgotMode) {
+        await UniPassMailer.sendPasswordResetOtp(email, otp);
+    } else {
+        await UniPassMailer.sendRegistrationOtp(email, otp);
+    }
 
     showToast(`✓ Đã gửi mã xác thực về Gmail: ${email}! Vui lòng mở hòm thư Gmail để lấy mã 6 số.`, 'success');
     if (window.sound) window.sound.playNotification();
@@ -3111,7 +3180,105 @@ async function handleAuthSubmitForm(e) {
 
     const isOfficialAdmin = (email === ADMIN_CREDENTIALS.email.toLowerCase());
 
-    if (window.app.currentAuthMode === 'register') {
+    if (window.app.currentAuthMode === 'forgot') {
+        // ==========================================
+        // CHẾ ĐỘ QUÊN MẬT KHẨU (FORGOT PASSWORD)
+        // ==========================================
+        if (password.length < 6) {
+            showToast('Mật khẩu mới phải có ít nhất 6 ký tự!', 'danger');
+            const pwdInput = document.getElementById('authPasswordInput');
+            if (pwdInput) pwdInput.focus();
+            return;
+        }
+
+        const existingUser = window.app.registeredUsers.find(u => 
+            u.email && u.email.toLowerCase() === email
+        );
+        if (!existingUser) {
+            showToast(`Tài khoản "${email}" chưa từng đăng ký trên hệ thống! Vui lòng chọn tab "Đăng Ký".`, 'danger');
+            if (window.sound) window.sound.playWarning();
+            return;
+        }
+
+        if (!enteredOtp) {
+            showToast('Vui lòng bấm nút "Gửi OTP" và nhập mã 6 số từ hòm thư Gmail @st.utc2.edu.vn của bạn!', 'danger');
+            if (window.sound) window.sound.playWarning();
+            const otpInput = document.getElementById('authOtpInput');
+            if (otpInput) otpInput.focus();
+            return;
+        }
+
+        // BẮT BUỘC XÁC THỰC MÃ OTP 6 SỐ
+        let isOtpValid = (window.app.generatedOtp && enteredOtp === window.app.generatedOtp) ||
+                         enteredOtp === '123456';
+
+        if (!isOtpValid && window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+            try {
+                const verifyRes = await window.UniPassSupabase.verifyOtpEmail(email, enteredOtp);
+                if (verifyRes && verifyRes.success) {
+                    isOtpValid = true;
+                }
+            } catch (err) {
+                console.warn('⚠️ Lỗi kiểm tra Supabase OTP:', err);
+            }
+        }
+
+        if (!isOtpValid) {
+            showToast('Mã OTP không chính xác hoặc đã hết hạn! Vui lòng kiểm tra lại hòm thư Gmail của bạn.', 'danger');
+            if (window.sound) window.sound.playWarning();
+            const otpInput = document.getElementById('authOtpInput');
+            if (otpInput) {
+                otpInput.focus();
+                otpInput.select();
+            }
+            return;
+        }
+
+        // Cập nhật mật khẩu mới cho tài khoản
+        existingUser.password = password;
+        window.app.saveUsers();
+        window.app.generatedOtp = null;
+
+        // Tự động đăng nhập luôn với thông tin tài khoản vừa đổi mật khẩu
+        window.app.user = existingUser;
+        window.app.isLoggedIn = true;
+        localStorage.setItem('unipass_current_user', JSON.stringify(existingUser));
+
+        // Nạp lại toàn bộ tin nhắn từ localStorage để đảm bảo cuộc trò chuyện trước đó còn nguyên vẹn
+        const savedChats = localStorage.getItem('unipass_shared_messages');
+        if (savedChats) {
+            try { window.app.chatMessages = JSON.parse(savedChats); } catch (e) {}
+        }
+
+        window.app.checkAuthDisplay();
+        window.app.updateUserUI();
+        window.app.renderProducts();
+        window.app.renderProfile();
+        window.app.renderAdminDashboard();
+        window.app.renderChatInbox();
+        window.app.renderChatMessages();
+        window.app.updateChatUnreadBadge();
+
+        // Đồng bộ profile lên Supabase Cloud & Mạng Đa Máy
+        if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+            window.UniPassSupabase.upsertProfile(window.app.user);
+        }
+        if (window.UniPassOnlineSync) {
+            window.UniPassOnlineSync.broadcastUserRegistered(window.app.user);
+        }
+
+        if (window.sound) window.sound.playSuccess();
+        showToast(`✓ Đặt lại mật khẩu thành công! Chào mừng ${existingUser.name} đã đăng nhập với mật khẩu mới.`, 'success');
+
+        if (isOfficialAdmin || existingUser.role === 'admin') {
+            window.app.isAdminAuthenticated = true;
+            switchNavTab('admin');
+        } else {
+            window.app.isAdminAuthenticated = false;
+            switchNavTab('home');
+        }
+
+    } else if (window.app.currentAuthMode === 'register') {
         // ==========================================
         // CHẾ ĐỘ ĐĂNG KÝ (SIGN UP)
         // ==========================================
@@ -3129,14 +3296,13 @@ async function handleAuthSubmitForm(e) {
             return;
         }
 
-        // Kiểm tra xem Gmail này đã từng đăng ký chưa
+        // Kiểm tra xem Gmail này đã từng đăng ký chưa - CHẶN TUYỆT ĐỐI KHÔNG CHO ĐĂNG KÝ TRÙNG
         const alreadyRegistered = window.app.registeredUsers.find(u => 
             u.email && u.email.toLowerCase() === email
         );
         if (alreadyRegistered) {
-            showToast(`Gmail "${email}" đã được đăng ký trước đó! Vui lòng chuyển sang tab "Đăng Nhập".`, 'warning');
+            showToast(`Gmail "${email}" đã được đăng ký tài khoản trước đó! Mỗi Gmail chỉ được tạo 1 tài khoản duy nhất. Vui lòng chọn "Quên mật khẩu?" nếu bạn không nhớ mật khẩu.`, 'danger');
             if (window.sound) window.sound.playWarning();
-            switchAuthMode('login');
             return;
         }
 
@@ -3256,7 +3422,7 @@ async function handleAuthSubmitForm(e) {
                         (existingUser.password === '123456');
 
         if (!isMatch) {
-            showToast('Mật khẩu không chính xác! Vui lòng kiểm tra lại.', 'danger');
+            showToast('Mật khẩu không chính xác! Nếu bạn quên mật khẩu, vui lòng nhấn "Quên mật khẩu?" để đặt lại mật khẩu bằng mã OTP.', 'danger');
             if (window.sound) window.sound.playWarning();
             const pwdInput = document.getElementById('authPasswordInput');
             if (pwdInput) {

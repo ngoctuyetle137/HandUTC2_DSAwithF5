@@ -110,7 +110,7 @@
 
                     <!-- 3. Mật Khẩu với nút SHOW như ảnh mẫu -->
                     <div class="auth-form-group">
-                        <label class="auth-label">Password *</label>
+                        <label class="auth-label" id="authPasswordLabel">Password *</label>
                         <div class="auth-input-wrap">
                             <span class="auth-input-icon"></span>
                             <input type="password" id="authPasswordInput" class="auth-input auth-input-password" 
@@ -119,13 +119,13 @@
                         </div>
                     </div>
 
-                    <!-- Hàng Remember Me & Forgot Password như ảnh mẫu -->
-                    <div class="auth-options-row">
+                    <!-- Hàng Remember Me & Quên Mật Khẩu -->
+                    <div class="auth-options-row" id="authOptionsRow">
                         <label class="auth-remember-wrap">
                             <input type="checkbox" id="authRememberMe" checked>
                             <span>Remember me</span>
                         </label>
-                        <a href="javascript:void(0)" class="auth-forgot-link" onclick="handleForgotPassword()">Forgot Password?</a>
+                        <a href="javascript:void(0)" class="auth-forgot-link" id="authForgotLink" onclick="handleForgotPassword()">Quên mật khẩu?</a>
                     </div>
 
                     <!-- 4. Gửi & Nhập Mã OTP Xác Nhận Danh Tính Gmail (Hiện khi Đăng Ký) -->
