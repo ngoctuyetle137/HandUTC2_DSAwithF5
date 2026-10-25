@@ -128,44 +128,105 @@ body {
     -webkit-backdrop-filter: blur(1.5px);
 }
 
-/* Quả cầu ánh sáng chuyển động mềm mại */
+/* Các quầng loang màu đa sắc chuyển động mềm mại (Chromatic Fluid Blobs) */
 .system-bg-glow-orb {
     position: absolute;
     border-radius: 50%;
-    filter: blur(60px);
-    opacity: 0.42;
+    filter: blur(75px);
+    opacity: 0.48;
     pointer-events: none;
     will-change: transform, opacity;
 }
 
+/* Quả cầu 1: Vàng Nắng Hoàng Kim UTC2 */
 .system-bg-glow-orb.orb-1 {
-    width: 460px;
-    height: 460px;
-    top: 8%;
-    left: 6%;
-    background: radial-gradient(circle, rgba(250, 204, 21, 0.55) 0%, rgba(234, 179, 8, 0.22) 55%, transparent 75%);
+    width: 520px;
+    height: 520px;
+    top: 5%;
+    left: 4%;
+    background: radial-gradient(circle, rgba(250, 204, 21, 0.65) 0%, rgba(245, 158, 11, 0.32) 55%, transparent 75%);
     animation: orbFloatOne 22s ease-in-out infinite alternate;
 }
 
+/* Quả cầu 2: Xanh Dương Bầu Trời UTC2 */
 .system-bg-glow-orb.orb-2 {
-    width: 500px;
-    height: 500px;
-    bottom: 10%;
-    right: 6%;
-    background: radial-gradient(circle, rgba(56, 189, 248, 0.48) 0%, rgba(14, 165, 233, 0.18) 55%, transparent 75%);
+    width: 560px;
+    height: 560px;
+    bottom: 6%;
+    right: 4%;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.58) 0%, rgba(14, 165, 233, 0.24) 55%, transparent 75%);
     animation: orbFloatTwo 26s ease-in-out infinite alternate;
 }
 
+/* Quả cầu 3: Hồng Cam San Hô / Sunset Coral Loang Màu */
+.system-bg-glow-orb.orb-3 {
+    width: 480px;
+    height: 480px;
+    top: 14%;
+    right: 10%;
+    background: radial-gradient(circle, rgba(251, 113, 133, 0.48) 0%, rgba(244, 63, 94, 0.20) 55%, transparent 75%);
+    animation: orbFloatThree 24s ease-in-out infinite alternate;
+}
+
+/* Quả cầu 4: Xanh Ngọc Bích / Mint Emerald Loang Màu */
+.system-bg-glow-orb.orb-4 {
+    width: 440px;
+    height: 440px;
+    bottom: 18%;
+    left: 10%;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.48) 0%, rgba(16, 185, 129, 0.20) 55%, transparent 75%);
+    animation: orbFloatFour 28s ease-in-out infinite alternate;
+}
+
 @keyframes orbFloatOne {
-    0% { transform: translate(0, 0) scale(1); opacity: 0.42; }
-    50% { transform: translate(55px, -45px) scale(1.16); opacity: 0.52; }
-    100% { transform: translate(-25px, 35px) scale(0.95); opacity: 0.36; }
+    0% { transform: translate(0, 0) scale(1); opacity: 0.45; }
+    50% { transform: translate(60px, -50px) scale(1.18); opacity: 0.58; }
+    100% { transform: translate(-30px, 40px) scale(0.94); opacity: 0.38; }
 }
 
 @keyframes orbFloatTwo {
-    0% { transform: translate(0, 0) scale(1); opacity: 0.42; }
-    50% { transform: translate(-65px, 40px) scale(1.12); opacity: 0.5; }
-    100% { transform: translate(35px, -30px) scale(0.92); opacity: 0.35; }
+    0% { transform: translate(0, 0) scale(1); opacity: 0.45; }
+    50% { transform: translate(-70px, 45px) scale(1.14); opacity: 0.55; }
+    100% { transform: translate(40px, -35px) scale(0.9); opacity: 0.38; }
+}
+
+@keyframes orbFloatThree {
+    0% { transform: translate(0, 0) scale(1); opacity: 0.38; }
+    50% { transform: translate(-65px, 55px) scale(1.15); opacity: 0.52; }
+    100% { transform: translate(35px, -30px) scale(0.9); opacity: 0.32; }
+}
+
+@keyframes orbFloatFour {
+    0% { transform: translate(0, 0) scale(1); opacity: 0.38; }
+    50% { transform: translate(65px, -45px) scale(1.16); opacity: 0.54; }
+    100% { transform: translate(-30px, 35px) scale(0.92); opacity: 0.32; }
+}
+
+/* Dải Aurora Loang Màu Chuyển Động Toàn Cảnh (Dynamic Aurora Ribbon) */
+.system-bg-aurora {
+    position: absolute;
+    inset: -20%;
+    background: linear-gradient(
+        135deg,
+        rgba(254, 240, 138, 0.32) 0%,
+        rgba(251, 146, 60, 0.25) 25%,
+        rgba(56, 189, 248, 0.28) 50%,
+        rgba(167, 139, 250, 0.22) 75%,
+        rgba(52, 211, 153, 0.25) 100%
+    );
+    background-size: 300% 300%;
+    filter: blur(80px);
+    opacity: 0.60;
+    mix-blend-mode: multiply;
+    animation: auroraWaveFlow 22s ease-in-out infinite alternate;
+    pointer-events: none;
+    will-change: background-position, transform;
+}
+
+@keyframes auroraWaveFlow {
+    0% { background-position: 0% 50%; transform: rotate(0deg) scale(1); }
+    50% { background-position: 100% 50%; transform: rotate(3deg) scale(1.05); }
+    100% { background-position: 50% 100%; transform: rotate(-2deg) scale(1); }
 }
 
 /* Các đốm sáng sinh động lấp lánh nhẹ nhàng trong khuôn viên trường */
@@ -862,10 +923,11 @@ body {
 }
 
 .nav-item-btn.active {
-    background: #fef08a;
+    background: linear-gradient(135deg, #fef08a 0%, #fde047 50%, #facc15 100%);
     color: #78350f;
-    border: 1px solid #fde047;
-    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.22);
+    border: 1px solid #facc15;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.30), 0 0 12px rgba(254, 240, 138, 0.45);
+    font-weight: 700;
 }
 
 .nav-item-btn.admin-tab {
@@ -1074,14 +1136,50 @@ body {
 }
 
 .hero-search-card {
-    background: var(--hero-gradient);
+    background: linear-gradient(125deg, #fffbeb 0%, #fef08a 25%, #fde047 50%, #f59e0b 75%, #fb923c 100%);
+    background-size: 200% 200%;
+    animation: heroGradientFlow 12s ease-in-out infinite alternate;
     border-radius: 22px;
     padding: 38px 42px;
     color: #451a03;
-    border: 1.5px solid #fef08a;
-    box-shadow: 0 16px 40px rgba(245, 158, 11, 0.22), 0 4px 12px rgba(217, 119, 6, 0.1);
+    border: 1.5px solid rgba(254, 240, 138, 0.95);
+    box-shadow: 0 20px 48px -10px rgba(245, 158, 11, 0.32), 
+                0 0 35px rgba(56, 189, 248, 0.22),
+                0 0 0 1px rgba(253, 224, 71, 0.5);
     position: relative;
     overflow: hidden;
+}
+
+@keyframes heroGradientFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 50% 100%; }
+}
+
+/* Tia sáng loang lướt qua Hero Banner (Chromatic Light Sweep) */
+.hero-search-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 40%;
+    height: 200%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.40) 50%,
+        transparent 100%
+    );
+    transform: rotate(25deg);
+    pointer-events: none;
+    animation: heroShimmerSweep 7s ease-in-out infinite;
+}
+
+@keyframes heroShimmerSweep {
+    0% { left: -60%; opacity: 0; }
+    20% { opacity: 0.85; }
+    40% { left: 140%; opacity: 0; }
+    100% { left: 140%; opacity: 0; }
 }
 
 .hero-search-card::before {
@@ -1153,7 +1251,7 @@ body {
 
 .hero-search-input:focus {
     border-color: #f59e0b;
-    box-shadow: 0 12px 34px rgba(245, 158, 11, 0.25), 0 0 0 3px rgba(254, 240, 138, 0.6);
+    box-shadow: 0 14px 36px rgba(245, 158, 11, 0.28), 0 0 0 3.5px rgba(251, 191, 36, 0.5), 0 0 22px rgba(56, 189, 248, 0.35);
 }
 
 .hero-input-icon {
@@ -1170,24 +1268,26 @@ body {
     right: 6px;
     top: 50%;
     transform: translateY(-50%);
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(135deg, #f59e0b 0%, #ea580c 50%, #d97706 100%);
+    background-size: 200% 200%;
     color: #ffffff;
     border: none;
     border-radius: var(--radius-full);
-    padding: 10px 20px;
+    padding: 10px 22px;
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 6px;
-    box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
-    transition: var(--transition);
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+    transition: all 0.25s ease;
 }
 
 .hero-submit-btn:hover {
-    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-    transform: translateY(-50%) scale(1.03);
+    background-position: 100% 50%;
+    transform: translateY(-50%) scale(1.04);
+    box-shadow: 0 6px 20px rgba(234, 88, 12, 0.5), 0 0 15px rgba(251, 191, 36, 0.4);
 }
 
 /* Gợi ý hot (Quick Tags) */
@@ -1219,11 +1319,11 @@ body {
 }
 
 .hero-tag-btn:hover {
-    background: #fef08a;
-    color: #451a03;
-    border-color: #f59e0b;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+    background: linear-gradient(135deg, #fef08a 0%, #fed7aa 100%);
+    color: #7c2d12;
+    border-color: #fb923c;
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.25), 0 0 10px rgba(251, 146, 60, 0.2);
 }
 
 .hero-tag-btn:active {
@@ -1537,26 +1637,52 @@ body {
 
 /* PRODUCT CARD (THIẾT KẾ CHÂN THẬT & HIỆU ỨNG ĐỘNG MƯỢT MÀ) */
 .uni-product-card {
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid #fef08a;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(254, 240, 138, 0.85);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
     display: flex;
     flex-direction: column;
     transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
                 box-shadow 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
-                border-color 0.22s ease;
+                border-color 0.25s ease;
     position: relative;
     cursor: pointer;
 }
 
 .uni-product-card:hover {
-    transform: translateY(-8px) scale(1.01);
-    box-shadow: 0 20px 38px -6px rgba(245, 158, 11, 0.22), 0 8px 16px -4px rgba(0, 0, 0, 0.05);
-    border-color: #fde047;
+    transform: translateY(-8px) scale(1.015);
+    box-shadow: 
+        0 22px 48px -8px rgba(245, 158, 11, 0.35), 
+        0 8px 24px -4px rgba(56, 189, 248, 0.22),
+        0 0 0 1.5px rgba(251, 191, 36, 0.7);
+    border-color: #f59e0b;
+}
+
+/* Tia sáng loang nhẹ khi hover qua thẻ */
+.uni-product-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.45) 50%,
+        transparent 100%
+    );
+    transform: skewX(-22deg);
+    pointer-events: none;
+    transition: left 0.65s ease;
+}
+
+.uni-product-card:hover::after {
+    left: 150%;
 }
 
 .card-image-wrapper {
@@ -1607,7 +1733,13 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
-    border: 1px solid rgba(253, 224, 71, 0.4);
+    border: 1px solid rgba(253, 224, 71, 0.5);
+    animation: timemarkPulse 3s infinite ease-in-out;
+}
+
+@keyframes timemarkPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(250, 204, 21, 0.35); border-color: rgba(253, 224, 71, 0.4); }
+    50% { box-shadow: 0 0 18px rgba(250, 204, 21, 0.75), 0 0 25px rgba(56, 189, 248, 0.3); border-color: #facc15; }
 }
 
 .badge-pulse-dot {
@@ -1654,8 +1786,10 @@ body {
 
 .card-price-text {
     font-size: 18px;
-    font-weight: 800;
-    color: #d97706;
+    font-weight: 900;
+    background: linear-gradient(135deg, #b45309 0%, #ea580c 50%, #d97706 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     letter-spacing: -0.3px;
 }
 
@@ -1753,7 +1887,8 @@ body {
 .card-cta-btn {
     width: 100%;
     margin-top: 10px;
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(135deg, #f59e0b 0%, #ea580c 50%, #d97706 100%);
+    background-size: 200% 200%;
     color: #ffffff;
     border: none;
     border-radius: var(--radius-md);
@@ -1761,18 +1896,20 @@ body {
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    box-shadow: 0 3px 10px rgba(217, 119, 6, 0.25);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.28);
 }
 
 .card-cta-btn:hover {
-    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    background-position: 100% 50%;
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(217, 119, 6, 0.38);
+    box-shadow: 0 8px 24px rgba(234, 88, 12, 0.42), 0 0 16px rgba(251, 191, 36, 0.35);
 }
 
 .card-cta-btn:active {
@@ -3189,4 +3326,22 @@ body {
     border: 1px solid #f59e0b;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     display: inline-block;
+}
+/* Nút bộ lọc loang màu & chuyển động */
+#btnToggleFilterMode {
+    background: linear-gradient(135deg, #f59e0b 0%, #ea580c 50%, #d97706 100%) !important;
+    background-size: 200% 200% !important;
+    animation: filterBtnFlow 8s ease-in-out infinite alternate !important;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35), 0 0 12px rgba(251, 191, 36, 0.3) !important;
+    transition: all 0.25s ease !important;
+}
+
+#btnToggleFilterMode:hover {
+    transform: translateY(-2px) scale(1.03) !important;
+    box-shadow: 0 8px 22px rgba(234, 88, 12, 0.45), 0 0 18px rgba(251, 191, 36, 0.45) !important;
+}
+
+@keyframes filterBtnFlow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
 }
