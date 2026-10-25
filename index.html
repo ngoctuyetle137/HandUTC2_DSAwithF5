@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -576,8 +576,9 @@
             <div class="admin-panel-card">
                 <div class="admin-panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <div>
-                        <div class="admin-panel-title">
-                            <span></span> Danh Sách Toàn Bộ Tài Khoản Đã Đăng Ký
+                        <div class="admin-panel-title" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <span>👥</span> Danh Sách Toàn Bộ Tài Khoản Đã Đăng Ký
+                            <span style="background:#e0f2fe; color:#0284c7; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:700;">💡 Bấm vào tài khoản bất kỳ để xem trang cá nhân & bài đăng</span>
                         </div>
                         <span style="font-size:12px; color:#64748b;" id="adminUserCountSubtitle">Đang nạp danh sách tài khoản...</span>
                     </div>
@@ -837,7 +838,10 @@
             <div class="checkout-info-grid">
                 <div class="checkout-info-row">
                     <span>Người đăng pass:</span>
-                    <strong id="modalSellerName" style="color:#0f172a;">Lê Thị Ngọc Tuyết</strong>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span id="modalSellerAvatar"></span>
+                        <strong id="modalSellerName" style="color:#0f172a;">Lê Thị Ngọc Tuyết</strong>
+                    </div>
                 </div>
                 <div class="checkout-info-row">
                     <span>Điểm uy tín người bán:</span>
@@ -1127,6 +1131,84 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODAL TRANG CÁ NHÂN TÀI KHOẢN (DÀNH CHO ADMIN)
+         ========================================== -->
+    <div class="checkout-modal-overlay" id="adminUserProfileModal">
+        <div class="checkout-modal-card" style="max-width:680px; width:94%; max-height:90vh; overflow-y:auto; padding:24px;">
+            <button class="checkout-close-btn" onclick="closeModal('adminUserProfileModal')">✕</button>
+
+            <!-- Header hồ sơ cá nhân -->
+            <div style="display:flex; align-items:center; gap:16px; padding-bottom:16px; border-bottom:1px solid #e2e8f0; margin-bottom:16px;">
+                <div id="adminModalAvatarWrapper" style="position:relative; flex-shrink:0;">
+                    <!-- Ảnh đại diện / Chữ cái đại diện -->
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <h3 id="adminModalUserName" style="font-size:20px; font-weight:800; color:#0f172a; margin:0;"></h3>
+                        <span id="adminModalRoleBadge"></span>
+                        <span style="background:#dcfce7; color:#15803d; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:700;">✓ Sinh viên UTC2 chính thức</span>
+                    </div>
+                    <div id="adminModalUserEmail" style="font-size:13px; color:#64748b; font-family:monospace; margin-top:3px;"></div>
+                    <div id="adminModalExtraInfo" style="font-size:12px; color:#475569; margin-top:4px;"></div>
+                </div>
+            </div>
+
+            <!-- Thống kê thông số tài khoản -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:18px;">
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; text-align:center;">
+                    <div style="font-size:11px; color:#64748b; font-weight:700; text-transform:uppercase;">Điểm Uy Tín</div>
+                    <div id="adminModalUserRep" style="font-size:18px; font-weight:800; color:#16a34a; margin-top:4px;">★ 95/100</div>
+                    <div id="adminModalUserRepNote" style="font-size:10.5px; color:#15803d; font-weight:600; margin-top:2px;">Rất uy tín</div>
+                </div>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; text-align:center;">
+                    <div style="font-size:11px; color:#64748b; font-weight:700; text-transform:uppercase;">Số Dư Xu</div>
+                    <div id="adminModalUserCoins" style="font-size:18px; font-weight:800; color:#d97706; margin-top:4px;">🪙 0 Xu</div>
+                    <div style="font-size:10.5px; color:#b45309; margin-top:2px;">Dùng giảm giá cọc</div>
+                </div>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; text-align:center;">
+                    <div style="font-size:11px; color:#64748b; font-weight:700; text-transform:uppercase;">Tổng Bài Đăng</div>
+                    <div id="adminModalUserPostCount" style="font-size:18px; font-weight:800; color:#0284c7; margin-top:4px;">0 bài</div>
+                    <div style="font-size:10.5px; color:#0369a1; margin-top:2px;">Trên sàn pass đồ</div>
+                </div>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; text-align:center;">
+                    <div style="font-size:11px; color:#64748b; font-weight:700; text-transform:uppercase;">Trạng Thái</div>
+                    <div style="font-size:13.5px; font-weight:800; color:#16a34a; margin-top:6px;">✓ Bình thường</div>
+                    <div style="font-size:10.5px; color:#64748b; margin-top:2px;">Đã xác thực</div>
+                </div>
+            </div>
+
+            <!-- Danh sách các bài đã đăng của tài khoản này -->
+            <div style="margin-bottom:18px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="font-size:15px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:6px;">
+                        📦 Các bài đã đăng của tài khoản này
+                        <span id="adminModalPostsBadge" style="background:#e0f2fe; color:#0284c7; font-size:11px; padding:2px 8px; border-radius:10px; font-weight:700;">0 bài</span>
+                    </h4>
+                </div>
+                <div id="adminModalUserPostsList" style="display:flex; flex-direction:column; gap:10px; max-height:280px; overflow-y:auto; padding-right:4px;">
+                    <!-- JS render danh sách bài đăng -->
+                </div>
+            </div>
+
+            <!-- Hành động của Admin đối với tài khoản này -->
+            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; padding-top:14px; border-top:1px solid #e2e8f0;">
+                <button type="button" class="btn-outline-chat" id="adminModalChatBtn" style="font-weight:700; color:#0284c7; border-color:#93c5fd;">
+                    💬 Nhắn Tin Trực Tiếp
+                </button>
+                <button type="button" class="btn-admin-warning" id="adminModalWarnBtn" style="padding:8px 14px;">
+                    ⚠️ Cảnh Cáo (-2đ)
+                </button>
+                <button type="button" class="btn-admin-success" id="adminModalRemindBtn" style="padding:8px 14px;">
+                    💬 Nhắc Nhở
+                </button>
+                <button type="button" class="apply-filter-btn" style="width:auto; padding:8px 18px; margin:0; background:#64748b;" onclick="closeModal('adminUserProfileModal')">
+                    Đóng
+                </button>
+            </div>
         </div>
     </div>
 

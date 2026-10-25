@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ===================================================================
  * UNIPASS UTC2 - SUPABASE CLIENT INTEGRATION ADAPTER
  * Hỗ trợ kết nối trực tiếp cơ sở dữ liệu Supabase PostgreSQL & Realtime
@@ -551,7 +551,8 @@
                     password: user.password || '123456',
                     reputation: user.reputation || 95,
                     coins: user.coins || 500,
-                    avatar_letter: user.avatarLetter || user.name.charAt(0).toUpperCase()
+                    avatar_letter: user.avatarLetter || user.name.charAt(0).toUpperCase(),
+                    avatar_url: user.avatarUrl || null
                 };
 
                 const { error } = await client

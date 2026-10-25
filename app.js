@@ -461,6 +461,9 @@ class AppController {
 
                     this.saveUsers();
                     this.renderAdminDashboard();
+                    this.renderProducts();
+                    this.renderChatInbox();
+                    this.renderChatMessages();
                     console.log(`✅ [Supabase] Đã đồng bộ ${cloudProfiles.length} tài khoản từ Cloud! Tổng tài khoản: ${this.registeredUsers.length}`);
                     if (manual) {
                         showToast(`✓ Đã nạp thành công ${this.registeredUsers.length} tài khoản từ Supabase Cloud!`, 'success');
@@ -797,11 +800,19 @@ class AppController {
                 );
                 if (idx !== -1) {
                     this.registeredUsers[idx] = { ...this.registeredUsers[idx], ...mappedUser };
+                    if (this.user && this.user.email && this.user.email.toLowerCase() === emailLower) {
+                        this.user = { ...this.user, ...mappedUser };
+                        localStorage.setItem('unipass_current_user', JSON.stringify(this.user));
+                        this.updateUserUI();
+                    }
                 } else {
                     this.registeredUsers.push(mappedUser);
                 }
                 this.saveUsers();
+                this.renderProducts();
                 this.renderAdminDashboard();
+                this.renderChatInbox();
+                this.renderChatMessages();
             }
         }
     }
@@ -1032,11 +1043,19 @@ class AppController {
             );
             if (idx !== -1) {
                 this.registeredUsers[idx] = { ...this.registeredUsers[idx], ...u };
+                if (this.user && this.user.email && this.user.email.toLowerCase() === emailLower) {
+                    this.user = { ...this.user, ...u };
+                    localStorage.setItem('unipass_current_user', JSON.stringify(this.user));
+                    this.updateUserUI();
+                }
             } else {
                 this.registeredUsers.push(u);
             }
             this.saveUsers();
+            this.renderProducts();
             this.renderAdminDashboard();
+            this.renderChatInbox();
+            this.renderChatMessages();
         });
     }
 
@@ -1881,6 +1900,14 @@ class AppController {
             const starScore = ((item.sellerRep || 90) / 20).toFixed(1);
             const reviewCount = Math.floor(((item.sellerRep || 90) - 70) * 1.2) || 15;
 
+            const sellerUser = (this.registeredUsers || []).find(u => 
+                (item.sellerEmail && u.email && u.email.toLowerCase() === item.sellerEmail.toLowerCase()) ||
+                (item.seller && u.name && u.name.toLowerCase() === item.seller.toLowerCase())
+            );
+            const sellerAvatarHtml = (sellerUser && sellerUser.avatarUrl) ?
+                `<img src="${sellerUser.avatarUrl}" alt="${item.seller}" class="seller-avatar-badge">` :
+                `<span style="margin-right:4px;">👤</span>`;
+
             return `
                 <div class="uni-product-card" onclick="openCheckoutModal('${item.id}')">
                     <div class="card-image-wrapper">
@@ -1908,8 +1935,9 @@ class AppController {
                         ` : ''}
                         
                         <div class="card-seller-row">
-                            <span class="card-seller-name">
-                                👤 ${item.seller}
+                            <span class="card-seller-name" style="display:inline-flex; align-items:center;">
+                                ${sellerAvatarHtml}
+                                <span>${item.seller}</span>
                                 <span class="verified-sv-tag" title="Sinh viên ST.UTC2 đã xác minh">✓ SV</span>
                             </span>
                             <span class="card-rep-badge" title="Đánh giá uy tín sinh viên">
@@ -2509,7 +2537,7 @@ class AppController {
         if (pendingPostsCountEl) pendingPostsCountEl.innerText = pendingPosts.length;
         if (pendingBadgeEl) pendingBadgeEl.innerText = `${pendingPosts.length} bài chờ`;
         if (totalUsersEl) totalUsersEl.innerText = this.registeredUsers.length;
-        if (userCountSubEl) userCountSubEl.innerText = `Tổng cộng ${this.registeredUsers.length} tài khoản đã đăng ký trên hệ thống (Gồm ${studentUsers.length} sinh viên & Quản Trị Viên)`;
+        if (userCountSubEl) userCountSubEl.innerText = `Tổng cộng ${this.registeredUsers.length} tài khoản đã đăng ký trên hệ thống (Gồm ${studentUsers.length} sinh viên & Quản Trị Viên) • Bấm vào tài khoản bất kỳ để xem trang cá nhân & bài đăng`;
         if (pendingDispEl) pendingDispEl.innerText = this.adminDisputes.filter(d => d.status === 'pending').length;
         if (warningsCountEl) warningsCountEl.innerText = this.adminWarningsIssued.length;
 
@@ -2591,23 +2619,35 @@ class AppController {
             `).join('');
         }
 
-        // Bảng 2: Quản lý danh sách toàn bộ tài khoản đã đăng ký trên hệ thống
+        // Bảng 2: Quản lý danh sách toàn bộ tài khoản đã đăng ký trên hệ thống (Hỗ trợ bấm xem trang cá nhân)
         if (usersTbody) {
             if (this.registeredUsers.length === 0) {
                 usersTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px; color:#64748b;">Chưa có tài khoản nào được lưu trên hệ thống. Bấm nút "Đồng Bộ Tài Khoản Từ Cloud" để nạp dữ liệu.</td></tr>`;
             } else {
                 usersTbody.innerHTML = this.registeredUsers.map(u => {
                     const isAdmin = (u.email === ADMIN_CREDENTIALS.email || u.role === 'admin');
+                    const safeEmail = (u.email || '').replace(/'/g, "\\'");
+                    const safeName = (u.name || '').replace(/'/g, "\\'");
+
+                    const avatarHtml = u.avatarUrl ?
+                        `<img src="${u.avatarUrl}" alt="${u.name}" style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:1.5px solid ${isAdmin ? '#dc2626' : '#0284c7'}; box-shadow:0 1px 4px rgba(0,0,0,0.12); flex-shrink:0;">` :
+                        `<div style="width:34px; height:34px; border-radius:50%; background:${isAdmin ? '#dc2626' : '#0284c7'}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; box-shadow:0 1px 4px rgba(0,0,0,0.12); flex-shrink:0;">
+                            ${u.avatarLetter || (u.name ? u.name.charAt(0).toUpperCase() : 'U')}
+                        </div>`;
+
                     return `
-                    <tr style="${isAdmin ? 'background:#f8fafc;' : ''}">
+                    <tr class="admin-user-row-clickable" style="${isAdmin ? 'background:#f8fafc;' : ''}" onclick="openAdminUserProfileModal('${safeEmail}')" title="Nhấp vào để xem toàn bộ hồ sơ & bài đăng của ${u.name}">
                         <td>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <div style="width:28px; height:28px; border-radius:50%; background:${isAdmin ? '#dc2626' : '#0284c7'}; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px;">
-                                    ${u.avatarLetter || (u.name ? u.name.charAt(0).toUpperCase() : 'U')}
-                                </div>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                ${avatarHtml}
                                 <div>
-                                    <strong>${u.name}</strong>
-                                    ${isAdmin ? '<span style="background:#fee2e2; color:#b91c1c; font-size:10px; padding:1px 6px; border-radius:10px; margin-left:4px; font-weight:700;">Admin</span>' : ''}
+                                    <div style="display:flex; align-items:center; gap:5px;">
+                                        <strong style="color:#0f172a; font-size:13px;">${u.name}</strong>
+                                        ${isAdmin ? '<span style="background:#fee2e2; color:#b91c1c; font-size:10px; padding:1px 6px; border-radius:10px; font-weight:700;">Admin</span>' : ''}
+                                    </div>
+                                    <div style="font-size:11px; color:#0284c7; font-weight:600; margin-top:1px;">
+                                        🔍 Nhấp để xem hồ sơ & bài đăng
+                                    </div>
                                 </div>
                             </div>
                         </td>
@@ -2617,13 +2657,20 @@ class AppController {
                         <td><span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700;">Đã xác thực</span></td>
                         <td>
                             ${isAdmin ? `
-                                <span style="font-size:11px; color:#64748b; font-style:italic;">Quản trị hệ thống</span>
+                                <div style="display:flex; gap:6px;">
+                                    <button class="btn-outline-chat" style="padding:4px 9px; font-size:11px; color:#0284c7; border-color:#93c5fd; font-weight:700;" onclick="event.stopPropagation(); openAdminUserProfileModal('${safeEmail}')" title="Xem trang cá nhân & bài đăng">
+                                        👤 Xem Hồ Sơ
+                                    </button>
+                                </div>
                             ` : `
                                 <div style="display:flex; gap:6px;">
-                                    <button class="btn-admin-warning" onclick="adminWarnUser('${u.name}')">
+                                    <button class="btn-outline-chat" style="padding:4px 9px; font-size:11px; color:#0284c7; border-color:#93c5fd; font-weight:700;" onclick="event.stopPropagation(); openAdminUserProfileModal('${safeEmail}')" title="Xem trang cá nhân & bài đăng">
+                                        👤 Xem Hồ Sơ
+                                    </button>
+                                    <button class="btn-admin-warning" onclick="event.stopPropagation(); adminWarnUser('${safeName}')" title="Cảnh cáo trừ điểm uy tín">
                                         ⚠️ Cảnh Cáo
                                     </button>
-                                    <button class="btn-admin-success" onclick="adminRemindUser('${u.name}')">
+                                    <button class="btn-admin-success" onclick="event.stopPropagation(); adminRemindUser('${safeName}')" title="Nhắc nhở">
                                         💬 Nhắc Nhở
                                     </button>
                                 </div>
@@ -4012,6 +4059,19 @@ function openCheckoutModal(productId) {
     document.getElementById('modalProductPrice').innerText = `${formatNumber(item.price)} VNĐ`;
     document.getElementById('modalSellerName').innerText = item.seller;
     document.getElementById('modalSellerRep').innerText = `★ ${item.sellerRep}/100`;
+
+    const sellerUserForModal = (window.app.registeredUsers || []).find(u => 
+        (item.sellerEmail && u.email && u.email.toLowerCase() === item.sellerEmail.toLowerCase()) ||
+        (item.seller && u.name && u.name.toLowerCase() === item.seller.toLowerCase())
+    );
+    const modalSellerAvtEl = document.getElementById('modalSellerAvatar');
+    if (modalSellerAvtEl) {
+        if (sellerUserForModal && sellerUserForModal.avatarUrl) {
+            modalSellerAvtEl.innerHTML = `<img src="${sellerUserForModal.avatarUrl}" alt="${item.seller}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #f59e0b; display:inline-block; vertical-align:middle;">`;
+        } else {
+            modalSellerAvtEl.innerHTML = `<span style="display:inline-block; width:24px; height:24px; border-radius:50%; background:#0284c7; color:#fff; text-align:center; line-height:24px; font-size:11px; font-weight:700;">${(item.seller ? item.seller.charAt(0) : 'U').toUpperCase()}</span>`;
+        }
+    }
     document.getElementById('modalSellerLocation').innerText = item.location;
     const descEl = document.getElementById('modalProductDescription');
     if (descEl) {
@@ -5260,15 +5320,33 @@ function handleAvatarUpload(event) {
                 window.app.user.avatarUrl = compressedDataUrl;
 
                 // Đồng bộ vào registeredUsers
-                const uIdx = window.app.registeredUsers.findIndex(u => u.email === window.app.user.email);
+                const uIdx = window.app.registeredUsers.findIndex(u => 
+                    (u.email && u.email.toLowerCase() === window.app.user.email.toLowerCase()) ||
+                    (u.id && u.id === window.app.user.id)
+                );
                 if (uIdx !== -1) {
                     window.app.registeredUsers[uIdx].avatarUrl = compressedDataUrl;
-                    window.app.saveUsers();
                 }
+                window.app.saveUsers();
 
                 localStorage.setItem('unipass_current_user', JSON.stringify(window.app.user));
                 window.app.updateUserUI();
-                showToast('🎉 Đã cập nhật ảnh đại diện thành công!', 'success');
+                window.app.renderProducts();
+                window.app.renderAdminDashboard();
+                window.app.renderChatInbox();
+                window.app.renderChatMessages();
+
+                // ĐỒNG BỘ LÊN SUPABASE CLOUD (Lưu trữ vĩnh viễn trên Database)
+                if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+                    window.UniPassSupabase.upsertProfile(window.app.user);
+                }
+
+                // ĐỒNG BỘ ĐA MÁY QUA MẠNG P2P / REALTIME (Máy B, C, D nhận ngay)
+                if (window.UniPassOnlineSync) {
+                    window.UniPassOnlineSync.broadcastUserRegistered(window.app.user);
+                }
+
+                showToast('🎉 Đã cập nhật ảnh đại diện thành công và đồng bộ toàn hệ thống!', 'success');
                 if (window.sound) window.sound.playSuccess();
             }
         };
@@ -5289,16 +5367,247 @@ function removeUserAvatar() {
 
     delete window.app.user.avatarUrl;
 
-    const uIdx = window.app.registeredUsers.findIndex(u => u.email === window.app.user.email);
+    const uIdx = window.app.registeredUsers.findIndex(u => 
+        (u.email && u.email.toLowerCase() === window.app.user.email.toLowerCase()) ||
+        (u.id && u.id === window.app.user.id)
+    );
     if (uIdx !== -1) {
         delete window.app.registeredUsers[uIdx].avatarUrl;
-        window.app.saveUsers();
     }
+    window.app.saveUsers();
 
     localStorage.setItem('unipass_current_user', JSON.stringify(window.app.user));
     window.app.updateUserUI();
-    showToast('Đã gỡ ảnh đại diện thành công.', 'info');
+    window.app.renderProducts();
+    window.app.renderAdminDashboard();
+    window.app.renderChatInbox();
+    window.app.renderChatMessages();
+
+    // Đồng bộ gỡ ảnh lên Supabase Cloud & Đa máy
+    if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+        window.UniPassSupabase.upsertProfile(window.app.user);
+    }
+    if (window.UniPassOnlineSync) {
+        window.UniPassOnlineSync.broadcastUserRegistered(window.app.user);
+    }
+
+    showToast('Đã gỡ ảnh đại diện thành công và đồng bộ toàn hệ thống.', 'info');
 }
+
+// ==========================================
+// QUẢN TRỊ ADMIN: XEM TRANG CÁ NHÂN & TOÀN BỘ BÀI ĐĂNG CỦA TÀI KHOẢN
+// ==========================================
+function openAdminUserProfileModal(userIdentifier) {
+    if (!window.app) return;
+    const targetUser = (window.app.registeredUsers || []).find(u => 
+        (u.email && u.email.toLowerCase() === (userIdentifier || '').toLowerCase()) ||
+        (u.name && u.name.toLowerCase() === (userIdentifier || '').toLowerCase()) ||
+        (u.id && u.id === userIdentifier)
+    );
+
+    if (!targetUser) {
+        showToast('Không tìm thấy thông tin tài khoản này trên hệ thống!', 'warning');
+        return;
+    }
+
+    const modal = document.getElementById('adminUserProfileModal');
+    if (!modal) return;
+
+    const isAdmin = (targetUser.email === ADMIN_CREDENTIALS.email || targetUser.role === 'admin');
+
+    // 1. Render Avatar
+    const avatarWrapper = document.getElementById('adminModalAvatarWrapper');
+    if (avatarWrapper) {
+        if (targetUser.avatarUrl) {
+            avatarWrapper.innerHTML = `
+                <img src="${targetUser.avatarUrl}" alt="${targetUser.name}" style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:3px solid ${isAdmin ? '#dc2626' : '#0284c7'}; box-shadow:0 4px 12px rgba(0,0,0,0.12);">
+            `;
+        } else {
+            const letter = targetUser.avatarLetter || (targetUser.name ? targetUser.name.charAt(0).toUpperCase() : 'U');
+            avatarWrapper.innerHTML = `
+                <div style="width:72px; height:72px; border-radius:50%; background:${isAdmin ? '#dc2626' : '#0284c7'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:800; border:3px solid #e2e8f0; box-shadow:0 4px 12px rgba(0,0,0,0.12);">
+                    ${letter}
+                </div>
+            `;
+        }
+    }
+
+    // 2. Tên & Email & MSSV
+    const nameEl = document.getElementById('adminModalUserName');
+    if (nameEl) nameEl.innerText = targetUser.name;
+
+    const roleBadge = document.getElementById('adminModalRoleBadge');
+    if (roleBadge) {
+        roleBadge.innerHTML = isAdmin ? 
+            `<span style="background:#fee2e2; color:#b91c1c; font-size:11px; padding:2px 8px; border-radius:10px; font-weight:700;">Quản Trị Viên (Admin)</span>` :
+            `<span style="background:#e0f2fe; color:#0369a1; font-size:11px; padding:2px 8px; border-radius:10px; font-weight:700;">Sinh Viên UTC2</span>`;
+    }
+
+    const emailEl = document.getElementById('adminModalUserEmail');
+    if (emailEl) emailEl.innerText = `✉ ${targetUser.email}`;
+
+    const extraEl = document.getElementById('adminModalExtraInfo');
+    if (extraEl) {
+        const mssvStr = targetUser.mssv ? `MSSV: <strong>${targetUser.mssv}</strong>` : (targetUser.email.includes('@st.utc2.edu.vn') ? `MSSV: <strong>${targetUser.email.split('@')[0]}</strong>` : '');
+        const phoneStr = targetUser.phone ? ` • SĐT: <strong>${targetUser.phone}</strong>` : '';
+        extraEl.innerHTML = `${mssvStr}${phoneStr}`;
+    }
+
+    // 3. Thống số (Uy tín, Xu)
+    const rep = typeof targetUser.reputation === 'number' ? targetUser.reputation : (Number(targetUser.reputation) || 95);
+    const coins = typeof targetUser.coins === 'number' ? targetUser.coins : (Number(targetUser.coins) || 0);
+
+    const repEl = document.getElementById('adminModalUserRep');
+    if (repEl) repEl.innerHTML = `★ ${rep}/100`;
+
+    const repNote = document.getElementById('adminModalUserRepNote');
+    if (repNote) {
+        if (rep >= 95) {
+            repNote.innerText = 'Rất uy tín (Tối đa)';
+            repNote.style.color = '#15803d';
+        } else if (rep >= 90) {
+            repNote.innerText = 'Đủ điều kiện cọc & pass đồ';
+            repNote.style.color = '#0284c7';
+        } else {
+            repNote.innerText = '⚠️ Dưới 90đ - Bị giới hạn cọc!';
+            repNote.style.color = '#dc2626';
+        }
+    }
+
+    const coinsEl = document.getElementById('adminModalUserCoins');
+    if (coinsEl) coinsEl.innerText = `🪙 ${coins} Xu`;
+
+    // 4. Lấy tất cả bài đăng của tài khoản này (Kể cả bài đã duyệt và bài đang chờ duyệt)
+    const uName = (targetUser.name || '').toLowerCase().trim();
+    const uEmail = (targetUser.email || '').toLowerCase().trim();
+
+    const userPosts = (window.app.products || []).filter(p => {
+        const sN = (p.seller || '').toLowerCase().trim();
+        const sE = (p.sellerEmail || '').toLowerCase().trim();
+        return (uEmail && sE === uEmail) || (uName && sN === uName) || (uEmail && sN === uEmail);
+    });
+
+    const postCountEl = document.getElementById('adminModalUserPostCount');
+    if (postCountEl) postCountEl.innerText = `${userPosts.length} bài`;
+
+    const postsBadge = document.getElementById('adminModalPostsBadge');
+    if (postsBadge) postsBadge.innerText = `${userPosts.length} bài đăng`;
+
+    const postsListEl = document.getElementById('adminModalUserPostsList');
+    if (postsListEl) {
+        if (userPosts.length === 0) {
+            postsListEl.innerHTML = `
+                <div style="text-align:center; padding:28px 16px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px; color:#64748b;">
+                    <div style="font-size:32px; margin-bottom:6px;">📦</div>
+                    <strong style="color:#0f172a; font-size:13.5px; display:block; margin-bottom:4px;">Chưa có bài đăng nào</strong>
+                    <p style="font-size:12px; margin:0;">Tài khoản này hiện tại chưa đăng món đồ pass nào trên sàn.</p>
+                </div>
+            `;
+        } else {
+            postsListEl.innerHTML = userPosts.map(p => {
+                let statusBg = '#dcfce7';
+                let statusColor = '#15803d';
+                let statusText = 'Đang hiển thị';
+
+                if (p.status === 'pending') {
+                    statusBg = '#fef3c7';
+                    statusColor = '#b45309';
+                    statusText = '⏳ Chờ duyệt TimeMark';
+                } else if (p.status === 'completed') {
+                    statusBg = '#e0f2fe';
+                    statusColor = '#0369a1';
+                    statusText = '✓ Đã pass';
+                } else if (p.status === 'rejected') {
+                    statusBg = '#fee2e2';
+                    statusColor = '#b91c1c';
+                    statusText = '✕ Bị từ chối';
+                }
+
+                const safePTitle = (p.title || '').replace(/'/g, "\\'");
+                const safePId = p.id;
+
+                return `
+                    <div style="display:flex; align-items:center; gap:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px;">
+                        <img src="${p.imageUrl}" alt="${safePTitle}" style="width:58px; height:58px; border-radius:8px; object-fit:cover; border:1px solid #cbd5e1; flex-shrink:0;">
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-weight:700; font-size:13.5px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${p.title}">
+                                ${p.title}
+                            </div>
+                            <div style="font-size:13px; color:#0284c7; font-weight:800; margin-top:2px;">
+                                ${formatNumber(p.price)} đ
+                            </div>
+                            <div style="font-size:11px; color:#64748b; margin-top:2px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                <span>Mã TimeMark: <strong>${p.timemarkCode || 'Chưa có'}</strong></span>
+                                <span>• Danh mục: ${getCategoryName(p.category)}</span>
+                            </div>
+                        </div>
+                        <div style="text-align:right; flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+                            <span style="background:${statusBg}; color:${statusColor}; font-size:10.5px; padding:2px 8px; border-radius:4px; font-weight:700;">
+                                ${statusText}
+                            </span>
+                            <div style="display:flex; gap:4px;">
+                                <button type="button" class="btn-outline-chat" style="padding:3px 8px; font-size:11px; color:#0284c7; border-color:#93c5fd;" onclick="closeModal('adminUserProfileModal'); openCheckoutModal('${safePId}')">
+                                    Xem bài
+                                </button>
+                                <button type="button" class="btn-admin-danger" style="padding:3px 8px; font-size:11px; border-radius:4px;" onclick="adminDeletePostFromModal('${safePId}', '${targetUser.email}')">
+                                    🗑 Gỡ bài
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
+    // 5. Cấu hình các nút hành động
+    const chatBtn = document.getElementById('adminModalChatBtn');
+    if (chatBtn) {
+        chatBtn.onclick = function() {
+            closeModal('adminUserProfileModal');
+            openChatBetweenUsers(targetUser.name, null, null, targetUser.email);
+        };
+    }
+
+    const warnBtn = document.getElementById('adminModalWarnBtn');
+    if (warnBtn) {
+        if (isAdmin) {
+            warnBtn.style.display = 'none';
+        } else {
+            warnBtn.style.display = 'inline-block';
+            warnBtn.onclick = function() {
+                adminWarnUser(targetUser.name);
+                openAdminUserProfileModal(targetUser.email);
+            };
+        }
+    }
+
+    const remindBtn = document.getElementById('adminModalRemindBtn');
+    if (remindBtn) {
+        if (isAdmin) {
+            remindBtn.style.display = 'none';
+        } else {
+            remindBtn.style.display = 'inline-block';
+            remindBtn.onclick = function() {
+                adminRemindUser(targetUser.name);
+            };
+        }
+    }
+
+    openModal('adminUserProfileModal');
+    if (window.sound) window.sound.playClick();
+}
+window.openAdminUserProfileModal = openAdminUserProfileModal;
+
+function adminDeletePostFromModal(postId, userEmail) {
+    if (!confirm('Bạn có chắc chắn muốn gỡ bài đăng này khỏi hệ thống?')) return;
+    adminDeletePost(postId);
+    showToast('Đã gỡ bài đăng thành công!', 'success');
+    if (userEmail) {
+        setTimeout(() => openAdminUserProfileModal(userEmail), 200);
+    }
+}
+window.adminDeletePostFromModal = adminDeletePostFromModal;
 
 // Khởi tạo listeners khi tải trang
 document.addEventListener('DOMContentLoaded', () => {

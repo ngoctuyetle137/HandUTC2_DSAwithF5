@@ -3019,3 +3019,40 @@ body {
 .nav-chat-pulse {
     animation: navChatPulse 0.8s ease-in-out 3;
 }
+/* ===================================================================
+   ADMIN USER PROFILE & AVATAR SYNC STYLES
+   =================================================================== */
+.admin-user-row-clickable {
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.admin-user-row-clickable:hover {
+    background: #f0f9ff !important;
+}
+
+.admin-view-profile-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #0284c7;
+    background: #e0f2fe;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+    letter-spacing: 0.2px;
+}
+
+.seller-avatar-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 5px;
+    vertical-align: middle;
+    border: 1px solid #f59e0b;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: inline-block;
+}
