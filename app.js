@@ -6295,11 +6295,43 @@ function initAuthBgMouseEffect() {
     });
 }
 
+// Khởi tạo hiệu ứng tương tác chuột toàn hệ thống cho hình nền khuôn viên UTC2
+function initSystemBgMouseParallax() {
+    const sysBg = document.getElementById('systemAmbientBg');
+    if (!sysBg) return;
+
+    let targetX = 0, targetY = 0;
+    let currentX = 0, currentY = 0;
+    let isTicking = false;
+
+    window.addEventListener('mousemove', (e) => {
+        const moveRatioX = (e.clientX / window.innerWidth) - 0.5;
+        const moveRatioY = (e.clientY / window.innerHeight) - 0.5;
+        targetX = moveRatioX * -18;
+        targetY = moveRatioY * -14;
+
+        if (!isTicking) {
+            isTicking = true;
+            requestAnimationFrame(() => {
+                currentX += (targetX - currentX) * 0.12;
+                currentY += (targetY - currentY) * 0.12;
+                sysBg.style.setProperty('--sys-shift-x', `${currentX.toFixed(2)}px`);
+                sysBg.style.setProperty('--sys-shift-y', `${currentY.toFixed(2)}px`);
+                isTicking = false;
+            });
+        }
+    }, { passive: true });
+}
+
 // Khởi chạy ngay hiệu ứng nền động
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAuthBgMouseEffect);
+    document.addEventListener('DOMContentLoaded', () => {
+        initAuthBgMouseEffect();
+        initSystemBgMouseParallax();
+    });
 } else {
     initAuthBgMouseEffect();
+    initSystemBgMouseParallax();
 }
 
 // ==========================================
