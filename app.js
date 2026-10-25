@@ -1182,9 +1182,11 @@ class AppController {
         const authScreen = document.getElementById('authPageContainer');
         const mainApp = document.getElementById('mainAppInterface');
 
+        const sysBg = document.getElementById('systemAmbientBg');
         if (this.isLoggedIn) {
             if (authScreen) authScreen.style.display = 'none';
             if (mainApp) mainApp.style.display = 'block';
+            if (sysBg) sysBg.style.display = 'block';
 
             // Xóa sạch ngay ô tìm kiếm khi vừa đăng nhập vào sàn đồ (Không cho hiện email)
             const searchInput = document.getElementById('mainSearchInput');
@@ -1213,6 +1215,7 @@ class AppController {
         } else {
             if (authScreen) authScreen.style.display = 'flex';
             if (mainApp) mainApp.style.display = 'none';
+            if (sysBg) sysBg.style.display = 'none';
         }
     }
 

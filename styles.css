@@ -250,7 +250,7 @@ body {
 .auth-bg-layer {
     width: 100%;
     height: 100%;
-    background-image: url('utc2_campus_bg.png');
+    background-image: url('utc2_campus_bg.jpg');
     background-size: cover;
     background-position: center 40%;
     filter: blur(4px) brightness(0.85) saturate(1.15);
