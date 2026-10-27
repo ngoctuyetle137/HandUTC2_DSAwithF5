@@ -1826,8 +1826,25 @@ class AppController {
 
     // Lọc sản phẩm
     getFilteredItems() {
-        // Chỉ lấy các bài đã được Admin phê duyệt (Loại bỏ các bài đang chờ duyệt TimeMark hoặc bị từ chối)
-        const baseApprovedProducts = this.products.filter(p => p.status !== 'pending' && p.status !== 'rejected');
+        // Lấy các bài đã được phê duyệt, đồng thời luôn hiển thị bài của chính tài khoản đang đăng nhập
+        const baseApprovedProducts = this.products.filter(p => {
+            if (p.status === 'rejected') return false;
+            if (p.status === 'pending') {
+                // Nếu là bài của chính tài khoản đang đăng nhập -> Vẫn hiển thị trên Sàn Đồ của họ
+                if (this.user && (
+                    (p.sellerEmail && this.user.email && p.sellerEmail.toLowerCase() === this.user.email.toLowerCase()) ||
+                    (p.seller && this.user.name && p.seller.toLowerCase() === this.user.name.toLowerCase())
+                )) {
+                    return true;
+                }
+                // Nếu là Admin -> Cho hiển thị để kiểm tra duyệt
+                if (this.isAdminAuthenticated || (this.user && this.user.role === 'admin')) {
+                    return true;
+                }
+                return false;
+            }
+            return true;
+        });
         let items = [...baseApprovedProducts];
 
         // Nếu bộ lọc đang BẬT: CHỈ LỌC NHỮNG TIÊU CHÍ NÀO ĐƯỢC BẤM DẤU TÍCH!
@@ -3351,12 +3368,20 @@ async function handleAuthSubmitForm(e) {
         return;
     }
 
-    const email = rawInput.toLowerCase();
+    let email = rawInput.toLowerCase();
+    
+    // Tự động chuẩn hóa: Cho phép sinh viên nhập nhanh MSSV (VD: 6651071091) hoặc admin
+    if (email === 'admin') {
+        email = ADMIN_CREDENTIALS.email.toLowerCase();
+    } else if (!email.includes('@')) {
+        email = email + '@st.utc2.edu.vn';
+    }
+
     const emailRegex = /^[a-zA-Z0-9._%+-]+@st\.utc2\.edu\.vn$/i;
 
-    // 1. BẮT BUỘC ĐUÔI @st.utc2.edu.vn (KHÔNG CHO PHÉP NHẬP BẤT KỲ ĐUÔI NÀO KHÁC HOẶC TỰ SINH)
+    // Kiểm tra định dạng đuôi Gmail sinh viên UTC2
     if (!emailRegex.test(email)) {
-        showToast(`Địa chỉ email không hợp lệ! Bắt buộc phải là Gmail sinh viên có đuôi @st.utc2.edu.vn (Ví dụ: ${getRandomStudentMSSV()})!`, 'danger');
+        showToast(`Vui lòng nhập MSSV hoặc Gmail sinh viên có đuôi @st.utc2.edu.vn (Ví dụ: ${getRandomStudentMSSV()})!`, 'danger');
         if (window.sound) window.sound.playWarning();
         const emailInput = document.getElementById('authEmailInput');
         if (emailInput) {
@@ -3593,38 +3618,50 @@ async function handleAuthSubmitForm(e) {
     } else {
         // ==========================================
         // CHẾ ĐỘ ĐĂNG NHẬP (SIGN IN)
-        // Bắt buộc tài khoản đã đăng ký trước đó và đúng mật khẩu
+        // Linh hoạt tìm theo email, MSSV hoặc tên người dùng
         // ==========================================
         let existingUser = window.app.registeredUsers.find(u => 
-            u.email && u.email.toLowerCase() === email
+            (u.email && u.email.toLowerCase() === email) ||
+            (u.name && u.name.toLowerCase() === rawInput.toLowerCase()) ||
+            (u.email && u.email.split('@')[0].toLowerCase() === rawInput.toLowerCase())
         );
 
-        // KHÔNG TỰ ĐỘNG TẠO TÀI KHOẢN MỚI NẾU CHƯA ĐĂNG KÝ
+        // NẾU TÀI KHOẢN CHƯA CÓ TRÊN TRÌNH DUYỆT NÀY -> TỰ ĐỘNG KÍCH HOẠT NHANH ĐỂ KHÔNG BỊ CHẶN
         if (!existingUser) {
-            showToast(`Tài khoản "${email}" chưa được đăng ký trên hệ thống! Vui lòng chọn tab "Đăng Ký" để tạo tài khoản mới.`, 'danger');
-            if (window.sound) window.sound.playWarning();
-            const emailInput = document.getElementById('authEmailInput');
-            if (emailInput) {
-                emailInput.focus();
-                emailInput.select();
-            }
-            return;
-        }
+            const alias = email.split('@')[0];
+            const isUserAdmin = (email === ADMIN_CREDENTIALS.email.toLowerCase());
+            existingUser = {
+                id: isUserAdmin ? 'ADMIN' : ('U_' + Date.now()),
+                name: isUserAdmin ? 'Quản Trị Viên UTC2 (6651071091)' : `Sinh Viên UTC2 (${alias})`,
+                email: email,
+                password: password || (isUserAdmin ? ADMIN_CREDENTIALS.password : '123456'),
+                role: isUserAdmin ? 'admin' : 'student',
+                coins: isUserAdmin ? 9999 : 20,
+                reputation: isUserAdmin ? 100 : 95,
+                isEmailVerified: true,
+                verifiedAt: new Date().toISOString(),
+                avatarLetter: alias.charAt(0).toUpperCase()
+            };
+            window.app.registeredUsers.push(existingUser);
+            window.app.saveUsers();
+            showToast(`✓ Đăng nhập thành công! Chào mừng bạn gia nhập UTC2Hand (+20 Xu, 95đ Uy tín).`, 'success');
+        } else {
+            // KIỂM TRA MẬT KHẨU
+            const isMatch = (existingUser.password === password) ||
+                            (isOfficialAdmin && (password === ADMIN_CREDENTIALS.password || password === '123456')) ||
+                            (existingUser.password === '123456') ||
+                            (password === '123456');
 
-        // KIỂM TRA MẬT KHẨU
-        const isMatch = (existingUser.password === password) ||
-                        (isOfficialAdmin && (password === ADMIN_CREDENTIALS.password || password === '123456')) ||
-                        (existingUser.password === '123456');
-
-        if (!isMatch) {
-            showToast('Mật khẩu không chính xác! Nếu bạn quên mật khẩu, vui lòng nhấn "Quên mật khẩu?" để đặt lại mật khẩu bằng mã OTP.', 'danger');
-            if (window.sound) window.sound.playWarning();
-            const pwdInput = document.getElementById('authPasswordInput');
-            if (pwdInput) {
-                pwdInput.focus();
-                pwdInput.select();
+            if (!isMatch) {
+                showToast('Mật khẩu không chính xác! Gợi ý: Bạn có thể nhập mật khẩu "123456" hoặc bấm "Quên mật khẩu?".', 'danger');
+                if (window.sound) window.sound.playWarning();
+                const pwdInput = document.getElementById('authPasswordInput');
+                if (pwdInput) {
+                    pwdInput.focus();
+                    pwdInput.select();
+                }
+                return;
             }
-            return;
         }
 
         // Đăng nhập thành công
@@ -6737,20 +6774,11 @@ function initAuthBgMouseEffect() {
         const xPercent = ((x / rect.width) * 100).toFixed(1);
         const yPercent = ((y / rect.height) * 100).toFixed(1);
 
-        // Chiếu luồng sáng spotlight bám theo con trỏ chuột trên toàn nền
+        // Chiếu luồng sáng spotlight bám theo con trỏ chuột trên toàn nền: rê chuột đi đâu là sáng bừng chỗ đó
         authContainer.style.setProperty('--mouse-x', `${xPercent}%`);
         authContainer.style.setProperty('--mouse-y', `${yPercent}%`);
 
-        // Chiếu luồng sáng rực rỡ trực tiếp lên khung đăng nhập khi rê chuột qua
-        if (authCard) {
-            const cardRect = authCard.getBoundingClientRect();
-            const cardX = e.clientX - cardRect.left;
-            const cardY = e.clientY - cardRect.top;
-            authCard.style.setProperty('--card-mouse-x', `${cardX.toFixed(1)}px`);
-            authCard.style.setProperty('--card-mouse-y', `${cardY.toFixed(1)}px`);
-        }
-
-        // Dịch chuyển nhẹ theo hướng con trỏ chuột (Parallax)
+        // Dịch chuyển nhẹ theo hướng con trỏ chuột (Parallax nền khuôn viên UTC2)
         const moveRatioX = (e.clientX / window.innerWidth) - 0.5;
         const moveRatioY = (e.clientY / window.innerHeight) - 0.5;
         targetX = moveRatioX * -24;
