@@ -1181,6 +1181,11 @@ class AppController {
     checkAuthDisplay() {
         const authScreen = document.getElementById('authPageContainer');
         const mainApp = document.getElementById('mainAppInterface');
+        const adminTabBtn = document.getElementById('navAdminTab') || document.querySelector('.nav-item-btn.admin-tab');
+        const emailInput = document.getElementById('authEmailInput');
+        if (emailInput && !emailInput.value && typeof getRandomStudentMSSV === 'function') {
+            emailInput.placeholder = `Ví dụ: ${getRandomStudentMSSV()}`;
+        }
 
         const sysBg = document.getElementById('systemAmbientBg');
         if (this.isLoggedIn) {
@@ -1763,6 +1768,26 @@ class AppController {
         this.updateDepositBadge();
         this.updateNotificationBadge();
         this.renderNotifications();
+
+        // PHÂN QUYỀN HIỂN THỊ TAB QUẢN TRỊ ADMIN:
+        // Các tài khoản sinh viên khác sẽ KHÔNG THẤY tab này, chỉ tài khoản Admin mới thấy!
+        const isOfficialAdmin = this.user && (
+            this.user.role === 'admin' ||
+            this.user.email === ADMIN_CREDENTIALS.email ||
+            this.user.email === '6651071091@st.utc2.edu.vn'
+        );
+        const adminTabBtn = document.getElementById('navAdminTab') || document.querySelector('.nav-item-btn.admin-tab');
+        if (adminTabBtn) {
+            adminTabBtn.style.display = isOfficialAdmin ? 'inline-flex' : 'none';
+        }
+
+        // Nếu tài khoản hiện tại không phải Admin nhưng đang ở tab Admin -> tự động chuyển về Săn Đồ
+        if (!isOfficialAdmin) {
+            const adminView = document.getElementById('adminDashboardSection');
+            if (adminView && adminView.style.display !== 'none') {
+                if (typeof switchNavTab === 'function') switchNavTab('home');
+            }
+        }
 
         localStorage.setItem('unipass_current_user', JSON.stringify(this.user));
     }
@@ -2832,10 +2857,24 @@ function showToast(msg, type = 'info') {
 }
 
 // ==========================================
+
+// Sinh mã số sinh viên (MSSV) ngẫu nhiên đúng định dạng UTC2 (10 chữ số) để gợi ý tránh lộ thông tin Admin
+function getRandomStudentMSSV() {
+    const kPrefixes = ['62', '63', '64', '65', '66'];
+    const p = kPrefixes[Math.floor(Math.random() * kPrefixes.length)];
+    const dept = ['5107', '5102', '5106', '5108'][Math.floor(Math.random() * 4)];
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    return `${p}${dept}${rand}@st.utc2.edu.vn`;
+}
+
 // 4. AUTH PAGE LOGIC (ĐĂNG KÝ / ĐĂNG NHẬP / XÁC THỰC OTP)
 // ==========================================
 function switchAuthMode(mode) {
     window.app.currentAuthMode = mode;
+    const emailInp = document.getElementById('authEmailInput');
+    if (emailInp && !emailInp.value) {
+        emailInp.placeholder = `Ví dụ: ${getRandomStudentMSSV()}`;
+    }
     const tabReg = document.getElementById('tabRegisterBtn');
     const tabLog = document.getElementById('tabLoginBtn');
     const nameField = document.getElementById('authNameField');
@@ -2931,7 +2970,7 @@ function handleForgotPassword() {
         showToast(`Đang gửi mã OTP xác nhận về Gmail: ${rawVal}...`, 'info');
         requestOtpCode();
     } else {
-        showToast('Vui lòng nhập Gmail sinh viên UTC2 (@st.utc2.edu.vn) rồi bấm "Gửi OTP" để tạo mật khẩu mới!', 'info');
+        showToast(`Vui lòng nhập Gmail sinh viên UTC2 (Ví dụ: ${getRandomStudentMSSV()}) rồi bấm "Gửi OTP" để tạo mật khẩu mới!`, 'info');
         if (emailInput) emailInput.focus();
     }
 }
@@ -3109,7 +3148,7 @@ async function requestOtpCode(e) {
 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@st\.utc2\.edu\.vn$/i;
     if (!emailRegex.test(rawVal)) {
-        showToast('Email không hợp lệ! Bắt buộc phải là Gmail sinh viên có đuôi @st.utc2.edu.vn (Ví dụ: sinhvien@st.utc2.edu.vn)!', 'danger');
+        showToast(`Email không hợp lệ! Bắt buộc phải là Gmail sinh viên có đuôi @st.utc2.edu.vn (Ví dụ: ${getRandomStudentMSSV()})!`, 'danger');
         if (window.sound) window.sound.playWarning();
         emailInput.focus();
         return;
@@ -3223,7 +3262,7 @@ async function handleAuthSubmitForm(e) {
 
     // 1. BẮT BUỘC ĐUÔI @st.utc2.edu.vn (KHÔNG CHO PHÉP NHẬP BẤT KỲ ĐUÔI NÀO KHÁC HOẶC TỰ SINH)
     if (!emailRegex.test(email)) {
-        showToast('Địa chỉ email không hợp lệ! Bắt buộc phải là Gmail sinh viên có đuôi @st.utc2.edu.vn (Ví dụ: sinhvien@st.utc2.edu.vn)!', 'danger');
+        showToast(`Địa chỉ email không hợp lệ! Bắt buộc phải là Gmail sinh viên có đuôi @st.utc2.edu.vn (Ví dụ: ${getRandomStudentMSSV()})!`, 'danger');
         if (window.sound) window.sound.playWarning();
         const emailInput = document.getElementById('authEmailInput');
         if (emailInput) {
@@ -3598,6 +3637,9 @@ function logoutToAuthScreen() {
     window.app.user = null;
     window.app.isAdminAuthenticated = false;
     localStorage.removeItem('unipass_current_user');
+
+    const adminTabBtn = document.getElementById('navAdminTab') || document.querySelector('.nav-item-btn.admin-tab');
+    if (adminTabBtn) adminTabBtn.style.display = 'none';
     window.app.checkAuthDisplay();
     window.app.updateDepositBadge();
     window.app.updateNotificationBadge();
@@ -4906,7 +4948,17 @@ function handleOrderDisputeSubmit(event) {
 // ==========================================
 function switchNavTab(tabName) {
     if (tabName === 'admin') {
-        if (!window.app.isAdminAuthenticated || !window.app.user || window.app.user.email !== ADMIN_CREDENTIALS.email) {
+        const isOfficialAdmin = window.app.user && (
+            window.app.user.role === 'admin' ||
+            window.app.user.email === ADMIN_CREDENTIALS.email ||
+            window.app.user.email === '6651071091@st.utc2.edu.vn'
+        );
+        if (!isOfficialAdmin) {
+            // Tài khoản sinh viên không có quyền truy cập tab này
+            switchNavTab('home');
+            return;
+        }
+        if (!window.app.isAdminAuthenticated) {
             openAdminAccessDeniedModal();
             return;
         }
