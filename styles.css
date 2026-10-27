@@ -97,9 +97,9 @@ body {
     background-repeat: no-repeat;
     opacity: 0.18;
     filter: blur(5px) saturate(1.15) contrast(1.02) brightness(1.02);
-    animation: systemBgFloat 26s ease-in-out infinite alternate;
+    /* bg float animation removed for performance */
     transform-origin: center center;
-    will-change: transform, filter;
+    /* will-change removed for performance */
 }
 
 @keyframes systemBgFloat {
@@ -144,9 +144,9 @@ body {
     filter: blur(80px);
     opacity: 0.50;
     mix-blend-mode: multiply;
-    animation: auroraWaveFlow 24s ease-in-out infinite alternate;
+    /* aurora animation removed for performance */
     pointer-events: none;
-    will-change: background-position, transform;
+    /* will-change removed for performance */
 }
 
 @keyframes auroraWaveFlow {
@@ -210,7 +210,7 @@ body {
     filter: blur(4px) brightness(0.85) saturate(1.15);
     animation: authBgBreathing 18s ease-in-out infinite alternate;
     transform-origin: center center;
-    will-change: transform, filter;
+    /* will-change removed for performance */
 }
 
 @keyframes authBgBreathing {
@@ -1031,14 +1031,12 @@ body {
 .hero-search-card {
     background: linear-gradient(125deg, #fffbeb 0%, #fef08a 25%, #fde047 50%, #f59e0b 75%, #fb923c 100%);
     background-size: 200% 200%;
-    animation: heroGradientFlow 12s ease-in-out infinite alternate;
+    /* gradient animation removed for performance */
     border-radius: 22px;
     padding: 38px 42px;
     color: #451a03;
     border: 1.5px solid rgba(254, 240, 138, 0.95);
-    box-shadow: 0 20px 48px -10px rgba(245, 158, 11, 0.32), 
-                0 0 35px rgba(56, 189, 248, 0.22),
-                0 0 0 1px rgba(253, 224, 71, 0.5);
+    box-shadow: 0 8px 24px -6px rgba(245, 158, 11, 0.2);
     position: relative;
     overflow: hidden;
 }
@@ -1049,41 +1047,9 @@ body {
     100% { background-position: 50% 100%; }
 }
 
-/* Tia sáng loang lướt qua Hero Banner (Chromatic Light Sweep) */
-.hero-search-card::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -60%;
-    width: 40%;
-    height: 200%;
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.40) 50%,
-        transparent 100%
-    );
-    transform: rotate(25deg);
-    pointer-events: none;
-    animation: heroShimmerSweep 7s ease-in-out infinite;
-}
+/* Shimmer sweep removed for performance */
 
-@keyframes heroShimmerSweep {
-    0% { left: -60%; opacity: 0; }
-    20% { opacity: 0.85; }
-    40% { left: 140%; opacity: 0; }
-    100% { left: 140%; opacity: 0; }
-}
-
-.hero-search-card::before {
-    content: '';
-    position: absolute;
-    top: -50px; right: -50px;
-    width: 280px; height: 280px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
-    pointer-events: none;
-    animation: sunlightGlow 9s ease-in-out infinite alternate;
-}
+/* Sunlight glow removed for performance */
 
 .hero-badges-row {
     display: flex;
@@ -1105,7 +1071,7 @@ body {
     gap: 6px;
     border: 1px solid rgba(245, 158, 11, 0.35);
     box-shadow: 0 2px 6px rgba(120, 53, 15, 0.08);
-    animation: gentleBadgeFloat 3.5s ease-in-out infinite alternate;
+    /* badge float animation removed for performance */
 }
 
 .hero-title {
@@ -1267,16 +1233,7 @@ body {
     color: var(--primary);
 }
 
-@keyframes sunlightGlow {
-    0% { transform: scale(1) translate(0, 0); opacity: 0.4; }
-    50% { transform: scale(1.15) translate(-10px, 10px); opacity: 0.65; }
-    100% { transform: scale(1.05) translate(8px, -6px); opacity: 0.45; }
-}
-
-@keyframes gentleBadgeFloat {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(-3px); }
-}
+/* sunlightGlow and gentleBadgeFloat keyframes removed for performance */
 
 /* ===================================================================
    MAIN LAYOUT (2 CỘT: BỘ LỌC BÊN TRÁI & GRID SẢN PHẨM BÊN PHẢI)
@@ -1310,8 +1267,7 @@ body {
 /* SIDEBAR: BỘ LỌC CHỌN LỌC */
 .sidebar-filter-card {
     background: rgba(255, 255, 255, 0.90);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    /* backdrop-filter removed for performance */
     border: 1px solid #fef08a;
     border-radius: var(--radius-lg);
     padding: 22px;
@@ -1530,27 +1486,22 @@ body {
 
 /* PRODUCT CARD (THIẾT KẾ CHÂN THẬT & HIỆU ỨNG ĐỘNG MƯỢT MÀ) */
 .uni-product-card {
-    background: rgba(255, 255, 255, 0.94);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: #ffffff;
+    /* backdrop-filter removed for performance */
     border: 1px solid rgba(254, 240, 138, 0.85);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     display: flex;
     flex-direction: column;
-    transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
-                box-shadow 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
-                border-color 0.25s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     position: relative;
     cursor: pointer;
 }
 
 .uni-product-card:hover {
-    transform: translateY(-6px) scale(1.01);
-    box-shadow: 
-        0 14px 28px -6px rgba(0, 0, 0, 0.08), 
-        0 6px 16px -4px rgba(245, 158, 11, 0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
     border-color: #f59e0b;
 }
 
@@ -1568,11 +1519,11 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+    /* transition removed for performance */
 }
 
 .uni-product-card:hover .card-image-wrapper img {
-    transform: scale(1.08);
+    /* zoom removed for performance */
 }
 
 /* Badges nổi trên ảnh */
@@ -1595,7 +1546,6 @@ body {
     top: 10px;
     right: 10px;
     background: rgba(28, 25, 23, 0.88);
-    backdrop-filter: blur(5px);
     color: #fde047;
     font-size: 10.5px;
     font-weight: 700;
@@ -3198,14 +3148,14 @@ body {
 #btnToggleFilterMode {
     background: linear-gradient(135deg, #f59e0b 0%, #ea580c 50%, #d97706 100%) !important;
     background-size: 200% 200% !important;
-    animation: filterBtnFlow 8s ease-in-out infinite alternate !important;
+    /* filter btn animation removed for performance */
     box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35), 0 0 12px rgba(251, 191, 36, 0.3) !important;
     transition: all 0.25s ease !important;
 }
 
 #btnToggleFilterMode:hover {
-    transform: translateY(-2px) scale(1.03) !important;
-    box-shadow: 0 8px 22px rgba(234, 88, 12, 0.45), 0 0 18px rgba(251, 191, 36, 0.45) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(234, 88, 12, 0.3) !important;
 }
 
 @keyframes filterBtnFlow {
