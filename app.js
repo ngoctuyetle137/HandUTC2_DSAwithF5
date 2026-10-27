@@ -6723,21 +6723,32 @@ document.addEventListener('click', (e) => {
 function initAuthBgMouseEffect() {
     const authContainer = document.getElementById('authPageContainer');
     const authParallax = document.getElementById('authBgParallax');
+    const authCard = document.querySelector('.auth-split-card');
     if (!authContainer) return;
 
     let targetX = 0, targetY = 0;
     let currentX = 0, currentY = 0;
     let isTicking = false;
 
-    authContainer.addEventListener('mousemove', (e) => {
+    function handleMouseMoveSpotlight(e) {
         const rect = authContainer.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         const xPercent = ((x / rect.width) * 100).toFixed(1);
         const yPercent = ((y / rect.height) * 100).toFixed(1);
 
+        // Chiếu luồng sáng spotlight bám theo con trỏ chuột trên toàn nền
         authContainer.style.setProperty('--mouse-x', `${xPercent}%`);
         authContainer.style.setProperty('--mouse-y', `${yPercent}%`);
+
+        // Chiếu luồng sáng rực rỡ trực tiếp lên khung đăng nhập khi rê chuột qua
+        if (authCard) {
+            const cardRect = authCard.getBoundingClientRect();
+            const cardX = e.clientX - cardRect.left;
+            const cardY = e.clientY - cardRect.top;
+            authCard.style.setProperty('--card-mouse-x', `${cardX.toFixed(1)}px`);
+            authCard.style.setProperty('--card-mouse-y', `${cardY.toFixed(1)}px`);
+        }
 
         // Dịch chuyển nhẹ theo hướng con trỏ chuột (Parallax)
         const moveRatioX = (e.clientX / window.innerWidth) - 0.5;
@@ -6757,11 +6768,22 @@ function initAuthBgMouseEffect() {
                 isTicking = false;
             });
         }
-    });
+    }
+
+    authContainer.addEventListener('mousemove', handleMouseMoveSpotlight);
+    window.addEventListener('mousemove', (e) => {
+        if (authContainer && authContainer.style.display !== 'none') {
+            handleMouseMoveSpotlight(e);
+        }
+    }, { passive: true });
 
     authContainer.addEventListener('mouseleave', () => {
         authContainer.style.setProperty('--mouse-x', '50%');
         authContainer.style.setProperty('--mouse-y', '50%');
+        if (authCard) {
+            authCard.style.setProperty('--card-mouse-x', '50%');
+            authCard.style.setProperty('--card-mouse-y', '50%');
+        }
         if (authParallax) {
             authParallax.style.setProperty('--mouse-shift-x', '0px');
             authParallax.style.setProperty('--mouse-shift-y', '0px');

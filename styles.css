@@ -229,19 +229,20 @@ body {
 }
 
 /* LỚP PHỦ ÁNH SÁNG THEO VỊ TRÍ CON CHUỘT TĂNG CHIỀU SÂU VÀ ĐỘ TẬP TRUNG */
+/* LỚP PHỦ ÁNH SÁNG THEO VỊ TRÍ CON CHUỘT: RÊ CHUỘT ĐẾN ĐÂU SÁNG BỪNG ĐẾN ĐÓ */
 .auth-bg-overlay {
     position: absolute;
     inset: 0;
     background: radial-gradient(
-        circle 750px at var(--mouse-x, 50%) var(--mouse-y, 50%),
-        rgba(255, 255, 255, 0.12) 0%,
-        rgba(186, 230, 253, 0.24) 45%,
-        rgba(12, 74, 110, 0.38) 100%
+        circle 600px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+        rgba(255, 255, 255, 0.42) 0%,
+        rgba(186, 230, 253, 0.30) 35%,
+        rgba(29, 101, 212, 0.42) 65%,
+        rgba(5, 18, 42, 0.82) 100%
     );
-    backdrop-filter: blur(1px);
     pointer-events: none;
     z-index: 1;
-    transition: background 0.12s ease-out;
+    transition: background 0.08s ease-out;
 }
 
 .auth-split-card {
@@ -278,17 +279,22 @@ body {
     z-index: 1;
 }
 
+/* HIỆU ỨNG RÊ CHUỘT TỚI ĐÂU LÀ SÁNG BỪNG TỚI ĐÓ TRÊN KHUNG ĐĂNG NHẬP (DYNAMIC CARD SPOTLIGHT) */
 .auth-split-card::after {
     content: '';
     position: absolute;
-    top: -120px;
-    left: 180px;
-    width: 380px;
-    height: 380px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(147, 197, 253, 0.45) 0%, transparent 70%);
+    inset: 0;
+    border-radius: 28px;
+    background: radial-gradient(
+        480px circle at var(--card-mouse-x, 50%) var(--card-mouse-y, 50%),
+        rgba(255, 255, 255, 0.45) 0%,
+        rgba(254, 240, 138, 0.25) 25%,
+        rgba(186, 230, 253, 0.15) 50%,
+        transparent 75%
+    );
     pointer-events: none;
-    z-index: 1;
+    z-index: 12;
+    transition: background 0.05s ease-out;
 }
 
 @keyframes authPopIn {
