@@ -3212,3 +3212,244 @@ body {
     0% { background-position: 0% 50%; }
     100% { background-position: 100% 50%; }
 }
+
+/* ===================================================================
+   AI OCR TIMEMARK SCANNER (TESSERACT.JS CLIENT-SIDE VISION)
+   =================================================================== */
+.ocr-scan-wrapper {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+.ocr-scanner-laser {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #22c55e 30%, #10b981 70%, transparent);
+    box-shadow: 0 0 14px #22c55e, 0 0 24px #10b981;
+    animation: ocrLaserScan 1.6s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 10;
+}
+
+@keyframes ocrLaserScan {
+    0% { top: 2%; opacity: 0.95; }
+    100% { top: 96%; opacity: 0.95; }
+}
+
+.ocr-result-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.2px;
+}
+
+.ocr-result-badge.match {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+}
+
+.ocr-result-badge.pending {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.ocr-result-badge.manual {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+/* ===================================================================
+   CHAT QUICK ACTIONS & ĐIỂM HẸN GIAO DỊCH AN TOÀN TRONG TRƯỜNG UTC2
+   =================================================================== */
+.chat-quick-actions-bar {
+    padding: 6px 10px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.chat-quick-actions-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.chat-action-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.chat-action-pill-btn:hover {
+    background: #f0f9ff;
+    border-color: #0284c7;
+    color: #0369a1;
+    transform: translateY(-1px);
+}
+
+.chat-action-pill-btn.primary-meetup {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    border-color: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+}
+
+.chat-action-pill-btn.primary-meetup:hover {
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    transform: translateY(-1px);
+}
+
+/* Thẻ tin nhắn Điểm hẹn an toàn UTC2 */
+.safe-meetup-card {
+    background: #ffffff;
+    border: 1.5px solid #38bdf8;
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
+    text-align: left;
+    max-width: 290px;
+    margin: 4px 0;
+}
+
+.safe-meetup-card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #0284c7;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border-bottom: 1px dashed #bae6fd;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+}
+
+.safe-meetup-spot-name {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.safe-meetup-time-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #fef3c7;
+    color: #b45309;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
+
+.safe-meetup-desc {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.safe-meetup-security-tip {
+    font-size: 10.5px;
+    color: #15803d;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 5px 8px;
+    line-height: 1.35;
+    margin-bottom: 8px;
+}
+
+.safe-meetup-agree-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: #ffffff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+    transition: all 0.2s ease;
+}
+
+.safe-meetup-agree-btn:hover {
+    background: #15803d;
+    transform: translateY(-1px);
+}
+
+/* Thẻ chọn điểm hẹn trong Modal */
+.safe-meetup-spot-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.safe-meetup-spot-card:hover {
+    border-color: #38bdf8;
+    background: #f0f9ff;
+    transform: translateY(-1px);
+}
+
+.safe-meetup-spot-card.selected {
+    border-color: #0284c7;
+    background: #f0f9ff;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.15);
+}
+
+.safe-meetup-spot-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: #e0f2fe;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.btn-time-slot.active {
+    border-color: #0284c7 !important;
+    background: #f0f9ff !important;
+    color: #0369a1 !important;
+    font-weight: 700 !important;
+}

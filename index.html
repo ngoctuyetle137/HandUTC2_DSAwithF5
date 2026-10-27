@@ -114,7 +114,7 @@
                         <div class="auth-input-wrap">
                             <span class="auth-input-icon"></span>
                             <input type="email" id="authEmailInput" class="auth-input" 
-                                   placeholder="Ví dụ: 6651071091@st.utc2.edu.vn" value="" required autocomplete="username">
+                                   placeholder="Ví dụ: sinhvien@st.utc2.edu.vn" value="" required autocomplete="username">
                         </div>
                     </div>
 
@@ -478,7 +478,7 @@
                     <div>
                         <div style="font-size:16.5px; font-weight:800; letter-spacing:0.3px;">PHÂN HỆ QUẢN TRỊ VIÊN HỆ THỐNG HAND UTC2</div>
                         <div style="font-size:13px; opacity:0.95; margin-top:2px;">
-                            Tài khoản quản trị được ủy quyền duy nhất: <strong style="background:rgba(255,255,255,0.25); padding:2px 8px; border-radius:6px; font-family:monospace; font-size:13.5px;">6651071091@st.utc2.edu.vn</strong>
+                            Tài khoản quản trị được ủy quyền duy nhất: <strong style="background:rgba(255,255,255,0.25); padding:2px 8px; border-radius:6px; font-family:monospace; font-size:13.5px;">Quản Trị Viên Hệ Thống UTC2</strong>
                         </div>
                     </div>
                 </div>
@@ -802,6 +802,19 @@
                 <!-- Messages rendered dynamically -->
             </div>
 
+            <!-- Thanh tiện ích chốt đơn & Điểm hẹn giao dịch an toàn tại UTC2 -->
+            <div class="chat-quick-actions-bar">
+                <button type="button" class="chat-action-pill-btn primary-meetup" onclick="openSafeMeetupPicker()">
+                    📍 Điểm Hẹn An Toàn UTC2
+                </button>
+                <button type="button" class="chat-action-pill-btn" onclick="quickSendChatText('Cho mình xin số điện thoại/Zalo để liên hệ khi đến điểm hẹn nha!')">
+                    📞 Xin SĐT/Zalo
+                </button>
+                <button type="button" class="chat-action-pill-btn" onclick="quickSendChatText('Món đồ này còn không bạn ơi? Có bớt chút đỉnh tiền xăng xe cho sinh viên không nè?')">
+                    💬 Hỏi Còn Đồ
+                </button>
+            </div>
+
             <!-- Khung nhập tin nhắn thủ công -->
             <div class="chat-input-bar">
                 <input type="text" id="chatInputText" placeholder="Nhập tin nhắn trao đổi đồ..." onkeydown="if(event.key==='Enter') sendManualMessage()">
@@ -1051,7 +1064,28 @@
                         <div style="position:absolute; top:6px; left:6px; background:rgba(22,163,74,0.92); color:#fff; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:4px;">
                             ✓ Đã chọn ảnh TimeMark
                         </div>
+                        <div id="timemarkLaserScanLine" class="ocr-scanner-laser" style="display:none;"></div>
                     </div>
+
+                    <!-- AI OCR Scanner Feedback Box -->
+                    <div id="timemarkOcrBox" style="margin-top:10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px; text-align:left;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="font-size:12px; font-weight:700; color:#15803d; display:flex; align-items:center; gap:6px;">
+                                <span>🤖</span> AI Quét TimeMark Tự Động (Tesseract OCR):
+                            </div>
+                            <span id="timemarkOcrBadge" style="font-size:10px; background:#dcfce7; color:#15803d; font-weight:700; padding:2px 6px; border-radius:4px;">Sẵn sàng</span>
+                        </div>
+                        <div id="timemarkOcrProgressWrap" style="display:none; margin-top:6px;">
+                            <div style="height:5px; background:#e2e8f0; border-radius:3px; overflow:hidden;">
+                                <div id="timemarkOcrBar" style="width:0%; height:100%; background:linear-gradient(90deg, #0284c7, #16a34a); transition:width 0.2s;"></div>
+                            </div>
+                            <div id="timemarkOcrStatus" style="font-size:11px; color:#64748b; margin-top:3px;">Đang đọc chữ viết...</div>
+                        </div>
+                        <div id="timemarkOcrResult" style="margin-top:6px; font-size:11.5px; line-height:1.4; color:#1e293b;">
+                            Hệ thống sẽ dùng AI quét tờ giấy ghi mã trong ảnh để kiểm tra tính hợp lệ trước khi gửi Admin duyệt!
+                        </div>
+                    </div>
+
                     <div style="margin-top:8px; display:flex; justify-content:center; gap:8px;">
                         <button type="button" class="btn-outline-chat" style="padding:5px 12px; font-size:11.5px;" onclick="document.getElementById('timemarkProofFileInput').click()">
                             🔄 Chọn / Chụp lại ảnh khác
@@ -1085,9 +1119,35 @@
             <h4 id="zoomImageTitle" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:10px; text-align:left;">
                 🔍 Xem Chi Tiết Ảnh Xác Thực TimeMark
             </h4>
-            <div style="background:#0f172a; border-radius:10px; padding:10px; display:flex; justify-content:center; align-items:center; min-height:280px; max-height:75vh; overflow:auto;">
-                <img id="zoomImageElement" src="" alt="Ảnh phóng to" style="max-width:100%; max-height:70vh; object-fit:contain; border-radius:6px;">
+            <div style="position:relative; background:#0f172a; border-radius:10px; padding:10px; display:flex; justify-content:center; align-items:center; min-height:280px; max-height:70vh; overflow:auto;">
+                <img id="zoomImageElement" src="" alt="Ảnh phóng to" style="max-width:100%; max-height:65vh; object-fit:contain; border-radius:6px;">
+                <div id="zoomLaserScanLine" class="ocr-scanner-laser" style="display:none;"></div>
             </div>
+
+            <!-- BẢNG PHÂN TÍCH AI / OCR SOI CHỮ VIẾT TẬP TRUNG CHO ADMIN -->
+            <div id="zoomOcrInspector" style="margin-top:10px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:10px 14px; text-align:left;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <div style="font-size:12.5px; font-weight:800; color:#0369a1; display:flex; align-items:center; gap:6px;">
+                        <span>🤖</span> Trợ Lý AI OCR (Tesseract.js Nhận Diện Ký Tự Quang Học)
+                    </div>
+                    <button type="button" id="btnZoomOcrTrigger" onclick="triggerZoomImageOcr()" style="background:#0284c7; color:#fff; border:none; padding:5px 12px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(2,132,199,0.25);">
+                        ⚡ Bấm Để AI Quét Chữ Ngay
+                    </button>
+                </div>
+                <div id="zoomOcrProgressWrap" style="display:none; margin-top:8px;">
+                    <div style="font-size:11px; color:#64748b; margin-bottom:3px; display:flex; justify-content:space-between;">
+                        <span id="zoomOcrStatusText">Đang phân tích nét chữ viết tay...</span>
+                        <span id="zoomOcrPercent">0%</span>
+                    </div>
+                    <div style="height:5px; background:#e2e8f0; border-radius:3px; overflow:hidden;">
+                        <div id="zoomOcrBar" style="width:0%; height:100%; background:#16a34a; transition:width 0.2s;"></div>
+                    </div>
+                </div>
+                <div id="zoomOcrResultBox" style="margin-top:8px; font-size:12px; line-height:1.45; color:#334155; display:none;">
+                    <!-- Filled dynamically -->
+                </div>
+            </div>
+
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
                 <span style="font-size:11.5px; color:#64748b;">Admin kiểm tra mẩu giấy ghi mã OTP TimeMark và mốc thời gian cạnh sản phẩm.</span>
                 <button class="btn-outline-chat" style="padding:6px 16px;" onclick="closeModal('zoomImageModal')">Đóng</button>
@@ -1113,7 +1173,7 @@
                         📧 Gmail / MSSV Quản Trị Viên:
                     </label>
                     <input type="text" id="adminModalEmailInput" class="hero-search-input" 
-                           placeholder="Nhập Gmail Admin (VD: 6651071091@st.utc2.edu.vn)..." 
+                           placeholder="Nhập Gmail Quản Trị Viên..." 
                            style="padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; box-shadow:none; width:100%; font-size:13px;"
                            autocomplete="username" required>
                 </div>
@@ -1529,10 +1589,69 @@
         </div>
     </div>
 
+    <!-- ===================================================================
+         MODAL CHỌN ĐIỂM HẸN GIAO DỊCH AN TOÀN TRONG KHUÔN VIÊN UTC2
+         =================================================================== -->
+    <div class="checkout-modal-overlay" id="safeMeetupModal">
+        <div class="checkout-modal-card" style="max-width:540px; text-align:left; padding:20px; max-height:90vh; overflow-y:auto;">
+            <button class="checkout-close-btn" onclick="closeModal('safeMeetupModal')">✕</button>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                <div style="width:42px; height:42px; border-radius:50%; background:#e0f2fe; color:#0284c7; font-size:22px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    📍
+                </div>
+                <div>
+                    <h3 style="font-size:17px; font-weight:800; color:#0f172a; margin:0;">Điểm Hẹn Giao Dịch An Toàn UTC2</h3>
+                    <div style="font-size:12px; color:#64748b; margin-top:2px;">Chọn địa điểm quen thuộc trong trường có bảo vệ, camera và đông sinh viên</div>
+                </div>
+            </div>
+
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:8px 12px; font-size:11.5px; color:#1e40af; margin-bottom:14px; line-height:1.45;">
+                🛡️ <strong>Khuyến nghị an toàn sinh viên UTC2:</strong> Ưu tiên giao dịch tại các sảnh lớn, thư viện hoặc căn tin trường vào ban ngày để kiểm tra đồ kỹ lưỡng trước khi chuyển tiền!
+            </div>
+
+            <!-- Danh sách 7 điểm hẹn UTC2 -->
+            <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:6px;">
+                1. Chọn vị trí gặp mặt tại Cơ sở 2 - ĐH GTVT:
+            </label>
+            <div id="safeMeetupSpotList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+                <!-- Rendered dynamically by JS -->
+            </div>
+
+            <!-- Chọn khung giờ hẹn -->
+            <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:6px;">
+                2. Chọn khung giờ hẹn nhận đồ:
+            </label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px;">
+                <button type="button" class="btn-time-slot" onclick="selectMeetupTimeSlot(this, 'Giờ ra chơi tiết 3-4 (9h15 - 9h30)')" style="padding:6px 10px; font-size:11.5px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; cursor:pointer; text-align:left;">⚡ Giờ ra chơi (9h15 - 9h30)</button>
+                <button type="button" class="btn-time-slot active" onclick="selectMeetupTimeSlot(this, 'Giờ nghỉ trưa (11h30 - 12h30)')" style="padding:6px 10px; font-size:11.5px; border:1.5px solid #0284c7; border-radius:6px; background:#f0f9ff; color:#0369a1; font-weight:700; cursor:pointer; text-align:left;">☀️ Nghỉ trưa (11h30 - 12h30)</button>
+                <button type="button" class="btn-time-slot" onclick="selectMeetupTimeSlot(this, 'Chiều tan học (16h30 - 17h30)')" style="padding:6px 10px; font-size:11.5px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; cursor:pointer; text-align:left;">🌅 Tan học (16h30 - 17h30)</button>
+                <button type="button" class="btn-time-slot" onclick="selectMeetupTimeSlot(this, 'Buổi tối (18h30 - 19h30)')" style="padding:6px 10px; font-size:11.5px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; cursor:pointer; text-align:left;">🌙 Buổi tối (18h30 - 19h30)</button>
+            </div>
+            <input type="text" id="customMeetupTimeInput" placeholder="Hoặc tự gõ giờ hẹn khác (VD: 14h chiều nay tại bàn tròn)..." style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; margin-bottom:14px;">
+
+            <!-- Lời nhắn kèm -->
+            <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:6px;">
+                3. Lời nhắn / Dấu hiệu nhận diện (Tùy chọn):
+            </label>
+            <input type="text" id="meetupNoteInput" value="Mình mặc áo đồng phục UTC2 nhé, bạn đến thì nhá máy mình ra liền!" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; margin-bottom:16px;">
+
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn-outline-chat" style="flex:1;" onclick="closeModal('safeMeetupModal')">
+                    Đóng
+                </button>
+                <button type="button" class="btn-primary-confirm" style="background:#0284c7; flex:2;" onclick="confirmSendSafeMeetupProposal()">
+                    🚀 Gửi Lời Hẹn Vào Khung Chat
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- SCRIPTS -->
+    <!-- Tesseract.js: Client-Side AI/OCR Engine Quét Chữ Viết TimeMark Ngay Trên Trình Duyệt -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-client.js"></script>
     <script src="online-sync.js"></script>
