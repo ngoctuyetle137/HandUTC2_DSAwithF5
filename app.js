@@ -225,6 +225,7 @@ const USERS_REGISTRY = {
 // ==========================================
 class AppController {
     constructor() {
+        window.app = this;
         this.registeredUsers = [];
         this.currentUserKey = null;
         this.user = null;
@@ -1783,8 +1784,8 @@ class AppController {
 
         // Nếu tài khoản hiện tại không phải Admin nhưng đang ở tab Admin -> tự động chuyển về Săn Đồ
         if (!isOfficialAdmin) {
-            const adminView = document.getElementById('adminDashboardSection');
-            if (adminView && adminView.style.display !== 'none') {
+            const adminTabBtn = document.getElementById('navAdminTab') || document.querySelector('.nav-item-btn[data-tab="admin"]');
+            if (adminTabBtn && adminTabBtn.classList.contains('active')) {
                 if (typeof switchNavTab === 'function') switchNavTab('home');
             }
         }
@@ -4987,27 +4988,35 @@ function switchNavTab(tabName) {
     if (tabName === 'home') {
         if (homeView) homeView.style.display = 'grid';
         if (heroBanner) heroBanner.style.display = 'block';
-        window.app.renderProducts();
+        if (window.app && typeof window.app.renderProducts === 'function') {
+            window.app.renderProducts();
+        }
     } else if (tabName === 'game') {
         if (gameView) gameView.style.display = 'flex';
         if (!window.game && document.getElementById('gameCanvas')) {
             window.game = new window.BlocklashGame('gameCanvas', (coins) => {
-                window.app.user.coins = (window.app.user.coins || 0) + coins;
-                const uIdx = window.app.registeredUsers.findIndex(u => u.email === window.app.user.email);
-                if (uIdx !== -1) {
-                    window.app.registeredUsers[uIdx].coins = window.app.user.coins;
-                    window.app.saveUsers();
+                if (window.app) {
+                    window.app.user.coins = (window.app.user.coins || 0) + coins;
+                    const uIdx = window.app.registeredUsers.findIndex(u => u.email === window.app.user.email);
+                    if (uIdx !== -1) {
+                        window.app.registeredUsers[uIdx].coins = window.app.user.coins;
+                        window.app.saveUsers();
+                    }
+                    window.app.updateUserUI();
                 }
-                window.app.updateUserUI();
                 showToast(`+${coins} Xu săn được đã cộng vào ví!`, 'success');
             });
         }
     } else if (tabName === 'profile') {
         if (profileView) profileView.style.display = 'flex';
-        window.app.renderProfile();
+        if (window.app && typeof window.app.renderProfile === 'function') {
+            window.app.renderProfile();
+        }
     } else if (tabName === 'admin') {
         if (adminView) adminView.style.display = 'flex';
-        window.app.renderAdminDashboard();
+        if (window.app && typeof window.app.renderAdminDashboard === 'function') {
+            window.app.renderAdminDashboard();
+        }
     }
 }
 
