@@ -4855,19 +4855,8 @@ function confirmDepositOrder() {
     }
 
     closeCheckoutModal();
-    window.app.updateDepositBadge();
-    window.app.renderProfile();
-}
-
-
-    // Đồng bộ đơn cọc lên mạng đa máy (Máy B, C, D...)
-    if (window.UniPassOnlineSync) {
-        window.UniPassOnlineSync.broadcastDepositOrder(newOrderData);
-    }
-
-    closeCheckoutModal();
     if (window.sound) window.sound.playSuccess();
-    showToast(`Đặt cọc thành công ${formatNumber(depositAmount)} đ! Đã gửi thông báo xác nhận đơn tới người bán (${currentCheckoutProduct.seller}).`, 'success');
+    window.app.updateDepositBadge();
     window.app.renderProfile();
 }
 
