@@ -3368,20 +3368,12 @@ async function handleAuthSubmitForm(e) {
         return;
     }
 
-    let email = rawInput.toLowerCase();
-    
-    // Tự động chuẩn hóa: Cho phép sinh viên nhập nhanh MSSV (VD: 6651071091) hoặc admin
-    if (email === 'admin') {
-        email = ADMIN_CREDENTIALS.email.toLowerCase();
-    } else if (!email.includes('@')) {
-        email = email + '@st.utc2.edu.vn';
-    }
-
+    const email = rawInput.toLowerCase();
     const emailRegex = /^[a-zA-Z0-9._%+-]+@st\.utc2\.edu\.vn$/i;
 
-    // Kiểm tra định dạng đuôi Gmail sinh viên UTC2
+    // 1. BẮT BUỘC ĐUÔI @st.utc2.edu.vn (KHÔNG CHO PHÉP NHẬP BẤT KỲ ĐUÔI NÀO KHÁC HOẶC TỰ SINH)
     if (!emailRegex.test(email)) {
-        showToast(`Vui lòng nhập MSSV hoặc Gmail sinh viên có đuôi @st.utc2.edu.vn (Ví dụ: ${getRandomStudentMSSV()})!`, 'danger');
+        showToast(`Địa chỉ email không hợp lệ! Bắt buộc phải là Gmail sinh viên có đuôi @st.utc2.edu.vn (Ví dụ: ${getRandomStudentMSSV()})!`, 'danger');
         if (window.sound) window.sound.playWarning();
         const emailInput = document.getElementById('authEmailInput');
         if (emailInput) {
@@ -3618,50 +3610,38 @@ async function handleAuthSubmitForm(e) {
     } else {
         // ==========================================
         // CHẾ ĐỘ ĐĂNG NHẬP (SIGN IN)
-        // Linh hoạt tìm theo email, MSSV hoặc tên người dùng
+        // Bắt buộc tài khoản đã đăng ký trước đó và đúng mật khẩu
         // ==========================================
         let existingUser = window.app.registeredUsers.find(u => 
-            (u.email && u.email.toLowerCase() === email) ||
-            (u.name && u.name.toLowerCase() === rawInput.toLowerCase()) ||
-            (u.email && u.email.split('@')[0].toLowerCase() === rawInput.toLowerCase())
+            u.email && u.email.toLowerCase() === email
         );
 
-        // NẾU TÀI KHOẢN CHƯA CÓ TRÊN TRÌNH DUYỆT NÀY -> TỰ ĐỘNG KÍCH HOẠT NHANH ĐỂ KHÔNG BỊ CHẶN
+        // KHÔNG TỰ ĐỘNG TẠO TÀI KHOẢN MỚI NẾU CHƯA ĐĂNG KÝ
         if (!existingUser) {
-            const alias = email.split('@')[0];
-            const isUserAdmin = (email === ADMIN_CREDENTIALS.email.toLowerCase());
-            existingUser = {
-                id: isUserAdmin ? 'ADMIN' : ('U_' + Date.now()),
-                name: isUserAdmin ? 'Quản Trị Viên UTC2 (6651071091)' : `Sinh Viên UTC2 (${alias})`,
-                email: email,
-                password: password || (isUserAdmin ? ADMIN_CREDENTIALS.password : '123456'),
-                role: isUserAdmin ? 'admin' : 'student',
-                coins: isUserAdmin ? 9999 : 20,
-                reputation: isUserAdmin ? 100 : 95,
-                isEmailVerified: true,
-                verifiedAt: new Date().toISOString(),
-                avatarLetter: alias.charAt(0).toUpperCase()
-            };
-            window.app.registeredUsers.push(existingUser);
-            window.app.saveUsers();
-            showToast(`✓ Đăng nhập thành công! Chào mừng bạn gia nhập UTC2Hand (+20 Xu, 95đ Uy tín).`, 'success');
-        } else {
-            // KIỂM TRA MẬT KHẨU
-            const isMatch = (existingUser.password === password) ||
-                            (isOfficialAdmin && (password === ADMIN_CREDENTIALS.password || password === '123456')) ||
-                            (existingUser.password === '123456') ||
-                            (password === '123456');
-
-            if (!isMatch) {
-                showToast('Mật khẩu không chính xác! Gợi ý: Bạn có thể nhập mật khẩu "123456" hoặc bấm "Quên mật khẩu?".', 'danger');
-                if (window.sound) window.sound.playWarning();
-                const pwdInput = document.getElementById('authPasswordInput');
-                if (pwdInput) {
-                    pwdInput.focus();
-                    pwdInput.select();
-                }
-                return;
+            showToast(`Tài khoản "${email}" chưa được đăng ký trên hệ thống! Vui lòng chọn tab "Đăng Ký" để tạo tài khoản mới.`, 'danger');
+            if (window.sound) window.sound.playWarning();
+            const emailInput = document.getElementById('authEmailInput');
+            if (emailInput) {
+                emailInput.focus();
+                emailInput.select();
             }
+            return;
+        }
+
+        // KIỂM TRA MẬT KHẨU
+        const isMatch = (existingUser.password === password) ||
+                        (isOfficialAdmin && (password === ADMIN_CREDENTIALS.password || password === '123456')) ||
+                        (existingUser.password === '123456');
+
+        if (!isMatch) {
+            showToast('Mật khẩu không chính xác! Nếu bạn quên mật khẩu, vui lòng nhấn "Quên mật khẩu?" để đặt lại mật khẩu bằng mã OTP.', 'danger');
+            if (window.sound) window.sound.playWarning();
+            const pwdInput = document.getElementById('authPasswordInput');
+            if (pwdInput) {
+                pwdInput.focus();
+                pwdInput.select();
+            }
+            return;
         }
 
         // Đăng nhập thành công
@@ -4593,212 +4573,62 @@ function closeCheckoutModal() {
     if (modal) modal.classList.remove('active');
 }
 
-// Tính số Xu đặt cọc: Áp dụng công thức 3% giá trị sản phẩm, tối thiểu là 2 xu và TỐI ĐA không quá 50 xu/giao dịch
-function calculateDepositCoins(price) {
-    const rawCoins = Math.round((Number(price || 0) * 0.03) / 1000);
-    return Math.min(50, Math.max(2, rawCoins));
-}
-
-// Đếm số giao dịch thành công của người dùng
-function getCompletedTradesCount(user) {
-    if (!user || !window.app || !window.app.depositOrders) return 0;
-    return window.app.depositOrders.filter(o => 
-        o.status === 'completed' && 
-        ((o.buyer && o.buyer === user.name) || (o.buyerEmail && o.buyerEmail === user.email) ||
-         (o.seller && o.seller === user.name) || (o.sellerEmail && o.sellerEmail === user.email))
-    ).length;
-}
-
-// Kiểm tra danh hiệu Tài Khoản Uy Tín còn hiệu lực hay không (Hiệu lực trong 1 tuần)
-function isReputationVipActive(user) {
-    if (!user) return false;
-    if (!user.reputationBadgeExpiry) return false;
-    return Date.now() < user.reputationBadgeExpiry;
-}
-
-// Lấy thời gian còn lại của Huy hiệu Uy tín
-function getReputationVipRemainingTime(user) {
-    if (!isReputationVipActive(user)) return null;
-    const diff = user.reputationBadgeExpiry - Date.now();
-    const days = Math.floor(diff / (24 * 60 * 60 * 1000));
-    const hours = Math.floor((diff % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-    return `${days} ngày ${hours} giờ`;
-}
-
-// Dịch vụ 1: Khôi phục +5 điểm uy tín bằng 30 Xu
-function restoreReputationWithCoins() {
-    if (!window.app || !window.app.user) {
-        showToast('Vui lòng đăng nhập để sử dụng tính năng!', 'warning');
-        return;
-    }
-    const user = window.app.user;
-    if (user.reputation >= 100) {
-        showToast('Điểm uy tín của bạn đã đạt mức tối đa (100/100 điểm)!', 'info');
-        return;
-    }
-    const userCoins = user.coins || 0;
-    if (userCoins < 30) {
-        showToast(`Bạn không đủ Xu! Cần 30 Xu để khôi phục +5 điểm uy tín (Ví hiện có: ${userCoins} Xu). Hãy chơi game để nhận thêm Xu!`, 'danger');
-        return;
-    }
-    if (!confirm('Xác nhận dùng 30 Xu để khôi phục +5 điểm uy tín?')) return;
-
-    user.coins = Math.max(0, userCoins - 30);
-    user.reputation = Math.min(100, (user.reputation || 95) + 5);
-
-    const uIdx = window.app.registeredUsers.findIndex(u => u.email === user.email);
-    if (uIdx !== -1) {
-        window.app.registeredUsers[uIdx].coins = user.coins;
-        window.app.registeredUsers[uIdx].reputation = user.reputation;
-        window.app.saveUsers();
-    }
-    window.app.updateUserUI();
-    window.app.renderProfile();
-
-    if (window.sound) window.sound.playSuccess();
-    showToast(`🎉 Khôi phục thành công +5 điểm uy tín (-30 Xu)! Điểm hiện tại: ${user.reputation}/100 ★`, 'success');
-}
-
-// Dịch vụ 2: Đẩy bài đăng lên TOP 1 trang Săn Đồ bằng 5 Xu
-function boostPostToTop(postId) {
-    if (!window.app || !window.app.user) return;
-    const user = window.app.user;
-    const post = window.app.products.find(p => p.id === postId);
-    if (!post) return;
-
-    if (post.seller !== user.name && post.sellerEmail !== user.email) {
-        showToast('Bạn chỉ có thể đẩy top bài đăng của chính mình!', 'danger');
-        return;
-    }
-
-    const userCoins = user.coins || 0;
-    if (userCoins < 5) {
-        showToast(`Bạn không đủ Xu! Cần 5 Xu để đẩy bài lên Top (Ví hiện có: ${userCoins} Xu). Hãy chơi game để nhận thêm Xu!`, 'danger');
-        return;
-    }
-
-    if (!confirm(`Xác nhận dùng 5 Xu để đẩy bài đăng "${post.title}" lên đầu trang Săn Đồ?`)) return;
-
-    user.coins = Math.max(0, userCoins - 5);
-    const uIdx = window.app.registeredUsers.findIndex(u => u.email === user.email);
-    if (uIdx !== -1) {
-        window.app.registeredUsers[uIdx].coins = user.coins;
-        window.app.saveUsers();
-    }
-
-    // Cập nhật thời gian bài viết lên mới nhất & gắn cờ boosted
-    post.approvedAt = Date.now();
-    post.submittedAt = Date.now();
-    post.isBoosted = true;
-    post.boostedAt = Date.now();
-
-    // Đưa bài lên vị trí đầu tiên của danh sách
-    const pIdx = window.app.products.findIndex(p => p.id === postId);
-    if (pIdx > -1) {
-        const [boosted] = window.app.products.splice(pIdx, 1);
-        window.app.products.unshift(boosted);
-    }
-
-    window.app.saveProducts();
-    window.app.rebuildDSACache();
-    window.app.renderProducts();
-    window.app.renderProfile();
-    window.app.updateUserUI();
-
-    if (window.UniPassOnlineSync) {
-        window.UniPassOnlineSync.broadcastNewPost(post);
-    }
-
-    if (window.sound) window.sound.playSuccess();
-    showToast(`🚀 Đã dùng 5 Xu đẩy bài "${post.title}" lên TOP 1 trang Săn Đồ thành công!`, 'success');
-}
-
-// Dịch vụ 3: Nhận Huy Hiệu Tài Khoản Uy Tín (Điều kiện: > 2 giao dịch thành công + 5 Xu -> hiệu lực 1 tuần)
-function purchaseReputationBadge() {
-    if (!window.app || !window.app.user) return;
-    const user = window.app.user;
-
-    const completedCount = getCompletedTradesCount(user);
-    if (completedCount <= 2) {
-        showToast(`Bạn chưa đủ điều kiện! Cần có TRÊN 2 giao dịch thành công (Hiện có: ${completedCount} giao dịch). Hãy hoàn thành thêm giao dịch để đạt điều kiện!`, 'warning');
-        return;
-    }
-
-    const userCoins = user.coins || 0;
-    if (userCoins < 5) {
-        showToast(`Bạn không đủ Xu! Cần 5 Xu để nhận huy hiệu (Ví hiện có: ${userCoins} Xu). Hãy chơi game để nhận thêm Xu!`, 'danger');
-        return;
-    }
-
-    if (!confirm('Xác nhận chi 5 Xu để kích hoạt "Huy Hiệu Tài Khoản Uy Tín" (Hiệu lực trong 1 tuần)?')) return;
-
-    user.coins = Math.max(0, userCoins - 5);
-    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-    user.reputationBadgeExpiry = Date.now() + ONE_WEEK_MS;
-    user.isReputationVip = true;
-
-    const uIdx = window.app.registeredUsers.findIndex(u => u.email === user.email);
-    if (uIdx !== -1) {
-        window.app.registeredUsers[uIdx].coins = user.coins;
-        window.app.registeredUsers[uIdx].reputationBadgeExpiry = user.reputationBadgeExpiry;
-        window.app.registeredUsers[uIdx].isReputationVip = true;
-        window.app.saveUsers();
-    }
-
-    window.app.updateUserUI();
-    window.app.renderProfile();
-    window.app.renderProducts();
-
-    if (window.sound) window.sound.playSuccess();
-    showToast('🎖️ Chúc mừng! Bạn đã nhận Huy Hiệu Tài Khoản Uy Tín UTC2 (Có hiệu lực trong 1 tuần)!', 'success');
-}
-
 function updateCheckoutCalculations() {
     if (!currentCheckoutProduct) return;
 
     const basePrice = currentCheckoutProduct.price;
-    const depositCoins = calculateDepositCoins(basePrice);
-    const availableCoins = (window.app && window.app.user) ? (window.app.user.coins || 0) : 0;
-
-    const depositCoinEl = document.getElementById('depositCoinsAmountText');
-    if (depositCoinEl) {
-        depositCoinEl.innerText = `${depositCoins} Xu`;
-    }
-
-    const userBalanceEl = document.getElementById('depositBuyerCoinsBalanceText');
-    if (userBalanceEl) {
-        const isEnough = availableCoins >= depositCoins;
-        userBalanceEl.innerHTML = `Ví của bạn: <strong style="color:${isEnough ? '#15803d' : '#b91c1c'};">${availableCoins} Xu</strong> ${isEnough ? '✓ Đủ xu cọc' : '⚠️ Thiếu ' + (depositCoins - availableCoins) + ' Xu!'}`;
-    }
+    let deposit = Math.max(3000, Math.round((basePrice * 0.1) / 1000) * 1000);
+    document.getElementById('depositAmountText').innerText = `${formatNumber(deposit)} VNĐ`;
 
     const shippingSelect = document.getElementById('shippingSelectOption');
     const shipFee = parseInt(shippingSelect ? shippingSelect.value : 0) || 0;
 
-    // Xu không để giảm tiền mặt, mà tính vào tiền cọc giữ chỗ
-    const finalTotal = basePrice + shipFee;
+    const coinCheckbox = document.getElementById('useCoinDiscountCheckbox');
+    const coinLabel = document.getElementById('coinDiscountLabelText');
+
+    const availableCoins = (window.app && window.app.user) ? (window.app.user.coins || 0) : 0;
+
+    // Cho phép dùng khoảng 30% số xu hiện có để giảm giá mặt hàng
+    let maxCoinsAllowed = Math.round(availableCoins * 0.3);
+    if (availableCoins > 0 && maxCoinsAllowed === 0) {
+        maxCoinsAllowed = 1;
+    }
+
+    // Mức giảm giá không vượt quá giá gốc của mặt hàng
+    const maxCoinsByPrice = Math.floor(basePrice / 100);
+    const coinsToUse = Math.min(maxCoinsAllowed, maxCoinsByPrice);
+    const discountVND = coinsToUse * 100;
+
+    if (coinLabel && coinCheckbox) {
+        if (availableCoins <= 0 || coinsToUse <= 0) {
+            coinCheckbox.checked = false;
+            coinCheckbox.disabled = true;
+            coinLabel.innerHTML = `<span style="color:#64748b;">🪙 Bạn hiện có <strong>0 Xu</strong> (Chưa đủ xu để giảm giá mặt hàng)</span>`;
+        } else {
+            coinCheckbox.disabled = false;
+            coinLabel.innerHTML = `🪙 Dùng <strong>${formatNumber(coinsToUse)} Xu</strong> (30% trong tổng ${formatNumber(availableCoins)} Xu hiện có) để giảm <strong style="color:#16a34a;">-${formatNumber(discountVND)} đ</strong>`;
+        }
+    }
+
+    let actualDiscount = 0;
+    if (coinCheckbox && coinCheckbox.checked && coinsToUse > 0) {
+        actualDiscount = discountVND;
+    }
+
+    const finalTotal = Math.max(0, basePrice + shipFee - actualDiscount);
 
     const breakdownEl = document.getElementById('calculationBreakdownText');
     if (breakdownEl) {
-        breakdownEl.innerText = `(Giá đồ: ${formatNumber(basePrice)}đ + Ship: ${formatNumber(shipFee)}đ • Cọc giữ chỗ: ${depositCoins} Xu)`;
+        if (actualDiscount > 0) {
+            breakdownEl.innerText = `(Giá gốc: ${formatNumber(basePrice)}đ + Ship: ${formatNumber(shipFee)}đ - Giảm 30% xu: ${formatNumber(actualDiscount)}đ)`;
+        } else {
+            breakdownEl.innerText = `(Giá gốc: ${formatNumber(basePrice)}đ + Ship: ${formatNumber(shipFee)}đ)`;
+        }
     }
 
     const totalEl = document.getElementById('finalTotalPaymentText');
     if (totalEl) {
         totalEl.innerText = `${formatNumber(finalTotal)} VNĐ`;
-    }
-
-    const confirmBtn = document.getElementById('confirmDepositBtn');
-    const isMine = window.app.user ? (currentCheckoutProduct.seller === window.app.user.name) : false;
-    if (confirmBtn && !isMine) {
-        if (availableCoins < depositCoins) {
-            confirmBtn.innerText = `⚠️ Cần ${depositCoins} Xu để cọc (Bạn thiếu ${depositCoins - availableCoins} Xu)`;
-            confirmBtn.style.background = '#94a3b8';
-            confirmBtn.disabled = true;
-        } else {
-            confirmBtn.innerText = `🤝 Đặt Cọc (${depositCoins} Xu) & Giữ Chỗ`;
-            confirmBtn.style.background = '#6366f1';
-            confirmBtn.disabled = false;
-        }
     }
 }
 
@@ -4812,17 +4642,25 @@ function confirmDepositOrder() {
 
     const basePrice = currentCheckoutProduct.price;
     const shipFee = parseInt(document.getElementById('shippingSelectOption').value) || 0;
-    const depositCoins = calculateDepositCoins(basePrice);
+    
+    // Tính toán số xu giảm giá (30% số xu hiện có)
     const availableCoins = (window.app && window.app.user) ? (window.app.user.coins || 0) : 0;
-
-    if (availableCoins < depositCoins) {
-        showToast(`Bạn không đủ Xu để đặt cọc! Cần có tối thiểu ${depositCoins} Xu (Ví hiện có: ${availableCoins} Xu). Hãy chơi game để nhận thêm Xu!`, 'danger');
-        return;
+    let maxCoinsAllowed = Math.round(availableCoins * 0.3);
+    if (availableCoins > 0 && maxCoinsAllowed === 0) {
+        maxCoinsAllowed = 1;
     }
+    const maxCoinsByPrice = Math.floor(basePrice / 100);
+    const coinsToUse = Math.min(maxCoinsAllowed, maxCoinsByPrice);
 
-    // Trừ số Xu đặt cọc trong ví của người mua
-    window.app.user.coins = Math.max(0, availableCoins - depositCoins);
+    const useCoins = document.getElementById('useCoinDiscountCheckbox') ? document.getElementById('useCoinDiscountCheckbox').checked : false;
+    const coinsUsed = (useCoins && availableCoins > 0) ? coinsToUse : 0;
+    const discountVND = coinsUsed * 100;
 
+    const depositAmount = Math.max(3000, Math.round((basePrice * 0.1) / 1000) * 1000);
+    const finalTotal = Math.max(0, basePrice + shipFee - discountVND);
+
+    window.app.user.coins = Math.max(0, (window.app.user.coins || 0) - coinsUsed);
+    
     // Đồng bộ số xu vào registeredUsers
     const uIdx = window.app.registeredUsers.findIndex(u => u.email === window.app.user.email);
     if (uIdx !== -1) {
@@ -4831,9 +4669,9 @@ function confirmDepositOrder() {
     }
     window.app.updateUserUI();
 
-    showToast(`✓ Đã cọc ${depositCoins} Xu (3% giá trị sản phẩm) giữ chỗ thành công! Xu sẽ được hoàn trả 100% khi giao dịch hoàn tất.`, 'success');
-
-    const finalTotal = basePrice + shipFee;
+    if (coinsUsed > 0) {
+        showToast(`Đã dùng ${coinsUsed} Xu (30% số xu) giảm ngay ${formatNumber(discountVND)} đ!`, 'success');
+    }
 
     const newOrderData = {
         id: 'ORD_' + Date.now(),
@@ -4845,30 +4683,29 @@ function confirmDepositOrder() {
         buyer: window.app.user.name,
         buyerEmail: window.app.user.email || 'buyer@st.utc2.edu.vn',
         productPrice: basePrice,
-        depositAmount: 0,
-        depositCoins: depositCoins, // Số Xu cọc (Áp dụng 3%, min 2 max 50)
+        depositAmount,
         shippingFee: shipFee,
-        discountCoins: 0,
-        discountAmount: 0,
+        discountCoins: coinsUsed,
+        discountAmount: discountVND,
         totalPayment: finalTotal,
         shippingOption: document.getElementById('shippingSelectOption') ? document.getElementById('shippingSelectOption').value : 'campus',
         meetLocation: currentCheckoutProduct.location,
-        status: 'pending_seller',
-        sellerAccepted: false,
-        buyerCompleted: false,
-        sellerCompleted: false,
+        status: 'pending_seller', // Người mua đã cọc, chờ người bán xác nhận đơn hàng
+        sellerAccepted: false,     // Người bán đã bấm xác nhận đơn hàng hay chưa
+        buyerCompleted: false,     // Người mua xác nhận đã nhận hàng
+        sellerCompleted: false,    // Người bán xác nhận đã giao hàng
         timestamp: Date.now()
     };
 
     window.app.depositOrders.push(newOrderData);
     window.app.saveOrders();
 
-    // Gửi thông báo tới người bán: Có người cọc đơn hàng của bạn
+    // Gửi thông báo tới người bán: Có người thêm đơn hàng của bạn vào đơn cọc
     window.app.addNotification({
         targetName: currentCheckoutProduct.seller,
         targetEmail: currentCheckoutProduct.sellerEmail || 'seller@st.utc2.edu.vn',
         title: 'Có khách đặt cọc đơn hàng!',
-        message: `${window.app.user.name} vừa cọc ${depositCoins} Xu giữ chỗ đơn hàng "${currentCheckoutProduct.title}" của bạn. Vui lòng vào mục Cá Nhân kiểm tra.`,
+        message: `${window.app.user.name} vừa thêm đơn hàng "${currentCheckoutProduct.title}" của bạn vào đơn cọc (Cọc giữ chỗ: ${formatNumber(depositAmount)} đ). Vui lòng vào mục Cá Nhân kiểm tra.`,
         type: 'order_deposit',
         relatedId: newOrderData.id
     });
@@ -4877,8 +4714,8 @@ function confirmDepositOrder() {
     window.app.addNotification({
         targetName: window.app.user.name,
         targetEmail: window.app.user.email,
-        title: 'Đặt cọc đơn hàng thành công!',
-        message: `Bạn đã cọc ${depositCoins} Xu cho đơn hàng "${currentCheckoutProduct.title}". Số Xu này sẽ được hoàn trả 100% sau khi hoàn thành giao dịch!`,
+        title: 'Thêm vào đơn cọc thành công!',
+        message: `Bạn đã thêm đơn hàng "${currentCheckoutProduct.title}" vào đơn cọc (Đã cọc: ${formatNumber(depositAmount)} đ). Đang chờ người bán xác nhận đơn.`,
         type: 'order_deposit',
         relatedId: newOrderData.id
     });
@@ -4887,15 +4724,6 @@ function confirmDepositOrder() {
     if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
         window.UniPassSupabase.createOrder(newOrderData);
     }
-    if (window.UniPassOnlineSync) {
-        window.UniPassOnlineSync.broadcastNewOrder(newOrderData);
-    }
-
-    closeCheckoutModal();
-    window.app.updateDepositBadge();
-    window.app.renderProfile();
-}
-
 
     // Đồng bộ đơn cọc lên mạng đa máy (Máy B, C, D...)
     if (window.UniPassOnlineSync) {
@@ -4969,26 +4797,6 @@ function confirmTradeComplete(orderId, role) {
 
     // NẾU CẢ 2 BÊN ĐÃ XÁC NHẬN HOÀN TẤT: TỰ ĐỘNG XÓA BÀI ĐĂNG & CỘNG ĐIỂM UY TÍN
     if (order.buyerCompleted && order.sellerCompleted) {
-
-        // 1. HOÀN TRẢ TOÀN BỘ XU CỌC CHO NGƯỜI MUA SAU KHI HOÀN TẤT GIAO DỊCH
-        const refundCoins = order.depositCoins || 0;
-        const buyerUser = window.app.registeredUsers.find(u => u.name === order.buyer || u.email === order.buyerEmail);
-        const sellerUser = window.app.registeredUsers.find(u => u.name === order.seller || u.email === order.sellerEmail);
-
-        if (refundCoins > 0 && buyerUser) {
-            buyerUser.coins = (buyerUser.coins || 0) + refundCoins;
-            if (window.app.user && (window.app.user.name === order.buyer || window.app.user.email === order.buyerEmail)) {
-                window.app.user.coins = buyerUser.coins;
-            }
-            window.app.addNotification({
-                targetName: order.buyer,
-                targetEmail: order.buyerEmail,
-                title: 'Hoàn trả Xu đặt cọc thành công!',
-                message: `Giao dịch hoàn tất! Hệ thống đã hoàn trả lại +${refundCoins} Xu cọc về ví của bạn.`,
-                type: 'coin_refund',
-                relatedId: order.id
-            });
-        }
         order.status = 'completed';
 
         // Cộng +2 điểm uy tín cho cả 2 bên
@@ -6760,25 +6568,23 @@ document.addEventListener('click', (e) => {
 function initAuthBgMouseEffect() {
     const authContainer = document.getElementById('authPageContainer');
     const authParallax = document.getElementById('authBgParallax');
-    const authCard = document.querySelector('.auth-split-card');
     if (!authContainer) return;
 
     let targetX = 0, targetY = 0;
     let currentX = 0, currentY = 0;
     let isTicking = false;
 
-    function handleMouseMoveSpotlight(e) {
+    authContainer.addEventListener('mousemove', (e) => {
         const rect = authContainer.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         const xPercent = ((x / rect.width) * 100).toFixed(1);
         const yPercent = ((y / rect.height) * 100).toFixed(1);
 
-        // Chiếu luồng sáng spotlight bám theo con trỏ chuột trên toàn nền: rê chuột đi đâu là sáng bừng chỗ đó
         authContainer.style.setProperty('--mouse-x', `${xPercent}%`);
         authContainer.style.setProperty('--mouse-y', `${yPercent}%`);
 
-        // Dịch chuyển nhẹ theo hướng con trỏ chuột (Parallax nền khuôn viên UTC2)
+        // Dịch chuyển nhẹ theo hướng con trỏ chuột (Parallax)
         const moveRatioX = (e.clientX / window.innerWidth) - 0.5;
         const moveRatioY = (e.clientY / window.innerHeight) - 0.5;
         targetX = moveRatioX * -24;
@@ -6796,22 +6602,11 @@ function initAuthBgMouseEffect() {
                 isTicking = false;
             });
         }
-    }
-
-    authContainer.addEventListener('mousemove', handleMouseMoveSpotlight);
-    window.addEventListener('mousemove', (e) => {
-        if (authContainer && authContainer.style.display !== 'none') {
-            handleMouseMoveSpotlight(e);
-        }
-    }, { passive: true });
+    });
 
     authContainer.addEventListener('mouseleave', () => {
         authContainer.style.setProperty('--mouse-x', '50%');
         authContainer.style.setProperty('--mouse-y', '50%');
-        if (authCard) {
-            authCard.style.setProperty('--card-mouse-x', '50%');
-            authCard.style.setProperty('--card-mouse-y', '50%');
-        }
         if (authParallax) {
             authParallax.style.setProperty('--mouse-shift-x', '0px');
             authParallax.style.setProperty('--mouse-shift-y', '0px');
