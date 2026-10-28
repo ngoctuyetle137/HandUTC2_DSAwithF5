@@ -1808,11 +1808,24 @@ class AppController {
         this.updateNotificationBadge();
         this.renderNotifications();
 
-        // HIỂN THỊ TAB QUẢN TRỊ ADMIN:
-        // Luôn hiển thị nút Admin để mọi tài khoản đều có thể vào hoặc xác thực phân hệ quản trị
+        // PHÂN QUYỀN HIỂN THỊ TAB QUẢN TRỊ ADMIN:
+        // Ở các tài khoản người dùng sinh viên thông thường: HOÀN TOÀN ẨN TAB QUẢN TRỊ ADMIN (style.display = 'none')
+        // Chỉ tài khoản Quản Trị Viên (role === 'admin' hoặc email là 6651071091@st.utc2.edu.vn) mới thấy tab này!
+        const isOfficialAdmin = this.user && (
+            this.user.role === 'admin' ||
+            this.user.email === ADMIN_CREDENTIALS.email ||
+            this.user.email === '6651071091@st.utc2.edu.vn'
+        );
         const adminTabBtn = document.getElementById('navAdminTab') || document.querySelector('.nav-item-btn.admin-tab');
         if (adminTabBtn) {
-            adminTabBtn.style.display = 'inline-flex';
+            adminTabBtn.style.display = isOfficialAdmin ? 'inline-flex' : 'none';
+        }
+
+        // Nếu tài khoản người dùng bình thường đang ở tab Admin -> tự động chuyển về Săn Đồ
+        if (!isOfficialAdmin) {
+            if (adminTabBtn && adminTabBtn.classList.contains('active')) {
+                if (typeof switchNavTab === 'function') switchNavTab('home');
+            }
         }
 
         localStorage.setItem('unipass_current_user', JSON.stringify(this.user));
@@ -5137,13 +5150,14 @@ function handleOrderDisputeSubmit(event) {
 // ==========================================
 function switchNavTab(tabName) {
     if (tabName === 'admin') {
-        const isOfficialAdmin = window.app.isAdminAuthenticated || (window.app.user && (
+        const isOfficialAdmin = window.app.user && (
             window.app.user.role === 'admin' ||
             window.app.user.email === ADMIN_CREDENTIALS.email ||
             window.app.user.email === '6651071091@st.utc2.edu.vn'
-        ));
+        );
         if (!isOfficialAdmin) {
-            openAdminAccessDeniedModal();
+            // Tài khoản người dùng bình thường không có quyền truy cập tab này
+            switchNavTab('home');
             return;
         }
         // Tự động kéo danh sách tài khoản mới nhất từ Supabase Cloud
