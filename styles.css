@@ -233,12 +233,14 @@ body {
     position: absolute;
     inset: 0;
     background: radial-gradient(
-        circle 650px at var(--mouse-x, 50%) var(--mouse-y, 50%),
-        rgba(255, 255, 255, 0.40) 0%,
-        rgba(186, 230, 253, 0.32) 30%,
-        rgba(29, 101, 212, 0.45) 60%,
-        rgba(5, 18, 42, 0.85) 100%
+        circle 750px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+        rgba(255, 255, 255, 0.38) 0%,
+        rgba(186, 230, 253, 0.32) 35%,
+        rgba(29, 101, 212, 0.45) 65%,
+        rgba(8, 26, 51, 0.82) 100%
     );
+    backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px);
     pointer-events: none;
     z-index: 1;
     transition: background 0.08s ease-out;

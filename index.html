@@ -113,8 +113,8 @@
                         <label class="auth-label">Gmail sinh viên UTC2 (@st.utc2.edu.vn) *</label>
                         <div class="auth-input-wrap">
                             <span class="auth-input-icon"></span>
-                            <input type="email" id="authEmailInput" class="auth-input" 
-                                   placeholder="Ví dụ: 6351074829@st.utc2.edu.vn" value="" required autocomplete="username">
+                            <input type="text" id="authEmailInput" class="auth-input"
+                                   placeholder="Ví dụ: 6351074829 hoặc 6351074829@st.utc2.edu.vn" value="" required autocomplete="username" inputmode="email">
                         </div>
                     </div>
 
@@ -191,6 +191,24 @@
                 <div class="auth-bottom-switch">
                     <span id="authBottomSwitchText">Don't have an account?</span>
                     <a href="javascript:void(0)" id="authBottomSwitchLink" onclick="toggleAuthModeViaLink()">Sign up</a>
+                </div>
+
+                <!-- Gợi ý đăng nhập nhanh 1-chạm (như hổm rài) -->
+                <div class="auth-quick-accounts-box" style="margin-top:16px; padding-top:12px; border-top:1px dashed #cbd5e1; font-size:11.5px; color:#475569;">
+                    <div style="font-weight:700; margin-bottom:8px; color:#0f172a; display:flex; align-items:center; gap:6px;">
+                        <span>⚡</span> Đăng nhập nhanh 1-chạm:
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="addr-chip" onclick="fillQuickLogin('6651071091', 'TietLee113377')" title="Tài khoản Quản Trị Viên UTC2" style="font-size:11px; padding:5px 10px; cursor:pointer; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; font-weight:700; color:#0369a1;">
+                            🛡️ Admin (6651071091)
+                        </button>
+                        <button type="button" class="addr-chip" onclick="fillQuickLogin('tuyetltn.st@st.utc2.edu.vn', '123456')" title="Sinh viên Lê Thị Ngọc Tuyết" style="font-size:11px; padding:5px 10px; cursor:pointer; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; font-weight:700; color:#15803d;">
+                            🎓 Lê Thị Ngọc Tuyết
+                        </button>
+                        <button type="button" class="addr-chip" onclick="fillQuickLogin('sinhvien@st.utc2.edu.vn', '123456')" title="Sinh viên UTC2 mẫu" style="font-size:11px; padding:5px 10px; cursor:pointer; background:#fefce8; border:1px solid #fef08a; border-radius:6px; font-weight:700; color:#a16207;">
+                            🎒 Sinh Viên UTC2
+                        </button>
+                    </div>
                 </div>
             </div>
 
