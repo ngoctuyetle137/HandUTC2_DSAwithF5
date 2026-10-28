@@ -239,31 +239,6 @@ class AppController {
         this.depositOrders = [];
         this.adminDisputes = [];
         this.adminWarningsIssued = [];
-        const savedWarnings = localStorage.getItem('unipass_admin_warnings');
-        if (savedWarnings) {
-            try { this.adminWarningsIssued = JSON.parse(savedWarnings); } catch (e) { this.adminWarningsIssued = []; }
-        }
-        if (!this.adminWarningsIssued || this.adminWarningsIssued.length === 0) {
-            this.adminWarningsIssued = [
-                {
-                    id: 'WARN_001',
-                    targetName: 'Phúc Lâm',
-                    targetEmail: 'lamnp.st@st.utc2.edu.vn',
-                    reason: 'Chậm trễ xác nhận bàn giao sách tại phòng tự học thư viện UTC2',
-                    penaltyPoints: 2,
-                    time: 'Hôm qua, 15:30'
-                },
-                {
-                    id: 'WARN_002',
-                    targetName: 'Trần Văn Cường',
-                    targetEmail: '6651071092@st.utc2.edu.vn',
-                    reason: 'Có dấu hiệu bùng hẹn giao nhận giáo trình C++ tại sảnh tòa E3',
-                    penaltyPoints: 5,
-                    time: '2 ngày trước'
-                }
-            ];
-            this.saveWarnings();
-        }
         this.notifications = [];
 
         this.filterMaxPrice = 350000;
@@ -1085,10 +1060,6 @@ class AppController {
         });
     }
 
-    saveWarnings() {
-        localStorage.setItem('unipass_admin_warnings', JSON.stringify(this.adminWarningsIssued));
-    }
-
     saveUsers() {
         localStorage.setItem('unipass_registered_users', JSON.stringify(this.registeredUsers));
         if (this.syncChannel) {
@@ -1259,7 +1230,7 @@ class AppController {
         this.postDLL = new window.UTC2_DSA.PostDoublyLinkedList();
 
         // CHỈ NẠP CÁC BÀI ĐÃ ĐƯỢC ADMIN DUYỆT (LOẠI BỎ PENDING VÀ REJECTED)
-        const approvedPosts = this.products.filter(p => p.status !== 'rejected'); // Nạp tất cả bài đăng trên Sàn Đồ (trừ bài rejected)
+        const approvedPosts = this.products.filter(p => p.status !== 'pending' && p.status !== 'rejected');
 
         const popularKeywords = [
             'Casio', 'Máy tính Casio', 'Giáo trình', 'Giáo trình Vật Lý', 'Sách C++',
@@ -1782,15 +1753,6 @@ class AppController {
         if (profName) profName.innerText = this.user.name;
         if (profEmail) profEmail.innerText = this.user.email;
         if (profRep) profRep.innerText = this.user.reputation;
-        const vipEl = document.getElementById('profileVipBadgeDisplay');
-        if (vipEl) {
-            if (isReputationVipActive(this.user)) {
-                const rem = getReputationVipRemainingTime(this.user);
-                vipEl.innerHTML = `<span class="badge-reputation-vip" title="Hiệu lực còn ${rem}">🎖️ Uy Tín VIP (${rem})</span>`;
-            } else {
-                vipEl.innerHTML = '';
-            }
-        }
         
         if (profAvatar) {
             if (customAvatar) {
@@ -1809,8 +1771,7 @@ class AppController {
         this.renderNotifications();
 
         // PHÂN QUYỀN HIỂN THỊ TAB QUẢN TRỊ ADMIN:
-        // Ở các tài khoản người dùng sinh viên thông thường: HOÀN TOÀN ẨN TAB QUẢN TRỊ ADMIN (style.display = 'none')
-        // Chỉ tài khoản Quản Trị Viên (role === 'admin' hoặc email là 6651071091@st.utc2.edu.vn) mới thấy tab này!
+        // Các tài khoản sinh viên khác sẽ KHÔNG THẤY tab này, chỉ tài khoản Admin mới thấy!
         const isOfficialAdmin = this.user && (
             this.user.role === 'admin' ||
             this.user.email === ADMIN_CREDENTIALS.email ||
@@ -1821,8 +1782,9 @@ class AppController {
             adminTabBtn.style.display = isOfficialAdmin ? 'inline-flex' : 'none';
         }
 
-        // Nếu tài khoản người dùng bình thường đang ở tab Admin -> tự động chuyển về Săn Đồ
+        // Nếu tài khoản hiện tại không phải Admin nhưng đang ở tab Admin -> tự động chuyển về Săn Đồ
         if (!isOfficialAdmin) {
+            const adminTabBtn = document.getElementById('navAdminTab') || document.querySelector('.nav-item-btn[data-tab="admin"]');
             if (adminTabBtn && adminTabBtn.classList.contains('active')) {
                 if (typeof switchNavTab === 'function') switchNavTab('home');
             }
@@ -1855,12 +1817,8 @@ class AppController {
 
     // Lọc sản phẩm
     getFilteredItems() {
-        // TẤT CẢ CÁC TÀI KHOẢN ĐỀU THẤY ĐƯỢC CÁC BÀI ĐĂNG TRÊN SÀN ĐỒ ĐỂ MUA BÁN
-        // Chỉ loại bỏ bài đăng đã bị Admin từ chối/gỡ bỏ (status === 'rejected')
-        const baseApprovedProducts = this.products.filter(p => {
-            if (p.status === 'rejected') return false;
-            return true;
-        });
+        // Chỉ lấy các bài đã được Admin phê duyệt (Loại bỏ các bài đang chờ duyệt TimeMark hoặc bị từ chối)
+        const baseApprovedProducts = this.products.filter(p => p.status !== 'pending' && p.status !== 'rejected');
         let items = [...baseApprovedProducts];
 
         // Nếu bộ lọc đang BẬT: CHỈ LỌC NHỮNG TIÊU CHÍ NÀO ĐƯỢC BẤM DẤU TÍCH!
@@ -1965,7 +1923,7 @@ class AppController {
         ` : '';
 
         container.innerHTML = searchBannerHtml + list.map(item => {
-            const isMyItem = this.user ? ((item.seller === this.user.name) || (item.sellerEmail && this.user.email && item.sellerEmail.toLowerCase() === this.user.email.toLowerCase())) : false;
+            const isMyItem = this.user ? (item.seller === this.user.name) : false;
             const origPrice = item.originalPrice || Math.round((item.price * 1.5) / 10000) * 10000;
             const discountPct = (origPrice > item.price) ? Math.round((1 - item.price / origPrice) * 100) : 0;
             const starScore = ((item.sellerRep || 90) / 20).toFixed(1);
@@ -1987,11 +1945,6 @@ class AppController {
                         <span class="card-badge-timemark">
                             <span class="badge-pulse-dot"></span> TimeMark: ${item.timemarkCode}
                         </span>
-                        ${item.status === 'pending' ? `
-                            <span style="position:absolute; bottom:8px; left:8px; background:#fffbeb; color:#b45309; border:1px solid #fde68a; font-size:10px; font-weight:800; padding:2px 8px; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.12);">
-                                ⏳ Đang duyệt TimeMark
-                            </span>
-                        ` : ''}
                     </div>
                     <div class="card-content">
                         <h4 class="card-title-text" title="${item.title}">${item.title}</h4>
@@ -2011,11 +1964,10 @@ class AppController {
                         ` : ''}
                         
                         <div class="card-seller-row">
-                            <span class="card-seller-name" style="display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap;">
+                            <span class="card-seller-name" style="display:inline-flex; align-items:center;">
                                 ${sellerAvatarHtml}
                                 <span>${item.seller}</span>
                                 <span class="verified-sv-tag" title="Sinh viên ST.UTC2 đã xác minh">✓ SV</span>
-                                ${(sellerUser && isReputationVipActive(sellerUser)) ? `<span class="badge-reputation-vip" title="Tài khoản uy tín đã được xác thực (Hiệu lực 1 tuần)">🎖️ Uy Tín VIP</span>` : ''}
                             </span>
                             <span class="card-rep-badge" title="Đánh giá uy tín sinh viên">
                                 ⭐ ${starScore} (${reviewCount})
@@ -2053,83 +2005,8 @@ class AppController {
             return;
         }
 
-        // Cập nhật hiển thị Huy Hiệu Uy Tín VIP ở thông tin cá nhân
-        const isVip = isReputationVipActive(this.user);
-        const vipRemaining = getReputationVipRemainingTime(this.user);
-        const completedTrades = getCompletedTradesCount(this.user);
-
-        // Chèn Khung Dịch Vụ Xu Sinh Viên UTC2 trước phần bài đăng & đơn cọc
-        const profileServicesBlock = document.getElementById('profileCoinServicesContainer');
-        if (profileServicesBlock) {
-            profileServicesBlock.innerHTML = `
-                <div style="background:#fffbeb; border:1.5px solid #fde68a; border-radius:12px; padding:14px 16px; margin-bottom:18px; box-shadow:0 1px 4px rgba(245,158,11,0.08);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-size:20px;">🪙</span>
-                            <h4 style="font-size:14px; font-weight:800; color:#92400e; margin:0;">Dịch Vụ Xu Sinh Viên UTC2</h4>
-                        </div>
-                        <div style="font-size:12.5px; color:#b45309; font-weight:700;">
-                            Ví hiện có: <span style="background:#fef3c7; border:1px solid #fde68a; padding:3px 10px; border-radius:12px; color:#d97706; font-size:13px;">🪙 ${this.user.coins || 0} Xu</span>
-                        </div>
-                    </div>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
-                        <!-- Dịch vụ 1: Khôi phục điểm uy tín -->
-                        <div style="background:#fff; border:1px solid #fef08a; border-radius:8px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
-                            <div>
-                                <div style="font-weight:700; color:#0f172a; font-size:13px; display:flex; align-items:center; gap:6px;">
-                                    🛡️ Khôi Phục Uy Tín
-                                </div>
-                                <div style="font-size:11.5px; color:#64748b; margin-top:4px; line-height:1.4;">
-                                    Chi <strong>30 Xu</strong> khôi phục ngay <strong>+5 Điểm Uy Tín</strong> (tối đa 100đ).
-                                </div>
-                            </div>
-                            <button type="button" onclick="restoreReputationWithCoins()" style="margin-top:10px; padding:6px 12px; background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;" title="Dùng 30 Xu khôi phục +5 điểm uy tín">
-                                🪙 Khôi Phục +5đ (30 Xu)
-                            </button>
-                        </div>
-
-                        <!-- Dịch vụ 2: Huy hiệu tài khoản uy tín (VIP) -->
-                        <div style="background:#fff; border:1px solid #fef08a; border-radius:8px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
-                            <div>
-                                <div style="font-weight:700; color:#0f172a; font-size:13px; display:flex; align-items:center; gap:6px;">
-                                    🎖️ Huy Hiệu Uy Tín (1 Tuần)
-                                </div>
-                                <div style="font-size:11.5px; color:#64748b; margin-top:4px; line-height:1.4;">
-                                    Yêu cầu: <strong>> 2 giao dịch thành công</strong> (Bạn có: <strong>${completedTrades}</strong>). Phí: <strong>5 Xu</strong>/tuần.
-                                </div>
-                            </div>
-                            ${isVip ? `
-                                <div style="margin-top:10px; padding:6px 10px; background:#dcfce7; color:#15803d; border-radius:6px; font-size:11.5px; font-weight:700; text-align:center; border:1px solid #86efac;">
-                                    🎖️ Đang hiệu lực (${vipRemaining})
-                                </div>
-                            ` : `
-                                <button type="button" onclick="purchaseReputationBadge()" style="margin-top:10px; padding:6px 12px; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;" title="Nhận huy hiệu tài khoản uy tín hiệu lực 1 tuần">
-                                    🎖️ Nhận Huy Hiệu (5 Xu)
-                                </button>
-                            `}
-                        </div>
-
-                        <!-- Dịch vụ 3: Cọc bằng xu -->
-                        <div style="background:#fff; border:1px solid #fef08a; border-radius:8px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
-                            <div>
-                                <div style="font-weight:700; color:#0f172a; font-size:13px; display:flex; align-items:center; gap:6px;">
-                                    🤝 Cọc Giữ Chỗ Bằng Xu
-                                </div>
-                                <div style="font-size:11.5px; color:#64748b; margin-top:4px; line-height:1.4;">
-                                    Cọc <strong>3%</strong> giá trị sản phẩm (Tối thiểu <strong>2 Xu</strong>, tối đa <strong>50 Xu</strong>). <strong>Hoàn cọc 100%</strong> sau khi giao dịch thành công!
-                                </div>
-                            </div>
-                            <div style="margin-top:10px; font-size:11px; color:#15803d; font-weight:700; text-align:center; padding:5px; background:#f0fdf4; border-radius:6px; border:1px solid #bbf7d0;">
-                                ✓ Tự động áp dụng khi Mua Hàng
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
         if (myPosts) {
-            const myItems = this.products.filter(p => (p.seller === this.user.name) || (p.sellerEmail && this.user.email && p.sellerEmail.toLowerCase() === this.user.email.toLowerCase()));
+            const myItems = this.products.filter(p => p.seller === this.user.name);
             if (myItems.length === 0) {
                 myPosts.innerHTML = `<p style="font-size:12px; color:#64748b;">Chưa có bài đăng nào.</p>`;
             } else {
@@ -2144,28 +2021,19 @@ class AppController {
                         statusBadge = `<span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">✅ Đã duyệt</span> ${countdown.html}`;
                     }
 
-                    const isPostBoosted = p.isBoosted && (p.boostedAt && (Date.now() - p.boostedAt < 24 * 60 * 60 * 1000));
                     return `
-                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:8px; font-size:12.5px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:8px; font-size:12.5px; display:flex; justify-content:space-between; align-items:center;">
                         <div>
                             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <strong>${p.title}</strong>
                                 ${statusBadge}
-                                ${isPostBoosted ? `<span style="background:linear-gradient(135deg, #f59e0b, #ea580c); color:#fff; padding:2px 7px; border-radius:4px; font-weight:800; font-size:10.5px;">🚀 Đang Top</span>` : ''}
                             </div>
                             <div style="color:#0284c7; font-size:11.5px; margin-top:3px;">
                                 ${formatNumber(p.price)} đ • TimeMark: <strong>${p.timemarkCode}</strong>
                                 ${p.timemarkProofUrl ? ` • <a href="javascript:void(0)" onclick="openZoomImageModal('${p.timemarkProofUrl}', 'Ảnh TimeMark: ${p.title}')" style="color:#16a34a; font-weight:700; text-decoration:underline;">🔍 Xem ảnh TimeMark đã chụp</a>` : ''}
                             </div>
                         </div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            ${p.status === 'approved' ? `
-                                <button type="button" onclick="boostPostToTop('${p.id}')" style="background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; border:none; padding:4px 9px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;" title="Dùng 5 Xu đẩy bài đăng lên Top 1 trang chủ">
-                                    🚀 Đẩy Top (5 Xu)
-                                </button>
-                            ` : ''}
-                            <button onclick="removePost('${p.id}')" style="background:none; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:700;">Xóa</button>
-                        </div>
+                        <button onclick="removePost('${p.id}')" style="background:none; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:700;">Xóa</button>
                     </div>
                     `;
                 }).join('');
@@ -2308,8 +2176,9 @@ class AppController {
                             </div>
 
                             <div style="background:#f8fafc; border-radius:6px; padding:8px 10px; margin-bottom:8px; font-size:11.5px; color:#334155; display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;">
-                                <div>Cọc giữ chỗ: <strong style="color:#d97706;">🪙 ${o.depositCoins || 2} Xu</strong> <span style="font-size:10.5px; color:#15803d;">(Hoàn cọc khi xong)</span></div>
-                                <div>Thanh toán tiền mặt: <strong>${formatNumber(o.totalPayment || o.productPrice || 0)} đ</strong></div>
+                                <div>Cọc giữ chỗ: <strong style="color:#16a34a;">${formatNumber(o.depositAmount || 0)} đ</strong></div>
+                                ${(o.discountAmount > 0) ? `<div style="color:#d97706; font-weight:600;">Giảm giá xu: <strong>-${formatNumber(o.discountAmount)} đ</strong> (${o.discountCoins || Math.round(o.discountAmount / 100)} Xu)</div>` : ''}
+                                <div>Tổng thanh toán: <strong>${formatNumber(o.totalPayment || o.finalTotal || 0)} đ</strong></div>
                                 <div>
                                     Tiến độ xác nhận: 
                                     <span style="color:${o.buyerCompleted ? '#16a34a' : '#b45309'}; font-weight:700;">Mua (Nhận đồ): ${o.buyerCompleted ? '✓ Đã nhận' : 'Chưa'}</span> | 
@@ -2945,51 +2814,6 @@ class AppController {
                     </tr>
                 `;
                 }).join('');
-            }
-        }
-
-        // BẢNG 4: DANH SÁCH CẢNH CÁO & XỬ LÝ VI PHẠM HỆ THỐNG
-        const warningsTbody = document.getElementById('adminWarningsTableBody');
-        const warningsBadge = document.getElementById('adminWarningsBadge');
-        if (warningsBadge) warningsBadge.innerText = `${this.adminWarningsIssued.length} cảnh cáo`;
-
-        if (warningsTbody) {
-            if (this.adminWarningsIssued.length === 0) {
-                warningsTbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" style="text-align:center; color:#15803d; padding:20px; font-weight:600; background:#f0fdf4;">
-                            🎉 Hiện tại không có tài khoản sinh viên nào bị cảnh cáo hoặc có vi phạm chưa xử lý.
-                        </td>
-                    </tr>
-                `;
-            } else {
-                warningsTbody.innerHTML = this.adminWarningsIssued.map(w => `
-                    <tr style="background:#fff1f2;">
-                        <td>
-                            <strong style="color:#0f172a;">${w.targetName || 'Sinh viên'}</strong>
-                        </td>
-                        <td style="color:#64748b; font-family:monospace; font-size:12px;">${w.targetEmail || 'student@st.utc2.edu.vn'}</td>
-                        <td>
-                            <div style="color:#be123c; font-weight:600; max-width:320px; font-size:12.5px;">${w.reason || w.warningMsg || 'Vi phạm nội quy giao dịch'}</div>
-                        </td>
-                        <td>
-                            <span style="background:#fee2e2; color:#b91c1c; padding:2px 8px; border-radius:4px; font-weight:800; font-size:11px;">
-                                -${w.penaltyPoints || 2} điểm uy tín
-                            </span>
-                        </td>
-                        <td style="color:#64748b; font-size:11.5px;">${w.time || 'Vừa xong'}</td>
-                        <td>
-                            <div style="display:flex; gap:6px;">
-                                <button class="btn-outline-chat" style="padding:4px 8px; font-size:11px; color:#15803d; border-color:#86efac; font-weight:700;" onclick="adminRevokeWarning('${w.id}')" title="Thu hồi cảnh cáo và hoàn lại điểm uy tín">
-                                    🔄 Thu Hồi
-                                </button>
-                                <button class="btn-admin-warning" style="padding:4px 8px; font-size:11px;" onclick="adminRemindUser('${w.targetName}')" title="Gửi lời nhắc">
-                                    💬 Nhắc Nhở
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `).join('');
             }
         }
     }
@@ -4389,29 +4213,6 @@ async function triggerZoomImageOcr() {
     }
 }
 
-function adminRevokeWarning(warningId) {
-    if (!window.app) return;
-    const idx = window.app.adminWarningsIssued.findIndex(w => w.id === warningId);
-    if (idx === -1) return;
-    const w = window.app.adminWarningsIssued[idx];
-    if (confirm(`Bạn có chắc muốn thu hồi cảnh cáo này và khôi phục lại +${w.penaltyPoints || 2} điểm uy tín cho sinh viên ${w.targetName}?`)) {
-        const user = window.app.registeredUsers.find(u => u.name === w.targetName || u.email === w.targetEmail);
-        if (user) {
-            user.reputation = Math.min(100, (user.reputation || 95) + (w.penaltyPoints || 2));
-            window.app.saveUsers();
-            if (window.app.user && (window.app.user.email === user.email || window.app.user.name === user.name)) {
-                window.app.user.reputation = user.reputation;
-                window.app.updateUserUI();
-            }
-        }
-        window.app.adminWarningsIssued.splice(idx, 1);
-        window.app.saveWarnings();
-        window.app.renderAdminDashboard();
-        if (window.sound) window.sound.playSuccess();
-        showToast(`Đã thu hồi cảnh cáo và hoàn lại +${w.penaltyPoints || 2} điểm uy tín cho ${w.targetName}!`, 'success');
-    }
-}
-
 function adminWarnUser(userName) {
     const warningMsg = prompt(`Nhập nội dung cảnh cáo gửi tới sinh viên ${userName}:`, 'Cảnh cáo: Tài khoản của bạn có dấu hiệu bùng hẹn giao nhận đồ tại campus UTC2.');
     if (!warningMsg) return;
@@ -4454,7 +4255,6 @@ function adminWarnUser(userName) {
         });
     }
 
-    window.app.saveWarnings();
     window.app.renderAdminDashboard();
 
     if (window.sound) window.sound.playWarning();
@@ -4546,7 +4346,6 @@ function adminPenalizeDispute(dispId) {
     }
 
     window.app.saveDisputes();
-    window.app.saveWarnings();
     window.app.renderAdminDashboard();
 
     if (window.sound) window.sound.playWarning();
@@ -5156,8 +4955,12 @@ function switchNavTab(tabName) {
             window.app.user.email === '6651071091@st.utc2.edu.vn'
         );
         if (!isOfficialAdmin) {
-            // Tài khoản người dùng bình thường không có quyền truy cập tab này
+            // Tài khoản sinh viên không có quyền truy cập tab này
             switchNavTab('home');
+            return;
+        }
+        if (!window.app.isAdminAuthenticated) {
+            openAdminAccessDeniedModal();
             return;
         }
         // Tự động kéo danh sách tài khoản mới nhất từ Supabase Cloud
@@ -5535,16 +5338,11 @@ function copyLanUrl() {
 let pendingNewPost = null;
 let pendingUploadedImageDataUrl = null;
 
-function triggerPostImageFilePicker(event) {
-    if (event && event.target && (event.target.classList.contains('btn-remove-preview-img') || event.target.closest('.btn-remove-preview-img'))) {
-        return;
-    }
-    const fileInput = document.getElementById('postImageFileInput');
-    if (fileInput) fileInput.click();
-}
+function handlePostImageFileSelect(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
 
-function processPostImageFile(file) {
-    if (!file || !file.type.startsWith('image/')) {
+    if (!file.type.startsWith('image/')) {
         showToast('Vui lòng chọn tệp định dạng hình ảnh (PNG, JPG, JPEG, WebP)!', 'danger');
         return;
     }
@@ -5554,66 +5352,46 @@ function processPostImageFile(file) {
         const rawDataUrl = e.target.result;
         const img = new Image();
         img.onload = function() {
-            try {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 540;
-                const MAX_HEIGHT = 540;
-                let width = img.width;
-                let height = img.height;
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 480;
+            const MAX_HEIGHT = 480;
+            let width = img.width;
+            let height = img.height;
 
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height = Math.round((height * MAX_WIDTH) / width);
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width = Math.round((width * MAX_HEIGHT) / height);
-                        height = MAX_HEIGHT;
-                    }
+            if (width > height) {
+                if (width > MAX_WIDTH) {
+                    height = Math.round((height * MAX_WIDTH) / width);
+                    width = MAX_WIDTH;
                 }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
-                pendingUploadedImageDataUrl = compressedDataUrl;
-            } catch (canvasErr) {
-                pendingUploadedImageDataUrl = rawDataUrl;
+            } else {
+                if (height > MAX_HEIGHT) {
+                    width = Math.round((width * MAX_HEIGHT) / height);
+                    height = MAX_HEIGHT;
+                }
             }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.68);
+            pendingUploadedImageDataUrl = compressedDataUrl;
 
             const previewWrap = document.getElementById('fileImagePreviewWrap');
             const previewImg = document.getElementById('fileImagePreviewElement');
             const promptContent = document.getElementById('fileUploadPromptContent');
 
-            if (previewImg) previewImg.src = pendingUploadedImageDataUrl;
+            if (previewImg) previewImg.src = compressedDataUrl;
             if (previewWrap) previewWrap.style.display = 'block';
             if (promptContent) promptContent.style.display = 'none';
 
             if (window.sound) window.sound.playClick();
-            showToast('✓ Đã tải ảnh sản phẩm thành công!', 'success');
-        };
-        img.onerror = function() {
-            pendingUploadedImageDataUrl = rawDataUrl;
-            const previewWrap = document.getElementById('fileImagePreviewWrap');
-            const previewImg = document.getElementById('fileImagePreviewElement');
-            const promptContent = document.getElementById('fileUploadPromptContent');
-
-            if (previewImg) previewImg.src = rawDataUrl;
-            if (previewWrap) previewWrap.style.display = 'block';
-            if (promptContent) promptContent.style.display = 'none';
-            showToast('✓ Đã nạp ảnh thành công!', 'success');
+            showToast('✓ Đã tải ảnh từ tệp thành công!', 'success');
         };
         img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
-}
-
-function handlePostImageFileSelect(event) {
-    const file = event.target.files && event.target.files[0];
-    if (file) processPostImageFile(file);
 }
 
 function removeSelectedPostImage() {
@@ -5786,14 +5564,10 @@ function handlePostSubmit(e) {
 function confirmPublishPostWithProof() {
     if (!pendingNewPost) return;
 
-    // Dùng ảnh xác thực TimeMark nếu tải lên, hoặc dùng ảnh sản phẩm đã tải lên
-    const proofImg = pendingTimeMarkProofDataUrl || pendingUploadedImageDataUrl || pendingNewPost.imageUrl;
+    // Dùng ảnh xác thực TimeMark nếu tải lên, hoặc dùng ảnh sản phẩm
+    const proofImg = pendingTimeMarkProofDataUrl || pendingNewPost.imageUrl;
     pendingNewPost.timemarkProofUrl = proofImg;
-    pendingNewPost.imageUrl = pendingUploadedImageDataUrl || pendingNewPost.imageUrl;
-    
-    // Bài đăng đã được hoàn tất thủ tục TimeMark -> Duyệt hiển thị để tất cả các tài khoản khác đều thấy và mua bán được!
-    pendingNewPost.status = 'approved';
-    pendingNewPost.approvedAt = Date.now();
+    pendingNewPost.status = 'pending'; // ⏳ Bắt buộc chờ Admin kiểm duyệt TimeMark
 
     window.app.products.unshift(pendingNewPost);
     window.app.saveProducts();
@@ -5828,11 +5602,11 @@ function confirmPublishPostWithProof() {
     if (descInput) descInput.value = '';
     if (urlInput) urlInput.value = '';
 
-    // Chuyển ngay sang Sàn Đồ để tất cả sinh viên cùng thấy và mua bán
-    switchNavTab('home');
+    // Chuyển sang Hồ sơ cá nhân để người dùng thấy bài của mình đang ở mục "Chờ Admin duyệt TimeMark"
+    switchNavTab('profile');
 
     if (window.sound) window.sound.playSuccess();
-    showToast(`✓ Đã đăng bài "${pendingNewPost.title}" lên Sàn Đồ thành công! Tất cả tài khoản sinh viên đã có thể xem và đặt mua.`, 'success');
+    showToast(`✓ Đã gửi bài "${pendingNewPost.title}" thành công! Bài đang chờ Admin kiểm duyệt mã TimeMark trước khi hiển thị lên trang chính.`, 'success');
     pendingNewPost = null;
 }
 
@@ -7706,51 +7480,4 @@ function quickSendChatText(txt) {
         input.value = txt;
         sendManualMessage();
     }
-}
-
-// Khởi tạo kéo thả và dán ảnh cho khung đăng bài
-function initPostImageDragDropAndPaste() {
-    const uploadBox = document.getElementById('postImageUploadBox');
-    if (uploadBox) {
-        uploadBox.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadBox.style.borderColor = '#16a34a';
-            uploadBox.style.background = '#f0fdf4';
-        });
-        uploadBox.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadBox.style.borderColor = '#0284c7';
-            uploadBox.style.background = '#f0f9ff';
-        });
-        uploadBox.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            uploadBox.style.borderColor = '#0284c7';
-            uploadBox.style.background = '#f0f9ff';
-            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-                processPostImageFile(e.dataTransfer.files[0]);
-            }
-        });
-    }
-
-    document.addEventListener('paste', (e) => {
-        const postModal = document.getElementById('createPostModal');
-        if (postModal && postModal.style.display !== 'none' && postModal.classList.contains('active')) {
-            if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
-                const file = e.clipboardData.files[0];
-                if (file.type && file.type.startsWith('image/')) {
-                    processPostImageFile(file);
-                    showToast('✓ Đã dán ảnh từ clipboard!', 'success');
-                }
-            }
-        }
-    });
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPostImageDragDropAndPaste);
-} else {
-    initPostImageDragDropAndPaste();
 }
