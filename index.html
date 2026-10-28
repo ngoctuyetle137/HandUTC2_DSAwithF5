@@ -691,9 +691,8 @@
                                 <button type="button" class="btn-remove-avatar-text" id="btnRemoveAvatar" style="display:none;" onclick="removeUserAvatar()">Gỡ ảnh</button>
                             </div>
                             <div style="font-size:12.5px; color:#64748b;" id="profileEmail">sinhvien@st.utc2.edu.vn</div>
-                            <div style="margin-top:4px; font-size:12.5px; color:#16a34a; font-weight:700; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                <span>🛡 Điểm Uy Tín: <span id="profileRepScore">95</span>/100</span>
-                                <span id="profileVipBadgeDisplay"></span>
+                            <div style="margin-top:4px; font-size:12.5px; color:#16a34a; font-weight:700;">
+                                🛡 Điểm Uy Tín: <span id="profileRepScore">95</span>/100
                             </div>
                         </div>
                     </div>
@@ -709,9 +708,6 @@
                 </div>
 
                 <hr style="border:none; border-top:1px solid #e2e8f0; margin:18px 0;">
-
-                <!-- KHUNG DỊCH VỤ XU SINH VIÊN UTC2 -->
-                <div id="profileCoinServicesContainer"></div>
 
                 <!-- KHUNG THÔNG BÁO HOẠT ĐỘNG CỦA TÀI KHOẢN -->
                 <div class="profile-notif-card" style="background:#ffffff; border:1px solid #fef08a; border-radius:12px; padding:14px 16px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
@@ -880,49 +876,51 @@
                 </div>
             </div>
 
-            <!-- Khung đặt cọc giữ chỗ bằng Xu -->
+            <!-- Khung đặt cọc & tiền ship & giảm tiền xu -->
             <div class="checkout-deposit-box">
                 <div class="deposit-box-header">
                     <span class="deposit-title">
-                        🛡️ Đặt Cọc Giữ Chỗ Bằng Xu (Chống Bùng Hẹn)
+                        🛡 Đặt cọc chống bùng hẹn (OOP Strategy)
                     </span>
-                    <span class="deposit-pill" id="depositPillFormulaText">Cọc 3% (2 - 50 Xu)</span>
+                    <span class="deposit-pill">10% cọc (Uy tín cao)</span>
                 </div>
 
                 <div class="deposit-row">
-                    <span>Số Xu cọc giữ chỗ:</span>
-                    <span class="deposit-amount" id="depositCoinsAmountText" style="color:#d97706; font-size:16px; font-weight:800;">2 Xu</span>
-                </div>
-
-                <div style="background:#fefce8; border:1px solid #fef08a; border-radius:8px; padding:8px 12px; font-size:12px; color:#854d0e; margin-bottom:10px; line-height:1.45;">
-                    💡 <strong>Công thức cọc:</strong> 3% giá trị sản phẩm (Tối thiểu <strong>2 Xu</strong>, tối đa không quá <strong>50 Xu</strong>/giao dịch).
-                    <div style="margin-top:4px;" id="depositBuyerCoinsBalanceText">Ví của bạn: <strong>... Xu</strong></div>
+                    <span>Tiền cọc giữ đồ:</span>
+                    <span class="deposit-amount" id="depositAmountText">3.000 VNĐ</span>
                 </div>
 
                 <div class="shipping-options-row">
-                    <label style="font-size:12.5px; color:#475569;">Giao nhận tại:</label>
-                    <select id="shippingSelectOption" class="feed-sort-select" style="padding:6px 10px; font-size:12px;" onchange="updateCheckoutCalculations()">
-                        <option value="0">Tự gặp trực tiếp tại campus UTC2 (0đ)</option>
-                        <option value="5000">Giao tận phòng KTX UTC2 (+5.000đ ship)</option>
-                        <option value="10000">Giao trọ lân cận Tăng Nhơn Phú (+10.000đ ship)</option>
+                    <span>Hình thức giao & Tiền ship:</span>
+                    <select class="shipping-select" id="shippingSelectOption" onchange="updateCheckoutCalculations()">
+                        <option value="0">Gặp tại điểm hẹn campus (+0 đ)</option>
+                        <option value="5000">Mang tận phòng KTX/trọ Man Thiện (+5.000 đ)</option>
+                        <option value="10000">Giao nhanh ngoài giờ (+10.000 đ)</option>
                     </select>
                 </div>
 
-                <div class="deposit-note-text" style="color:#166534; background:#f0fdf4; border:1px solid #bbf7d0; padding:7px 10px; border-radius:6px; margin-top:8px;">
-                    ✅ <strong>Hoàn cọc 100%:</strong> Xu không dùng để giảm tiền thanh toán trực tiếp, mà để tính vào tiền cọc. Ngay sau khi hai bên xác nhận hoàn thành giao dịch, hệ thống sẽ <strong>hoàn trả 100% số Xu cọc</strong> về ví của bạn!
+                <label class="coin-discount-checkbox-row">
+                    <input type="checkbox" id="useCoinDiscountCheckbox" checked onchange="updateCheckoutCalculations()">
+                    <span id="coinDiscountLabelText">
+                        🪙 Dùng 30% số xu hiện có để giảm giá mặt hàng
+                    </span>
+                </label>
+
+                <div class="deposit-note-text">
+                    * Tiền cọc được bảo vệ tự động và hoàn trả 100% về ví khi 2 bạn gặp nhau trao đồ thành công.
                 </div>
             </div>
 
-            <!-- Tổng thanh toán tiền mặt khi gặp nhận đồ -->
+            <!-- Tổng thanh toán -->
             <div class="checkout-total-banner">
                 <div class="checkout-total-label">
-                    Tiền thanh toán đồ khi nhận hàng:
+                    Tổng số tiền thanh toán / cọc:
                     <div style="font-size:11px; font-weight:normal; color:#64748b;" id="calculationBreakdownText">
-                        (Giá đồ + Ship)
+                        (Giá đồ + Ship - Giảm xu)
                     </div>
                 </div>
                 <div class="checkout-total-number" id="finalTotalPaymentText">
-                    35.000 VNĐ
+                    38.000 VNĐ
                 </div>
             </div>
 
