@@ -7100,14 +7100,14 @@ async function runTimeMarkOcrScan(imageSrc, expectedCode, options = {}) {
 
         let rawText = '';
         if (window.Tesseract && typeof window.Tesseract.recognize === 'function') {
-            onProgress(50, 'Tesseract AI Engine: Đang quét ký tự quang học đa tầng...');
+            onProgress(50, 'Tesseract AI Engine: Đang quét kỹ ký tự quang học trên mẩu giấy...');
             try {
                 const ocrResult = await Promise.race([
                     window.Tesseract.recognize(processedSrc, 'eng', {
                         logger: m => {
                             if (m.status === 'recognizing text') {
                                 const p = Math.min(92, Math.round(50 + (m.progress || 0) * 42));
-                                onProgress(p, `Tesseract AI: Nhận diện chữ viết quang học ${Math.round((m.progress || 0) * 100)}%...`);
+                                onProgress(p, `Tesseract AI: Soi nét chữ viết tay ${Math.round((m.progress || 0) * 100)}%...`);
                             }
                         }
                     }),
@@ -7119,10 +7119,10 @@ async function runTimeMarkOcrScan(imageSrc, expectedCode, options = {}) {
             }
         }
 
-        onProgress(88, 'Đang phân tích đối soát mã OTP TimeMark chuyên sâu...');
+        onProgress(88, 'AI đang đối soát nghiêm ngặt từng chữ số với mã OTP bảo mật...');
         await new Promise(r => setTimeout(r, 200));
 
-        // Bước 2: Phân tích và đối soát chuyên sâu đa thuật toán (Deep Verification)
+        // Bước 2: Phân tích và chấm điểm NGHIÊM NGẶT (Strict OCR Scoring)
         const cleanUpper = (rawText || '').toUpperCase();
         const noSpace = cleanUpper.replace(/\s+/g, '');
         const homoglyphMapped = normalizeHandwrittenOcr(cleanUpper);
@@ -7132,86 +7132,97 @@ async function runTimeMarkOcrScan(imageSrc, expectedCode, options = {}) {
         let confidence = 0;
         let detectedCode = '';
 
-        // Chiến thuật 1: Khớp chính xác 4 số OTP
-        if (expectedDigits && (noSpace.includes(expectedDigits) || cleanUpper.includes(expectedDigits))) {
-            isMatched = true;
-            confidence = 99.2;
-            detectedCode = `UTC2 - ${expectedDigits}`;
-        }
-        // Chiến thuật 2: Khớp sau khi ánh xạ ký tự dễ nhầm (Homoglyphs: B->8, O->0, l->1...)
-        else if (expectedDigits && homoglyphNoSpace.includes(expectedDigits)) {
-            isMatched = true;
-            confidence = 98.4;
-            detectedCode = `UTC2 - ${expectedDigits}`;
-        }
-        // Chiến thuật 3: Tìm tiền tố UTC2 + mã 4 chữ số
-        else {
-            const m = cleanUpper.match(/(?:UTC\s*2|UTC2|UTG2|UIC2|VIC2|UTE2)[^0-9A-Z]*([0-9A-Z]{4})/i);
-            if (m) {
-                const candidate = normalizeHandwrittenOcr(m[1].replace(/\D/g, '') || m[1]);
-                if (expectedDigits && (candidate === expectedDigits || levenshteinDist(candidate, expectedDigits) <= 1)) {
-                    isMatched = true;
-                    confidence = 97.5;
-                    detectedCode = `UTC2 - ${expectedDigits}`;
-                } else if (candidate.length === 4) {
-                    detectedCode = `UTC2 - ${candidate}`;
-                    confidence = 88.0;
+        // Kiểm tra xem ảnh có chữ viết hoặc con số thực tế được nhận diện hay không
+        const hasRecognizedContent = (rawText && rawText.trim().length >= 2) || (cleanUpper.length >= 2);
+
+        if (!hasRecognizedContent) {
+            // Ảnh không có chữ viết / không thấy mẩu giấy
+            isMatched = false;
+            confidence = 15.0;
+            detectedCode = 'Không phát hiện mẩu giấy ghi mã';
+        } else if (expectedDigits) {
+            // Tiêu chuẩn 1: Có chữ UTC2 đi kèm chính xác 4 số OTP
+            const utcRegex = new RegExp(`(?:UTC\\s*2|UTC2|UTG2|UIC2|VIC2|UTE2)[^0-9A-Z]*${expectedDigits}`, 'i');
+            if (utcRegex.test(cleanUpper) || utcRegex.test(homoglyphMapped)) {
+                isMatched = true;
+                confidence = 99.4;
+                detectedCode = `UTC2 - ${expectedDigits}`;
+            }
+            // Tiêu chuẩn 2: Xuất hiện đúng 4 chữ số OTP trên mẩu giấy
+            else if (noSpace.includes(expectedDigits) || cleanUpper.includes(expectedDigits)) {
+                isMatched = true;
+                confidence = 97.2;
+                detectedCode = `UTC2 - ${expectedDigits}`;
+            }
+            // Tiêu chuẩn 3: Trùng khớp sau khi khử nhiễu ký tự viết tay (B->8, O->0, l->1, Z->2, S->5, G->6, T->7, q->9)
+            else if (homoglyphNoSpace.includes(expectedDigits)) {
+                isMatched = true;
+                confidence = 95.8;
+                detectedCode = `UTC2 - ${expectedDigits}`;
+            }
+            // Tiêu chuẩn 4: CHẤM ĐIỂM CHẶT CHẼ THEO ĐỘ LỆCH KÝ TỰ (ĐÁNH RỚT NẾU SAI MÃ OTP)
+            else {
+                // Quét tất cả các cụm 4 chữ số trên mẩu giấy để tìm số người dùng đã viết
+                const allDigitBlocks = (homoglyphMapped.match(/\b\d{4}\b/g) || homoglyphNoSpace.match(/\d{4}/g) || []);
+                let bestCandidate = '';
+                let minDistance = 99;
+
+                for (const blk of allDigitBlocks) {
+                    const dist = levenshteinDist(blk, expectedDigits);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        bestCandidate = blk;
+                    }
+                }
+
+                if (minDistance === 1) {
+                    // Viết nhầm 1 số (ví dụ expected 8924 nhưng viết 8921) -> Đạt 82% (DƯỚI 95% -> KHÔNG ĐƯỢC DUYỆT TỰ ĐỘNG)
+                    isMatched = false;
+                    confidence = 82.0;
+                    detectedCode = bestCandidate ? `UTC2 - ${bestCandidate}` : 'Lệch 1 chữ số OTP';
+                } else if (minDistance === 2) {
+                    // Viết nhầm 2 số -> 52%
+                    isMatched = false;
+                    confidence = 52.0;
+                    detectedCode = bestCandidate ? `UTC2 - ${bestCandidate}` : 'Sai lệch 2 chữ số OTP';
+                } else if (bestCandidate) {
+                    // Viết mã số khác hoàn toàn
+                    isMatched = false;
+                    confidence = 30.0;
+                    detectedCode = `UTC2 - ${bestCandidate} (Không khớp)`;
+                } else {
+                    // Không có số 4 chữ số nào trên giấy
+                    isMatched = false;
+                    confidence = 22.0;
+                    detectedCode = 'Không tìm thấy mã OTP 4 số trên giấy';
                 }
             }
+        } else {
+            isMatched = false;
+            confidence = 20.0;
+            detectedCode = 'Thiếu mã OTP để đối chiếu';
         }
 
-        // Chiến thuật 4: Tìm tất cả chuỗi 4 chữ số có khoảng cách Levenshtein <= 1
-        if (!isMatched && expectedDigits) {
-            const allDigitBlocks = (homoglyphMapped.match(/\b\d{4}\b/g) || []);
-            for (const blk of allDigitBlocks) {
-                if (blk === expectedDigits) {
-                    isMatched = true;
-                    confidence = 98.6;
-                    detectedCode = `UTC2 - ${expectedDigits}`;
-                    break;
-                } else if (levenshteinDist(blk, expectedDigits) <= 1) {
-                    isMatched = true;
-                    confidence = 94.8;
-                    detectedCode = `UTC2 - ${expectedDigits}`;
-                    break;
-                }
-            }
-        }
-
-        // Chiến thuật 5 (Deep Context Heuristics):
-        // Nếu ảnh được tải lên làm bằng chứng TimeMark hoặc ảnh bài đăng có mã TimeMark dự kiến
-        if (!isMatched && expectedCode) {
-            // Nhận diện mã TimeMark thông minh dựa trên ngữ cảnh phiên đăng bài
-            isMatched = true;
-            confidence = 98.5;
-            detectedCode = expectedCode.startsWith('UTC2') ? expectedCode : `UTC2 - ${expectedDigits || '8924'}`;
-        } else if (!detectedCode) {
-            detectedCode = expectedCode || `UTC2 - ${expectedDigits || '8924'}`;
-            confidence = 98.0;
-            isMatched = true;
-        }
-
-        onProgress(100, 'Hoàn tất quét quang học AI DeepScan!');
+        onProgress(100, isMatched ? 'Hoàn tất quét: Khớp mã OTP!' : 'Hoàn tất quét: Chưa khớp chuẩn!');
 
         return {
             success: true,
             isMatched: isMatched,
             detectedCode: detectedCode,
             expectedCode: expectedCode || '',
-            rawText: rawText.trim() || `Xác thực TimeMark: ${detectedCode}`,
+            rawText: rawText.trim() || `Nội dung quét: ${detectedCode}`,
             confidence: Number(confidence.toFixed(1))
         };
     } catch (err) {
-        console.warn('OCR engine fallback:', err);
-        onProgress(100, 'Hoàn tất phân tích AI!');
-        const finalCode = expectedCode || `UTC2 - ${expectedDigits || '8924'}`;
+        console.warn('OCR engine error:', err);
+        onProgress(100, 'Không thể nhận diện ảnh!');
         return {
-            success: true,
-            isMatched: true,
-            detectedCode: finalCode,
+            success: false,
+            isMatched: false,
+            detectedCode: 'Lỗi quét ảnh',
             expectedCode: expectedCode || '',
-            rawText: `Xác thực TimeMark AI: ${finalCode}`,
-            confidence: 98.2
+            rawText: 'Không đọc được chữ viết trên ảnh mẩu giấy.',
+            confidence: 25.0
         };
     }
 }
