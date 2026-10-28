@@ -239,6 +239,31 @@ class AppController {
         this.depositOrders = [];
         this.adminDisputes = [];
         this.adminWarningsIssued = [];
+        const savedWarnings = localStorage.getItem('unipass_admin_warnings');
+        if (savedWarnings) {
+            try { this.adminWarningsIssued = JSON.parse(savedWarnings); } catch (e) { this.adminWarningsIssued = []; }
+        }
+        if (!this.adminWarningsIssued || this.adminWarningsIssued.length === 0) {
+            this.adminWarningsIssued = [
+                {
+                    id: 'WARN_001',
+                    targetName: 'Phúc Lâm',
+                    targetEmail: 'lamnp.st@st.utc2.edu.vn',
+                    reason: 'Chậm trễ xác nhận bàn giao sách tại phòng tự học thư viện UTC2',
+                    penaltyPoints: 2,
+                    time: 'Hôm qua, 15:30'
+                },
+                {
+                    id: 'WARN_002',
+                    targetName: 'Trần Văn Cường',
+                    targetEmail: '6651071092@st.utc2.edu.vn',
+                    reason: 'Có dấu hiệu bùng hẹn giao nhận giáo trình C++ tại sảnh tòa E3',
+                    penaltyPoints: 5,
+                    time: '2 ngày trước'
+                }
+            ];
+            this.saveWarnings();
+        }
         this.notifications = [];
 
         this.filterMaxPrice = 350000;
@@ -1060,6 +1085,10 @@ class AppController {
         });
     }
 
+    saveWarnings() {
+        localStorage.setItem('unipass_admin_warnings', JSON.stringify(this.adminWarningsIssued));
+    }
+
     saveUsers() {
         localStorage.setItem('unipass_registered_users', JSON.stringify(this.registeredUsers));
         if (this.syncChannel) {
@@ -1230,7 +1259,7 @@ class AppController {
         this.postDLL = new window.UTC2_DSA.PostDoublyLinkedList();
 
         // CHỈ NẠP CÁC BÀI ĐÃ ĐƯỢC ADMIN DUYỆT (LOẠI BỎ PENDING VÀ REJECTED)
-        const approvedPosts = this.products.filter(p => p.status !== 'pending' && p.status !== 'rejected');
+        const approvedPosts = this.products.filter(p => p.status !== 'rejected'); // Nạp tất cả bài đăng trên Sàn Đồ (trừ bài rejected)
 
         const popularKeywords = [
             'Casio', 'Máy tính Casio', 'Giáo trình', 'Giáo trình Vật Lý', 'Sách C++',
@@ -1779,24 +1808,11 @@ class AppController {
         this.updateNotificationBadge();
         this.renderNotifications();
 
-        // PHÂN QUYỀN HIỂN THỊ TAB QUẢN TRỊ ADMIN:
-        // Các tài khoản sinh viên khác sẽ KHÔNG THẤY tab này, chỉ tài khoản Admin mới thấy!
-        const isOfficialAdmin = this.user && (
-            this.user.role === 'admin' ||
-            this.user.email === ADMIN_CREDENTIALS.email ||
-            this.user.email === '6651071091@st.utc2.edu.vn'
-        );
+        // HIỂN THỊ TAB QUẢN TRỊ ADMIN:
+        // Luôn hiển thị nút Admin để mọi tài khoản đều có thể vào hoặc xác thực phân hệ quản trị
         const adminTabBtn = document.getElementById('navAdminTab') || document.querySelector('.nav-item-btn.admin-tab');
         if (adminTabBtn) {
-            adminTabBtn.style.display = isOfficialAdmin ? 'inline-flex' : 'none';
-        }
-
-        // Nếu tài khoản hiện tại không phải Admin nhưng đang ở tab Admin -> tự động chuyển về Săn Đồ
-        if (!isOfficialAdmin) {
-            const adminTabBtn = document.getElementById('navAdminTab') || document.querySelector('.nav-item-btn[data-tab="admin"]');
-            if (adminTabBtn && adminTabBtn.classList.contains('active')) {
-                if (typeof switchNavTab === 'function') switchNavTab('home');
-            }
+            adminTabBtn.style.display = 'inline-flex';
         }
 
         localStorage.setItem('unipass_current_user', JSON.stringify(this.user));
@@ -1826,23 +1842,10 @@ class AppController {
 
     // Lọc sản phẩm
     getFilteredItems() {
-        // Lấy các bài đã được phê duyệt, đồng thời luôn hiển thị bài của chính tài khoản đang đăng nhập
+        // TẤT CẢ CÁC TÀI KHOẢN ĐỀU THẤY ĐƯỢC CÁC BÀI ĐĂNG TRÊN SÀN ĐỒ ĐỂ MUA BÁN
+        // Chỉ loại bỏ bài đăng đã bị Admin từ chối/gỡ bỏ (status === 'rejected')
         const baseApprovedProducts = this.products.filter(p => {
             if (p.status === 'rejected') return false;
-            if (p.status === 'pending') {
-                // Nếu là bài của chính tài khoản đang đăng nhập -> Vẫn hiển thị trên Sàn Đồ của họ
-                if (this.user && (
-                    (p.sellerEmail && this.user.email && p.sellerEmail.toLowerCase() === this.user.email.toLowerCase()) ||
-                    (p.seller && this.user.name && p.seller.toLowerCase() === this.user.name.toLowerCase())
-                )) {
-                    return true;
-                }
-                // Nếu là Admin -> Cho hiển thị để kiểm tra duyệt
-                if (this.isAdminAuthenticated || (this.user && this.user.role === 'admin')) {
-                    return true;
-                }
-                return false;
-            }
             return true;
         });
         let items = [...baseApprovedProducts];
@@ -1972,8 +1975,8 @@ class AppController {
                             <span class="badge-pulse-dot"></span> TimeMark: ${item.timemarkCode}
                         </span>
                         ${item.status === 'pending' ? `
-                            <span style="position:absolute; bottom:8px; left:8px; background:#fffbeb; color:#b45309; border:1px solid #fde68a; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.12);">
-                                ⏳ Bài của bạn (Chờ Admin duyệt)
+                            <span style="position:absolute; bottom:8px; left:8px; background:#fffbeb; color:#b45309; border:1px solid #fde68a; font-size:10px; font-weight:800; padding:2px 8px; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.12);">
+                                ⏳ Đang duyệt TimeMark
                             </span>
                         ` : ''}
                     </div>
@@ -2929,6 +2932,51 @@ class AppController {
                     </tr>
                 `;
                 }).join('');
+            }
+        }
+
+        // BẢNG 4: DANH SÁCH CẢNH CÁO & XỬ LÝ VI PHẠM HỆ THỐNG
+        const warningsTbody = document.getElementById('adminWarningsTableBody');
+        const warningsBadge = document.getElementById('adminWarningsBadge');
+        if (warningsBadge) warningsBadge.innerText = `${this.adminWarningsIssued.length} cảnh cáo`;
+
+        if (warningsTbody) {
+            if (this.adminWarningsIssued.length === 0) {
+                warningsTbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align:center; color:#15803d; padding:20px; font-weight:600; background:#f0fdf4;">
+                            🎉 Hiện tại không có tài khoản sinh viên nào bị cảnh cáo hoặc có vi phạm chưa xử lý.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                warningsTbody.innerHTML = this.adminWarningsIssued.map(w => `
+                    <tr style="background:#fff1f2;">
+                        <td>
+                            <strong style="color:#0f172a;">${w.targetName || 'Sinh viên'}</strong>
+                        </td>
+                        <td style="color:#64748b; font-family:monospace; font-size:12px;">${w.targetEmail || 'student@st.utc2.edu.vn'}</td>
+                        <td>
+                            <div style="color:#be123c; font-weight:600; max-width:320px; font-size:12.5px;">${w.reason || w.warningMsg || 'Vi phạm nội quy giao dịch'}</div>
+                        </td>
+                        <td>
+                            <span style="background:#fee2e2; color:#b91c1c; padding:2px 8px; border-radius:4px; font-weight:800; font-size:11px;">
+                                -${w.penaltyPoints || 2} điểm uy tín
+                            </span>
+                        </td>
+                        <td style="color:#64748b; font-size:11.5px;">${w.time || 'Vừa xong'}</td>
+                        <td>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn-outline-chat" style="padding:4px 8px; font-size:11px; color:#15803d; border-color:#86efac; font-weight:700;" onclick="adminRevokeWarning('${w.id}')" title="Thu hồi cảnh cáo và hoàn lại điểm uy tín">
+                                    🔄 Thu Hồi
+                                </button>
+                                <button class="btn-admin-warning" style="padding:4px 8px; font-size:11px;" onclick="adminRemindUser('${w.targetName}')" title="Gửi lời nhắc">
+                                    💬 Nhắc Nhở
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
             }
         }
     }
@@ -4328,6 +4376,29 @@ async function triggerZoomImageOcr() {
     }
 }
 
+function adminRevokeWarning(warningId) {
+    if (!window.app) return;
+    const idx = window.app.adminWarningsIssued.findIndex(w => w.id === warningId);
+    if (idx === -1) return;
+    const w = window.app.adminWarningsIssued[idx];
+    if (confirm(`Bạn có chắc muốn thu hồi cảnh cáo này và khôi phục lại +${w.penaltyPoints || 2} điểm uy tín cho sinh viên ${w.targetName}?`)) {
+        const user = window.app.registeredUsers.find(u => u.name === w.targetName || u.email === w.targetEmail);
+        if (user) {
+            user.reputation = Math.min(100, (user.reputation || 95) + (w.penaltyPoints || 2));
+            window.app.saveUsers();
+            if (window.app.user && (window.app.user.email === user.email || window.app.user.name === user.name)) {
+                window.app.user.reputation = user.reputation;
+                window.app.updateUserUI();
+            }
+        }
+        window.app.adminWarningsIssued.splice(idx, 1);
+        window.app.saveWarnings();
+        window.app.renderAdminDashboard();
+        if (window.sound) window.sound.playSuccess();
+        showToast(`Đã thu hồi cảnh cáo và hoàn lại +${w.penaltyPoints || 2} điểm uy tín cho ${w.targetName}!`, 'success');
+    }
+}
+
 function adminWarnUser(userName) {
     const warningMsg = prompt(`Nhập nội dung cảnh cáo gửi tới sinh viên ${userName}:`, 'Cảnh cáo: Tài khoản của bạn có dấu hiệu bùng hẹn giao nhận đồ tại campus UTC2.');
     if (!warningMsg) return;
@@ -4370,6 +4441,7 @@ function adminWarnUser(userName) {
         });
     }
 
+    window.app.saveWarnings();
     window.app.renderAdminDashboard();
 
     if (window.sound) window.sound.playWarning();
@@ -4461,6 +4533,7 @@ function adminPenalizeDispute(dispId) {
     }
 
     window.app.saveDisputes();
+    window.app.saveWarnings();
     window.app.renderAdminDashboard();
 
     if (window.sound) window.sound.playWarning();
@@ -5064,17 +5137,12 @@ function handleOrderDisputeSubmit(event) {
 // ==========================================
 function switchNavTab(tabName) {
     if (tabName === 'admin') {
-        const isOfficialAdmin = window.app.user && (
+        const isOfficialAdmin = window.app.isAdminAuthenticated || (window.app.user && (
             window.app.user.role === 'admin' ||
             window.app.user.email === ADMIN_CREDENTIALS.email ||
             window.app.user.email === '6651071091@st.utc2.edu.vn'
-        );
+        ));
         if (!isOfficialAdmin) {
-            // Tài khoản sinh viên không có quyền truy cập tab này
-            switchNavTab('home');
-            return;
-        }
-        if (!window.app.isAdminAuthenticated) {
             openAdminAccessDeniedModal();
             return;
         }
@@ -5717,11 +5785,11 @@ function confirmPublishPostWithProof() {
     if (descInput) descInput.value = '';
     if (urlInput) urlInput.value = '';
 
-    // Chuyển sang Hồ sơ cá nhân để người dùng thấy bài của mình đang ở mục "Chờ Admin duyệt TimeMark"
-    switchNavTab('profile');
+    // Chuyển ngay sang Sàn Đồ để tất cả sinh viên cùng thấy và mua bán
+    switchNavTab('home');
 
     if (window.sound) window.sound.playSuccess();
-    showToast(`✓ Đã gửi bài "${pendingNewPost.title}" thành công! Bài đang chờ Admin kiểm duyệt mã TimeMark trước khi hiển thị lên trang chính.`, 'success');
+    showToast(`✓ Đã đăng bài "${pendingNewPost.title}" lên Sàn Đồ thành công! Tất cả tài khoản sinh viên đã có thể xem và đặt mua.`, 'success');
     pendingNewPost = null;
 }
 

@@ -231,7 +231,7 @@
                 <button class="nav-item-btn" data-tab="game" onclick="switchNavTab('game')">
                     <span></span> Kéo Thả Săn Xu
                 </button>
-                <button class="nav-item-btn admin-tab" id="navAdminTab" data-tab="admin" onclick="switchNavTab('admin')" style="display:none;">
+                <button class="nav-item-btn admin-tab" id="navAdminTab" data-tab="admin" onclick="switchNavTab('admin')">
                     <span></span> Quản Trị Admin
                 </button>
                 <button class="nav-item-btn" data-tab="profile" onclick="switchNavTab('profile')">
@@ -637,6 +637,35 @@
                             </tr>
                         </thead>
                         <tbody id="adminDisputesTableBody">
+                            <!-- Rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Panel 4: Danh Sách Cảnh Cáo & Xử Lý Vi Phạm Hệ Thống -->
+            <div class="admin-panel-card" id="adminWarningsPanel" style="border-left: 4px solid #ef4444;">
+                <div class="admin-panel-header" style="background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border-bottom: 1px solid #fecdd3; padding: 14px 18px;">
+                    <div class="admin-panel-title" style="color: #be123c;">
+                        <span>⚠️</span> Danh Sách Cảnh Cáo & Xử Lý Vi Phạm
+                        <span id="adminWarningsBadge" style="background:#e11d48; color:#fff; font-size:11px; padding:2px 8px; border-radius:12px; margin-left:8px; font-weight:800;">0 cảnh cáo</span>
+                    </div>
+                    <span style="font-size:12px; color:#9f1239;">Theo dõi toàn bộ sinh viên bị cảnh cáo do vi phạm giao dịch, bùng hẹn hoặc trừ điểm uy tín</span>
+                </div>
+
+                <div style="overflow-x:auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Sinh Viên Bị Cảnh Cáo</th>
+                                <th>Email / MSSV</th>
+                                <th>Nội Dung Cảnh Cáo & Lý Do Vi Phạm</th>
+                                <th>Mức Phạt</th>
+                                <th>Thời Gian</th>
+                                <th>Hành Động Admin</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminWarningsTableBody">
                             <!-- Rendered by JS -->
                         </tbody>
                     </table>
@@ -1169,6 +1198,14 @@
                 Khu vực Quản trị hệ thống HandUTC2 yêu cầu nhập chính xác <strong>Gmail Quản Trị Viên</strong> và <strong>Mật khẩu</strong> để truy cập.
             </p>
 
+            <div style="margin-bottom:14px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:10px 12px; font-size:12px; color:#0369a1; text-align:left;">
+                <strong>💡 Tài khoản Quản Trị Viên UTC2:</strong><br>
+                • Gmail / MSSV: <code style="color:#0284c7; font-weight:700;">6651071091@st.utc2.edu.vn</code> (hoặc <code>6651071091</code>)<br>
+                • Mật khẩu: <code style="color:#0284c7; font-weight:700;">TietLee113377</code> (hoặc <code>123456</code>)<br>
+                <button type="button" onclick="document.getElementById('adminModalEmailInput').value='6651071091@st.utc2.edu.vn'; document.getElementById('adminModalPasswordInput').value='TietLee113377'; loginAsOfficialAdmin();" style="margin-top:6px; background:#0284c7; color:#fff; border:none; border-radius:6px; padding:5px 12px; font-size:11.5px; font-weight:700; cursor:pointer;">
+                    ⚡ Nhập Nhanh & Mở Admin
+                </button>
+            </div>
             <form onsubmit="event.preventDefault(); loginAsOfficialAdmin();" style="text-align:left;">
                 <div style="margin-bottom:14px;">
                     <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:5px;">
