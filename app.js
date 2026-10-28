@@ -1753,6 +1753,15 @@ class AppController {
         if (profName) profName.innerText = this.user.name;
         if (profEmail) profEmail.innerText = this.user.email;
         if (profRep) profRep.innerText = this.user.reputation;
+        const vipEl = document.getElementById('profileVipBadgeDisplay');
+        if (vipEl) {
+            if (isReputationVipActive(this.user)) {
+                const rem = getReputationVipRemainingTime(this.user);
+                vipEl.innerHTML = `<span class="badge-reputation-vip" title="Hiệu lực còn ${rem}">🎖️ Uy Tín VIP (${rem})</span>`;
+            } else {
+                vipEl.innerHTML = '';
+            }
+        }
         
         if (profAvatar) {
             if (customAvatar) {
@@ -1964,10 +1973,11 @@ class AppController {
                         ` : ''}
                         
                         <div class="card-seller-row">
-                            <span class="card-seller-name" style="display:inline-flex; align-items:center;">
+                            <span class="card-seller-name" style="display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap;">
                                 ${sellerAvatarHtml}
                                 <span>${item.seller}</span>
                                 <span class="verified-sv-tag" title="Sinh viên ST.UTC2 đã xác minh">✓ SV</span>
+                                ${(sellerUser && isReputationVipActive(sellerUser)) ? `<span class="badge-reputation-vip" title="Tài khoản uy tín đã được xác thực (Hiệu lực 1 tuần)">🎖️ Uy Tín VIP</span>` : ''}
                             </span>
                             <span class="card-rep-badge" title="Đánh giá uy tín sinh viên">
                                 ⭐ ${starScore} (${reviewCount})
@@ -2005,6 +2015,81 @@ class AppController {
             return;
         }
 
+        // Cập nhật hiển thị Huy Hiệu Uy Tín VIP ở thông tin cá nhân
+        const isVip = isReputationVipActive(this.user);
+        const vipRemaining = getReputationVipRemainingTime(this.user);
+        const completedTrades = getCompletedTradesCount(this.user);
+
+        // Chèn Khung Dịch Vụ Xu Sinh Viên UTC2 trước phần bài đăng & đơn cọc
+        const profileServicesBlock = document.getElementById('profileCoinServicesContainer');
+        if (profileServicesBlock) {
+            profileServicesBlock.innerHTML = `
+                <div style="background:#fffbeb; border:1.5px solid #fde68a; border-radius:12px; padding:14px 16px; margin-bottom:18px; box-shadow:0 1px 4px rgba(245,158,11,0.08);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:20px;">🪙</span>
+                            <h4 style="font-size:14px; font-weight:800; color:#92400e; margin:0;">Dịch Vụ Xu Sinh Viên UTC2</h4>
+                        </div>
+                        <div style="font-size:12.5px; color:#b45309; font-weight:700;">
+                            Ví hiện có: <span style="background:#fef3c7; border:1px solid #fde68a; padding:3px 10px; border-radius:12px; color:#d97706; font-size:13px;">🪙 ${this.user.coins || 0} Xu</span>
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+                        <!-- Dịch vụ 1: Khôi phục điểm uy tín -->
+                        <div style="background:#fff; border:1px solid #fef08a; border-radius:8px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+                            <div>
+                                <div style="font-weight:700; color:#0f172a; font-size:13px; display:flex; align-items:center; gap:6px;">
+                                    🛡️ Khôi Phục Uy Tín
+                                </div>
+                                <div style="font-size:11.5px; color:#64748b; margin-top:4px; line-height:1.4;">
+                                    Chi <strong>30 Xu</strong> khôi phục ngay <strong>+5 Điểm Uy Tín</strong> (tối đa 100đ).
+                                </div>
+                            </div>
+                            <button type="button" onclick="restoreReputationWithCoins()" style="margin-top:10px; padding:6px 12px; background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;" title="Dùng 30 Xu khôi phục +5 điểm uy tín">
+                                🪙 Khôi Phục +5đ (30 Xu)
+                            </button>
+                        </div>
+
+                        <!-- Dịch vụ 2: Huy hiệu tài khoản uy tín (VIP) -->
+                        <div style="background:#fff; border:1px solid #fef08a; border-radius:8px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+                            <div>
+                                <div style="font-weight:700; color:#0f172a; font-size:13px; display:flex; align-items:center; gap:6px;">
+                                    🎖️ Huy Hiệu Uy Tín (1 Tuần)
+                                </div>
+                                <div style="font-size:11.5px; color:#64748b; margin-top:4px; line-height:1.4;">
+                                    Yêu cầu: <strong>> 2 giao dịch thành công</strong> (Bạn có: <strong>${completedTrades}</strong>). Phí: <strong>5 Xu</strong>/tuần.
+                                </div>
+                            </div>
+                            ${isVip ? `
+                                <div style="margin-top:10px; padding:6px 10px; background:#dcfce7; color:#15803d; border-radius:6px; font-size:11.5px; font-weight:700; text-align:center; border:1px solid #86efac;">
+                                    🎖️ Đang hiệu lực (${vipRemaining})
+                                </div>
+                            ` : `
+                                <button type="button" onclick="purchaseReputationBadge()" style="margin-top:10px; padding:6px 12px; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;" title="Nhận huy hiệu tài khoản uy tín hiệu lực 1 tuần">
+                                    🎖️ Nhận Huy Hiệu (5 Xu)
+                                </button>
+                            `}
+                        </div>
+
+                        <!-- Dịch vụ 3: Cọc bằng xu -->
+                        <div style="background:#fff; border:1px solid #fef08a; border-radius:8px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+                            <div>
+                                <div style="font-weight:700; color:#0f172a; font-size:13px; display:flex; align-items:center; gap:6px;">
+                                    🤝 Cọc Giữ Chỗ Bằng Xu
+                                </div>
+                                <div style="font-size:11.5px; color:#64748b; margin-top:4px; line-height:1.4;">
+                                    Cọc <strong>3%</strong> giá trị sản phẩm (Tối thiểu <strong>2 Xu</strong>, tối đa <strong>50 Xu</strong>). <strong>Hoàn cọc 100%</strong> sau khi giao dịch thành công!
+                                </div>
+                            </div>
+                            <div style="margin-top:10px; font-size:11px; color:#15803d; font-weight:700; text-align:center; padding:5px; background:#f0fdf4; border-radius:6px; border:1px solid #bbf7d0;">
+                                ✓ Tự động áp dụng khi Mua Hàng
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         if (myPosts) {
             const myItems = this.products.filter(p => p.seller === this.user.name);
             if (myItems.length === 0) {
@@ -2021,19 +2106,28 @@ class AppController {
                         statusBadge = `<span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">✅ Đã duyệt</span> ${countdown.html}`;
                     }
 
+                    const isPostBoosted = p.isBoosted && (p.boostedAt && (Date.now() - p.boostedAt < 24 * 60 * 60 * 1000));
                     return `
-                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:8px; font-size:12.5px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:8px; font-size:12.5px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <div>
                             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <strong>${p.title}</strong>
                                 ${statusBadge}
+                                ${isPostBoosted ? `<span style="background:linear-gradient(135deg, #f59e0b, #ea580c); color:#fff; padding:2px 7px; border-radius:4px; font-weight:800; font-size:10.5px;">🚀 Đang Top</span>` : ''}
                             </div>
                             <div style="color:#0284c7; font-size:11.5px; margin-top:3px;">
                                 ${formatNumber(p.price)} đ • TimeMark: <strong>${p.timemarkCode}</strong>
                                 ${p.timemarkProofUrl ? ` • <a href="javascript:void(0)" onclick="openZoomImageModal('${p.timemarkProofUrl}', 'Ảnh TimeMark: ${p.title}')" style="color:#16a34a; font-weight:700; text-decoration:underline;">🔍 Xem ảnh TimeMark đã chụp</a>` : ''}
                             </div>
                         </div>
-                        <button onclick="removePost('${p.id}')" style="background:none; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:700;">Xóa</button>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            ${p.status === 'approved' ? `
+                                <button type="button" onclick="boostPostToTop('${p.id}')" style="background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; border:none; padding:4px 9px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;" title="Dùng 5 Xu đẩy bài đăng lên Top 1 trang chủ">
+                                    🚀 Đẩy Top (5 Xu)
+                                </button>
+                            ` : ''}
+                            <button onclick="removePost('${p.id}')" style="background:none; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:700;">Xóa</button>
+                        </div>
                     </div>
                     `;
                 }).join('');
@@ -2176,9 +2270,8 @@ class AppController {
                             </div>
 
                             <div style="background:#f8fafc; border-radius:6px; padding:8px 10px; margin-bottom:8px; font-size:11.5px; color:#334155; display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;">
-                                <div>Cọc giữ chỗ: <strong style="color:#16a34a;">${formatNumber(o.depositAmount || 0)} đ</strong></div>
-                                ${(o.discountAmount > 0) ? `<div style="color:#d97706; font-weight:600;">Giảm giá xu: <strong>-${formatNumber(o.discountAmount)} đ</strong> (${o.discountCoins || Math.round(o.discountAmount / 100)} Xu)</div>` : ''}
-                                <div>Tổng thanh toán: <strong>${formatNumber(o.totalPayment || o.finalTotal || 0)} đ</strong></div>
+                                <div>Cọc giữ chỗ: <strong style="color:#d97706;">🪙 ${o.depositCoins || 2} Xu</strong> <span style="font-size:10.5px; color:#15803d;">(Hoàn cọc khi xong)</span></div>
+                                <div>Thanh toán tiền mặt: <strong>${formatNumber(o.totalPayment || o.productPrice || 0)} đ</strong></div>
                                 <div>
                                     Tiến độ xác nhận: 
                                     <span style="color:${o.buyerCompleted ? '#16a34a' : '#b45309'}; font-weight:700;">Mua (Nhận đồ): ${o.buyerCompleted ? '✓ Đã nhận' : 'Chưa'}</span> | 
@@ -4463,62 +4556,212 @@ function closeCheckoutModal() {
     if (modal) modal.classList.remove('active');
 }
 
+// Tính số Xu đặt cọc: Áp dụng công thức 3% giá trị sản phẩm, tối thiểu là 2 xu và TỐI ĐA không quá 50 xu/giao dịch
+function calculateDepositCoins(price) {
+    const rawCoins = Math.round((Number(price || 0) * 0.03) / 1000);
+    return Math.min(50, Math.max(2, rawCoins));
+}
+
+// Đếm số giao dịch thành công của người dùng
+function getCompletedTradesCount(user) {
+    if (!user || !window.app || !window.app.depositOrders) return 0;
+    return window.app.depositOrders.filter(o => 
+        o.status === 'completed' && 
+        ((o.buyer && o.buyer === user.name) || (o.buyerEmail && o.buyerEmail === user.email) ||
+         (o.seller && o.seller === user.name) || (o.sellerEmail && o.sellerEmail === user.email))
+    ).length;
+}
+
+// Kiểm tra danh hiệu Tài Khoản Uy Tín còn hiệu lực hay không (Hiệu lực trong 1 tuần)
+function isReputationVipActive(user) {
+    if (!user) return false;
+    if (!user.reputationBadgeExpiry) return false;
+    return Date.now() < user.reputationBadgeExpiry;
+}
+
+// Lấy thời gian còn lại của Huy hiệu Uy tín
+function getReputationVipRemainingTime(user) {
+    if (!isReputationVipActive(user)) return null;
+    const diff = user.reputationBadgeExpiry - Date.now();
+    const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+    const hours = Math.floor((diff % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    return `${days} ngày ${hours} giờ`;
+}
+
+// Dịch vụ 1: Khôi phục +5 điểm uy tín bằng 30 Xu
+function restoreReputationWithCoins() {
+    if (!window.app || !window.app.user) {
+        showToast('Vui lòng đăng nhập để sử dụng tính năng!', 'warning');
+        return;
+    }
+    const user = window.app.user;
+    if (user.reputation >= 100) {
+        showToast('Điểm uy tín của bạn đã đạt mức tối đa (100/100 điểm)!', 'info');
+        return;
+    }
+    const userCoins = user.coins || 0;
+    if (userCoins < 30) {
+        showToast(`Bạn không đủ Xu! Cần 30 Xu để khôi phục +5 điểm uy tín (Ví hiện có: ${userCoins} Xu). Hãy chơi game để nhận thêm Xu!`, 'danger');
+        return;
+    }
+    if (!confirm('Xác nhận dùng 30 Xu để khôi phục +5 điểm uy tín?')) return;
+
+    user.coins = Math.max(0, userCoins - 30);
+    user.reputation = Math.min(100, (user.reputation || 95) + 5);
+
+    const uIdx = window.app.registeredUsers.findIndex(u => u.email === user.email);
+    if (uIdx !== -1) {
+        window.app.registeredUsers[uIdx].coins = user.coins;
+        window.app.registeredUsers[uIdx].reputation = user.reputation;
+        window.app.saveUsers();
+    }
+    window.app.updateUserUI();
+    window.app.renderProfile();
+
+    if (window.sound) window.sound.playSuccess();
+    showToast(`🎉 Khôi phục thành công +5 điểm uy tín (-30 Xu)! Điểm hiện tại: ${user.reputation}/100 ★`, 'success');
+}
+
+// Dịch vụ 2: Đẩy bài đăng lên TOP 1 trang Săn Đồ bằng 5 Xu
+function boostPostToTop(postId) {
+    if (!window.app || !window.app.user) return;
+    const user = window.app.user;
+    const post = window.app.products.find(p => p.id === postId);
+    if (!post) return;
+
+    if (post.seller !== user.name && post.sellerEmail !== user.email) {
+        showToast('Bạn chỉ có thể đẩy top bài đăng của chính mình!', 'danger');
+        return;
+    }
+
+    const userCoins = user.coins || 0;
+    if (userCoins < 5) {
+        showToast(`Bạn không đủ Xu! Cần 5 Xu để đẩy bài lên Top (Ví hiện có: ${userCoins} Xu). Hãy chơi game để nhận thêm Xu!`, 'danger');
+        return;
+    }
+
+    if (!confirm(`Xác nhận dùng 5 Xu để đẩy bài đăng "${post.title}" lên đầu trang Săn Đồ?`)) return;
+
+    user.coins = Math.max(0, userCoins - 5);
+    const uIdx = window.app.registeredUsers.findIndex(u => u.email === user.email);
+    if (uIdx !== -1) {
+        window.app.registeredUsers[uIdx].coins = user.coins;
+        window.app.saveUsers();
+    }
+
+    // Cập nhật thời gian bài viết lên mới nhất & gắn cờ boosted
+    post.approvedAt = Date.now();
+    post.submittedAt = Date.now();
+    post.isBoosted = true;
+    post.boostedAt = Date.now();
+
+    // Đưa bài lên vị trí đầu tiên của danh sách
+    const pIdx = window.app.products.findIndex(p => p.id === postId);
+    if (pIdx > -1) {
+        const [boosted] = window.app.products.splice(pIdx, 1);
+        window.app.products.unshift(boosted);
+    }
+
+    window.app.saveProducts();
+    window.app.rebuildDSACache();
+    window.app.renderProducts();
+    window.app.renderProfile();
+    window.app.updateUserUI();
+
+    if (window.UniPassOnlineSync) {
+        window.UniPassOnlineSync.broadcastNewPost(post);
+    }
+
+    if (window.sound) window.sound.playSuccess();
+    showToast(`🚀 Đã dùng 5 Xu đẩy bài "${post.title}" lên TOP 1 trang Săn Đồ thành công!`, 'success');
+}
+
+// Dịch vụ 3: Nhận Huy Hiệu Tài Khoản Uy Tín (Điều kiện: > 2 giao dịch thành công + 5 Xu -> hiệu lực 1 tuần)
+function purchaseReputationBadge() {
+    if (!window.app || !window.app.user) return;
+    const user = window.app.user;
+
+    const completedCount = getCompletedTradesCount(user);
+    if (completedCount <= 2) {
+        showToast(`Bạn chưa đủ điều kiện! Cần có TRÊN 2 giao dịch thành công (Hiện có: ${completedCount} giao dịch). Hãy hoàn thành thêm giao dịch để đạt điều kiện!`, 'warning');
+        return;
+    }
+
+    const userCoins = user.coins || 0;
+    if (userCoins < 5) {
+        showToast(`Bạn không đủ Xu! Cần 5 Xu để nhận huy hiệu (Ví hiện có: ${userCoins} Xu). Hãy chơi game để nhận thêm Xu!`, 'danger');
+        return;
+    }
+
+    if (!confirm('Xác nhận chi 5 Xu để kích hoạt "Huy Hiệu Tài Khoản Uy Tín" (Hiệu lực trong 1 tuần)?')) return;
+
+    user.coins = Math.max(0, userCoins - 5);
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    user.reputationBadgeExpiry = Date.now() + ONE_WEEK_MS;
+    user.isReputationVip = true;
+
+    const uIdx = window.app.registeredUsers.findIndex(u => u.email === user.email);
+    if (uIdx !== -1) {
+        window.app.registeredUsers[uIdx].coins = user.coins;
+        window.app.registeredUsers[uIdx].reputationBadgeExpiry = user.reputationBadgeExpiry;
+        window.app.registeredUsers[uIdx].isReputationVip = true;
+        window.app.saveUsers();
+    }
+
+    window.app.updateUserUI();
+    window.app.renderProfile();
+    window.app.renderProducts();
+
+    if (window.sound) window.sound.playSuccess();
+    showToast('🎖️ Chúc mừng! Bạn đã nhận Huy Hiệu Tài Khoản Uy Tín UTC2 (Có hiệu lực trong 1 tuần)!', 'success');
+}
+
 function updateCheckoutCalculations() {
     if (!currentCheckoutProduct) return;
 
     const basePrice = currentCheckoutProduct.price;
-    let deposit = Math.max(3000, Math.round((basePrice * 0.1) / 1000) * 1000);
-    document.getElementById('depositAmountText').innerText = `${formatNumber(deposit)} VNĐ`;
+    const depositCoins = calculateDepositCoins(basePrice);
+    const availableCoins = (window.app && window.app.user) ? (window.app.user.coins || 0) : 0;
+
+    const depositCoinEl = document.getElementById('depositCoinsAmountText');
+    if (depositCoinEl) {
+        depositCoinEl.innerText = `${depositCoins} Xu`;
+    }
+
+    const userBalanceEl = document.getElementById('depositBuyerCoinsBalanceText');
+    if (userBalanceEl) {
+        const isEnough = availableCoins >= depositCoins;
+        userBalanceEl.innerHTML = `Ví của bạn: <strong style="color:${isEnough ? '#15803d' : '#b91c1c'};">${availableCoins} Xu</strong> ${isEnough ? '✓ Đủ xu cọc' : '⚠️ Thiếu ' + (depositCoins - availableCoins) + ' Xu!'}`;
+    }
 
     const shippingSelect = document.getElementById('shippingSelectOption');
     const shipFee = parseInt(shippingSelect ? shippingSelect.value : 0) || 0;
 
-    const coinCheckbox = document.getElementById('useCoinDiscountCheckbox');
-    const coinLabel = document.getElementById('coinDiscountLabelText');
-
-    const availableCoins = (window.app && window.app.user) ? (window.app.user.coins || 0) : 0;
-
-    // Cho phép dùng khoảng 30% số xu hiện có để giảm giá mặt hàng
-    let maxCoinsAllowed = Math.round(availableCoins * 0.3);
-    if (availableCoins > 0 && maxCoinsAllowed === 0) {
-        maxCoinsAllowed = 1;
-    }
-
-    // Mức giảm giá không vượt quá giá gốc của mặt hàng
-    const maxCoinsByPrice = Math.floor(basePrice / 100);
-    const coinsToUse = Math.min(maxCoinsAllowed, maxCoinsByPrice);
-    const discountVND = coinsToUse * 100;
-
-    if (coinLabel && coinCheckbox) {
-        if (availableCoins <= 0 || coinsToUse <= 0) {
-            coinCheckbox.checked = false;
-            coinCheckbox.disabled = true;
-            coinLabel.innerHTML = `<span style="color:#64748b;">🪙 Bạn hiện có <strong>0 Xu</strong> (Chưa đủ xu để giảm giá mặt hàng)</span>`;
-        } else {
-            coinCheckbox.disabled = false;
-            coinLabel.innerHTML = `🪙 Dùng <strong>${formatNumber(coinsToUse)} Xu</strong> (30% trong tổng ${formatNumber(availableCoins)} Xu hiện có) để giảm <strong style="color:#16a34a;">-${formatNumber(discountVND)} đ</strong>`;
-        }
-    }
-
-    let actualDiscount = 0;
-    if (coinCheckbox && coinCheckbox.checked && coinsToUse > 0) {
-        actualDiscount = discountVND;
-    }
-
-    const finalTotal = Math.max(0, basePrice + shipFee - actualDiscount);
+    // Xu không để giảm tiền mặt, mà tính vào tiền cọc giữ chỗ
+    const finalTotal = basePrice + shipFee;
 
     const breakdownEl = document.getElementById('calculationBreakdownText');
     if (breakdownEl) {
-        if (actualDiscount > 0) {
-            breakdownEl.innerText = `(Giá gốc: ${formatNumber(basePrice)}đ + Ship: ${formatNumber(shipFee)}đ - Giảm 30% xu: ${formatNumber(actualDiscount)}đ)`;
-        } else {
-            breakdownEl.innerText = `(Giá gốc: ${formatNumber(basePrice)}đ + Ship: ${formatNumber(shipFee)}đ)`;
-        }
+        breakdownEl.innerText = `(Giá đồ: ${formatNumber(basePrice)}đ + Ship: ${formatNumber(shipFee)}đ • Cọc giữ chỗ: ${depositCoins} Xu)`;
     }
 
     const totalEl = document.getElementById('finalTotalPaymentText');
     if (totalEl) {
         totalEl.innerText = `${formatNumber(finalTotal)} VNĐ`;
+    }
+
+    const confirmBtn = document.getElementById('confirmDepositBtn');
+    const isMine = window.app.user ? (currentCheckoutProduct.seller === window.app.user.name) : false;
+    if (confirmBtn && !isMine) {
+        if (availableCoins < depositCoins) {
+            confirmBtn.innerText = `⚠️ Cần ${depositCoins} Xu để cọc (Bạn thiếu ${depositCoins - availableCoins} Xu)`;
+            confirmBtn.style.background = '#94a3b8';
+            confirmBtn.disabled = true;
+        } else {
+            confirmBtn.innerText = `🤝 Đặt Cọc (${depositCoins} Xu) & Giữ Chỗ`;
+            confirmBtn.style.background = '#6366f1';
+            confirmBtn.disabled = false;
+        }
     }
 }
 
@@ -4532,25 +4775,17 @@ function confirmDepositOrder() {
 
     const basePrice = currentCheckoutProduct.price;
     const shipFee = parseInt(document.getElementById('shippingSelectOption').value) || 0;
-    
-    // Tính toán số xu giảm giá (30% số xu hiện có)
+    const depositCoins = calculateDepositCoins(basePrice);
     const availableCoins = (window.app && window.app.user) ? (window.app.user.coins || 0) : 0;
-    let maxCoinsAllowed = Math.round(availableCoins * 0.3);
-    if (availableCoins > 0 && maxCoinsAllowed === 0) {
-        maxCoinsAllowed = 1;
+
+    if (availableCoins < depositCoins) {
+        showToast(`Bạn không đủ Xu để đặt cọc! Cần có tối thiểu ${depositCoins} Xu (Ví hiện có: ${availableCoins} Xu). Hãy chơi game để nhận thêm Xu!`, 'danger');
+        return;
     }
-    const maxCoinsByPrice = Math.floor(basePrice / 100);
-    const coinsToUse = Math.min(maxCoinsAllowed, maxCoinsByPrice);
 
-    const useCoins = document.getElementById('useCoinDiscountCheckbox') ? document.getElementById('useCoinDiscountCheckbox').checked : false;
-    const coinsUsed = (useCoins && availableCoins > 0) ? coinsToUse : 0;
-    const discountVND = coinsUsed * 100;
+    // Trừ số Xu đặt cọc trong ví của người mua
+    window.app.user.coins = Math.max(0, availableCoins - depositCoins);
 
-    const depositAmount = Math.max(3000, Math.round((basePrice * 0.1) / 1000) * 1000);
-    const finalTotal = Math.max(0, basePrice + shipFee - discountVND);
-
-    window.app.user.coins = Math.max(0, (window.app.user.coins || 0) - coinsUsed);
-    
     // Đồng bộ số xu vào registeredUsers
     const uIdx = window.app.registeredUsers.findIndex(u => u.email === window.app.user.email);
     if (uIdx !== -1) {
@@ -4559,9 +4794,9 @@ function confirmDepositOrder() {
     }
     window.app.updateUserUI();
 
-    if (coinsUsed > 0) {
-        showToast(`Đã dùng ${coinsUsed} Xu (30% số xu) giảm ngay ${formatNumber(discountVND)} đ!`, 'success');
-    }
+    showToast(`✓ Đã cọc ${depositCoins} Xu (3% giá trị sản phẩm) giữ chỗ thành công! Xu sẽ được hoàn trả 100% khi giao dịch hoàn tất.`, 'success');
+
+    const finalTotal = basePrice + shipFee;
 
     const newOrderData = {
         id: 'ORD_' + Date.now(),
@@ -4573,29 +4808,30 @@ function confirmDepositOrder() {
         buyer: window.app.user.name,
         buyerEmail: window.app.user.email || 'buyer@st.utc2.edu.vn',
         productPrice: basePrice,
-        depositAmount,
+        depositAmount: 0,
+        depositCoins: depositCoins, // Số Xu cọc (Áp dụng 3%, min 2 max 50)
         shippingFee: shipFee,
-        discountCoins: coinsUsed,
-        discountAmount: discountVND,
+        discountCoins: 0,
+        discountAmount: 0,
         totalPayment: finalTotal,
         shippingOption: document.getElementById('shippingSelectOption') ? document.getElementById('shippingSelectOption').value : 'campus',
         meetLocation: currentCheckoutProduct.location,
-        status: 'pending_seller', // Người mua đã cọc, chờ người bán xác nhận đơn hàng
-        sellerAccepted: false,     // Người bán đã bấm xác nhận đơn hàng hay chưa
-        buyerCompleted: false,     // Người mua xác nhận đã nhận hàng
-        sellerCompleted: false,    // Người bán xác nhận đã giao hàng
+        status: 'pending_seller',
+        sellerAccepted: false,
+        buyerCompleted: false,
+        sellerCompleted: false,
         timestamp: Date.now()
     };
 
     window.app.depositOrders.push(newOrderData);
     window.app.saveOrders();
 
-    // Gửi thông báo tới người bán: Có người thêm đơn hàng của bạn vào đơn cọc
+    // Gửi thông báo tới người bán: Có người cọc đơn hàng của bạn
     window.app.addNotification({
         targetName: currentCheckoutProduct.seller,
         targetEmail: currentCheckoutProduct.sellerEmail || 'seller@st.utc2.edu.vn',
         title: 'Có khách đặt cọc đơn hàng!',
-        message: `${window.app.user.name} vừa thêm đơn hàng "${currentCheckoutProduct.title}" của bạn vào đơn cọc (Cọc giữ chỗ: ${formatNumber(depositAmount)} đ). Vui lòng vào mục Cá Nhân kiểm tra.`,
+        message: `${window.app.user.name} vừa cọc ${depositCoins} Xu giữ chỗ đơn hàng "${currentCheckoutProduct.title}" của bạn. Vui lòng vào mục Cá Nhân kiểm tra.`,
         type: 'order_deposit',
         relatedId: newOrderData.id
     });
@@ -4604,8 +4840,8 @@ function confirmDepositOrder() {
     window.app.addNotification({
         targetName: window.app.user.name,
         targetEmail: window.app.user.email,
-        title: 'Thêm vào đơn cọc thành công!',
-        message: `Bạn đã thêm đơn hàng "${currentCheckoutProduct.title}" vào đơn cọc (Đã cọc: ${formatNumber(depositAmount)} đ). Đang chờ người bán xác nhận đơn.`,
+        title: 'Đặt cọc đơn hàng thành công!',
+        message: `Bạn đã cọc ${depositCoins} Xu cho đơn hàng "${currentCheckoutProduct.title}". Số Xu này sẽ được hoàn trả 100% sau khi hoàn thành giao dịch!`,
         type: 'order_deposit',
         relatedId: newOrderData.id
     });
@@ -4614,6 +4850,15 @@ function confirmDepositOrder() {
     if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
         window.UniPassSupabase.createOrder(newOrderData);
     }
+    if (window.UniPassOnlineSync) {
+        window.UniPassOnlineSync.broadcastNewOrder(newOrderData);
+    }
+
+    closeCheckoutModal();
+    window.app.updateDepositBadge();
+    window.app.renderProfile();
+}
+
 
     // Đồng bộ đơn cọc lên mạng đa máy (Máy B, C, D...)
     if (window.UniPassOnlineSync) {
@@ -4687,6 +4932,26 @@ function confirmTradeComplete(orderId, role) {
 
     // NẾU CẢ 2 BÊN ĐÃ XÁC NHẬN HOÀN TẤT: TỰ ĐỘNG XÓA BÀI ĐĂNG & CỘNG ĐIỂM UY TÍN
     if (order.buyerCompleted && order.sellerCompleted) {
+
+        // 1. HOÀN TRẢ TOÀN BỘ XU CỌC CHO NGƯỜI MUA SAU KHI HOÀN TẤT GIAO DỊCH
+        const refundCoins = order.depositCoins || 0;
+        const buyerUser = window.app.registeredUsers.find(u => u.name === order.buyer || u.email === order.buyerEmail);
+        const sellerUser = window.app.registeredUsers.find(u => u.name === order.seller || u.email === order.sellerEmail);
+
+        if (refundCoins > 0 && buyerUser) {
+            buyerUser.coins = (buyerUser.coins || 0) + refundCoins;
+            if (window.app.user && (window.app.user.name === order.buyer || window.app.user.email === order.buyerEmail)) {
+                window.app.user.coins = buyerUser.coins;
+            }
+            window.app.addNotification({
+                targetName: order.buyer,
+                targetEmail: order.buyerEmail,
+                title: 'Hoàn trả Xu đặt cọc thành công!',
+                message: `Giao dịch hoàn tất! Hệ thống đã hoàn trả lại +${refundCoins} Xu cọc về ví của bạn.`,
+                type: 'coin_refund',
+                relatedId: order.id
+            });
+        }
         order.status = 'completed';
 
         // Cộng +2 điểm uy tín cho cả 2 bên
