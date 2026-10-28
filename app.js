@@ -5567,16 +5567,35 @@ function confirmPublishPostWithProof() {
     // Dùng ảnh xác thực TimeMark nếu tải lên, hoặc dùng ảnh sản phẩm
     const proofImg = pendingTimeMarkProofDataUrl || pendingNewPost.imageUrl;
     pendingNewPost.timemarkProofUrl = proofImg;
-    pendingNewPost.status = 'pending'; // ⏳ Bắt buộc chờ Admin kiểm duyệt TimeMark
+
+    // KIỂM TRA ĐỘ KHỚP AI QUÉT MÃ TIMEMARK TRÊN GIẤY:
+    // Nếu AI quét trùng khớp với mã OTP từ 95% trở lên -> BÀI ĐĂNG ĐƯỢC DUYỆT TỰ ĐỘNG LUÔN!
+    const ocr = pendingNewPost.ocrResult;
+    const isAutoApproved = ocr && ocr.isMatched && (Number(ocr.confidence) >= 95.0);
+
+    if (isAutoApproved) {
+        pendingNewPost.status = 'approved';
+        pendingNewPost.approvedAt = Date.now();
+        pendingNewPost.autoApprovedByAI = true;
+
+        // Thưởng 1 điểm uy tín cho người bán vì chụp ảnh xác thực mẩu giấy viết tay chuẩn xác
+        if (window.app.user) {
+            window.app.user.reputation = Math.min(100, (window.app.user.reputation || 95) + 1);
+            window.app.saveUsers();
+            window.app.updateUserUI();
+        }
+    } else {
+        pendingNewPost.status = 'pending'; // ⏳ Nếu độ khớp < 95%: Chờ Admin kiểm duyệt thủ công
+    }
 
     window.app.products.unshift(pendingNewPost);
     window.app.saveProducts();
     window.app.rebuildDSACache();
-    window.app.renderProducts(); // Không hiển thị lên trang chính vì status là 'pending'
-    window.app.renderProfile();  // Hiển thị trong Hồ sơ cá nhân với trạng thái "Chờ Admin duyệt"
-    window.app.renderAdminDashboard(); // Cập nhật ngay bảng duyệt bài của Admin
+    window.app.renderProducts(); // Hiển thị ngay lên Sàn Đồ nếu đã được duyệt (status === 'approved')!
+    window.app.renderProfile();  // Cập nhật danh sách bài đăng cá nhân
+    window.app.renderAdminDashboard(); // Cập nhật bảng kiểm duyệt Admin
 
-    // Đồng bộ sản phẩm mới lên Supabase Cloud (lưu dạng hidden để chờ duyệt)
+    // Đồng bộ sản phẩm mới lên Supabase Cloud
     if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
         window.UniPassSupabase.addProduct(pendingNewPost);
     }
@@ -5602,11 +5621,16 @@ function confirmPublishPostWithProof() {
     if (descInput) descInput.value = '';
     if (urlInput) urlInput.value = '';
 
-    // Chuyển sang Hồ sơ cá nhân để người dùng thấy bài của mình đang ở mục "Chờ Admin duyệt TimeMark"
-    switchNavTab('profile');
-
     if (window.sound) window.sound.playSuccess();
-    showToast(`✓ Đã gửi bài "${pendingNewPost.title}" thành công! Bài đang chờ Admin kiểm duyệt mã TimeMark trước khi hiển thị lên trang chính.`, 'success');
+
+    if (isAutoApproved) {
+        switchNavTab('home'); // Chuyển về ngay Sàn Đồ để người dùng và các tài khoản khác thấy bài đăng ngay!
+        showToast(`🎉 Tuyệt vời! AI DeepScan quét mẩu giấy khớp ${ocr.confidence}% mã OTP. Bài đăng "${pendingNewPost.title}" đã được DUYỆT TỰ ĐỘNG và hiển thị ngay trên Sàn Đồ!`, 'success');
+    } else {
+        switchNavTab('profile');
+        showToast(`✓ Đã gửi bài "${pendingNewPost.title}"! AI quét mã đạt ${ocr ? ocr.confidence : 0}% (< 95%), bài đang ở trạng thái Chờ Admin kiểm duyệt thủ công.`, 'info');
+    }
+
     pendingNewPost = null;
 }
 
@@ -7219,28 +7243,46 @@ async function triggerProofUploadOcr(imageSrc) {
 
     if (pendingNewPost) pendingNewPost.ocrResult = res;
 
+    const isAutoApproveEligible = res.isMatched && (res.confidence >= 95.0);
+
     if (badge) {
-        if (res.isMatched) {
+        if (isAutoApproveEligible) {
             badge.className = 'ocr-result-badge match';
-            badge.innerText = `Khớp ${res.confidence}% ✓`;
+            badge.innerText = `Khớp ${res.confidence}% ✓ (Duyệt Ngay)`;
+        } else if (res.isMatched) {
+            badge.className = 'ocr-result-badge manual';
+            badge.innerText = `Khớp ${res.confidence}% (Chờ Admin)`;
         } else {
-            badge.className = 'ocr-result-badge match';
-            badge.innerText = `Khớp 98% ✓`;
+            badge.className = 'ocr-result-badge pending';
+            badge.innerText = `Chưa rõ (${res.confidence}%)`;
         }
     }
 
     if (resultBox) {
         resultBox.innerHTML = `
-            <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:8px 12px; margin-top:6px;">
-                <div style="color:#15803d; font-weight:800; font-size:12.5px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;">
-                    <span>✅ AI DeepScan: [${res.detectedCode}]</span>
-                    <span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">Độ tin cậy: ${res.confidence}%</span>
+            <div style="background:${isAutoApproveEligible ? '#f0fdf4' : '#fffbeb'}; border:1px solid ${isAutoApproveEligible ? '#86efac' : '#fde68a'}; border-radius:8px; padding:8px 12px; margin-top:6px;">
+                <div style="color:${isAutoApproveEligible ? '#15803d' : '#92400e'}; font-weight:800; font-size:12.5px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+                    <span>🤖 AI DeepScan: [${res.detectedCode}]</span>
+                    <span style="background:${isAutoApproveEligible ? '#dcfce7' : '#fef3c7'}; color:${isAutoApproveEligible ? '#15803d' : '#b45309'}; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">Độ trùng khớp: ${res.confidence}%</span>
                 </div>
-                <div style="font-size:11.5px; color:#166534; margin-top:4px; line-height:1.4;">
-                    Đã quét kỹ mẩu giấy: Nét chữ viết tay khớp với mã OTP bảo mật UTC2. Bài đăng được ưu tiên duyệt nhanh!
+                <div style="font-size:11.5px; color:${isAutoApproveEligible ? '#166534' : '#78350f'}; margin-top:4px; line-height:1.4;">
+                    ${isAutoApproveEligible 
+                        ? '✅ <strong>Đạt chuẩn ≥ 95%:</strong> Chữ viết tay trên giấy trùng khớp mã OTP! Bài đăng sẽ được <strong>TỰ ĐỘNG DUYỆT NGAY LẬP TỨC</strong> lên Sàn Đồ.' 
+                        : '⚠️ <strong>Chưa đạt 95%:</strong> Chữ viết trên giấy chưa rõ hoặc độ khớp thấp. Bài sẽ chuyển cho Admin kiểm duyệt bằng mắt thường.'}
                 </div>
             </div>
         `;
+    }
+
+    const confirmBtn = document.querySelector('button[onclick="confirmPublishPostWithProof()"]');
+    if (confirmBtn) {
+        if (isAutoApproveEligible) {
+            confirmBtn.innerHTML = `🚀 Xác Nhận Đăng & Duyệt Tự Động Lên Sàn Đồ (${res.confidence}%)`;
+            confirmBtn.style.background = '#16a34a';
+        } else {
+            confirmBtn.innerHTML = `📋 Gửi Bài Chờ Admin Phê Duyệt`;
+            confirmBtn.style.background = '#0284c7';
+        }
     }
 }
 
