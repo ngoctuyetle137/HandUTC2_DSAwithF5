@@ -1949,7 +1949,7 @@ class AppController {
         ` : '';
 
         container.innerHTML = searchBannerHtml + list.map(item => {
-            const isMyItem = this.user ? (item.seller === this.user.name) : false;
+            const isMyItem = this.user ? ((item.seller === this.user.name) || (item.sellerEmail && this.user.email && item.sellerEmail.toLowerCase() === this.user.email.toLowerCase())) : false;
             const origPrice = item.originalPrice || Math.round((item.price * 1.5) / 10000) * 10000;
             const discountPct = (origPrice > item.price) ? Math.round((1 - item.price / origPrice) * 100) : 0;
             const starScore = ((item.sellerRep || 90) / 20).toFixed(1);
@@ -1971,6 +1971,11 @@ class AppController {
                         <span class="card-badge-timemark">
                             <span class="badge-pulse-dot"></span> TimeMark: ${item.timemarkCode}
                         </span>
+                        ${item.status === 'pending' ? `
+                            <span style="position:absolute; bottom:8px; left:8px; background:#fffbeb; color:#b45309; border:1px solid #fde68a; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.12);">
+                                ⏳ Bài của bạn (Chờ Admin duyệt)
+                            </span>
+                        ` : ''}
                     </div>
                     <div class="card-content">
                         <h4 class="card-title-text" title="${item.title}">${item.title}</h4>
@@ -2108,7 +2113,7 @@ class AppController {
         }
 
         if (myPosts) {
-            const myItems = this.products.filter(p => p.seller === this.user.name);
+            const myItems = this.products.filter(p => (p.seller === this.user.name) || (p.sellerEmail && this.user.email && p.sellerEmail.toLowerCase() === this.user.email.toLowerCase()));
             if (myItems.length === 0) {
                 myPosts.innerHTML = `<p style="font-size:12px; color:#64748b;">Chưa có bài đăng nào.</p>`;
             } else {
