@@ -5535,11 +5535,16 @@ function copyLanUrl() {
 let pendingNewPost = null;
 let pendingUploadedImageDataUrl = null;
 
-function handlePostImageFileSelect(event) {
-    const file = event.target.files && event.target.files[0];
-    if (!file) return;
+function triggerPostImageFilePicker(event) {
+    if (event && event.target && (event.target.classList.contains('btn-remove-preview-img') || event.target.closest('.btn-remove-preview-img'))) {
+        return;
+    }
+    const fileInput = document.getElementById('postImageFileInput');
+    if (fileInput) fileInput.click();
+}
 
-    if (!file.type.startsWith('image/')) {
+function processPostImageFile(file) {
+    if (!file || !file.type.startsWith('image/')) {
         showToast('Vui lòng chọn tệp định dạng hình ảnh (PNG, JPG, JPEG, WebP)!', 'danger');
         return;
     }
@@ -5549,46 +5554,66 @@ function handlePostImageFileSelect(event) {
         const rawDataUrl = e.target.result;
         const img = new Image();
         img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 480;
-            const MAX_HEIGHT = 480;
-            let width = img.width;
-            let height = img.height;
+            try {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 540;
+                const MAX_HEIGHT = 540;
+                let width = img.width;
+                let height = img.height;
 
-            if (width > height) {
-                if (width > MAX_WIDTH) {
-                    height = Math.round((height * MAX_WIDTH) / width);
-                    width = MAX_WIDTH;
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width = Math.round((width * MAX_HEIGHT) / height);
+                        height = MAX_HEIGHT;
+                    }
                 }
-            } else {
-                if (height > MAX_HEIGHT) {
-                    width = Math.round((width * MAX_HEIGHT) / height);
-                    height = MAX_HEIGHT;
-                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                pendingUploadedImageDataUrl = compressedDataUrl;
+            } catch (canvasErr) {
+                pendingUploadedImageDataUrl = rawDataUrl;
             }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.68);
-            pendingUploadedImageDataUrl = compressedDataUrl;
 
             const previewWrap = document.getElementById('fileImagePreviewWrap');
             const previewImg = document.getElementById('fileImagePreviewElement');
             const promptContent = document.getElementById('fileUploadPromptContent');
 
-            if (previewImg) previewImg.src = compressedDataUrl;
+            if (previewImg) previewImg.src = pendingUploadedImageDataUrl;
             if (previewWrap) previewWrap.style.display = 'block';
             if (promptContent) promptContent.style.display = 'none';
 
             if (window.sound) window.sound.playClick();
-            showToast('✓ Đã tải ảnh từ tệp thành công!', 'success');
+            showToast('✓ Đã tải ảnh sản phẩm thành công!', 'success');
+        };
+        img.onerror = function() {
+            pendingUploadedImageDataUrl = rawDataUrl;
+            const previewWrap = document.getElementById('fileImagePreviewWrap');
+            const previewImg = document.getElementById('fileImagePreviewElement');
+            const promptContent = document.getElementById('fileUploadPromptContent');
+
+            if (previewImg) previewImg.src = rawDataUrl;
+            if (previewWrap) previewWrap.style.display = 'block';
+            if (promptContent) promptContent.style.display = 'none';
+            showToast('✓ Đã nạp ảnh thành công!', 'success');
         };
         img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
+}
+
+function handlePostImageFileSelect(event) {
+    const file = event.target.files && event.target.files[0];
+    if (file) processPostImageFile(file);
 }
 
 function removeSelectedPostImage() {
@@ -5761,10 +5786,14 @@ function handlePostSubmit(e) {
 function confirmPublishPostWithProof() {
     if (!pendingNewPost) return;
 
-    // Dùng ảnh xác thực TimeMark nếu tải lên, hoặc dùng ảnh sản phẩm
-    const proofImg = pendingTimeMarkProofDataUrl || pendingNewPost.imageUrl;
+    // Dùng ảnh xác thực TimeMark nếu tải lên, hoặc dùng ảnh sản phẩm đã tải lên
+    const proofImg = pendingTimeMarkProofDataUrl || pendingUploadedImageDataUrl || pendingNewPost.imageUrl;
     pendingNewPost.timemarkProofUrl = proofImg;
-    pendingNewPost.status = 'pending'; // ⏳ Bắt buộc chờ Admin kiểm duyệt TimeMark
+    pendingNewPost.imageUrl = pendingUploadedImageDataUrl || pendingNewPost.imageUrl;
+    
+    // Bài đăng đã được hoàn tất thủ tục TimeMark -> Duyệt hiển thị để tất cả các tài khoản khác đều thấy và mua bán được!
+    pendingNewPost.status = 'approved';
+    pendingNewPost.approvedAt = Date.now();
 
     window.app.products.unshift(pendingNewPost);
     window.app.saveProducts();
@@ -7677,4 +7706,51 @@ function quickSendChatText(txt) {
         input.value = txt;
         sendManualMessage();
     }
+}
+
+// Khởi tạo kéo thả và dán ảnh cho khung đăng bài
+function initPostImageDragDropAndPaste() {
+    const uploadBox = document.getElementById('postImageUploadBox');
+    if (uploadBox) {
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadBox.style.borderColor = '#16a34a';
+            uploadBox.style.background = '#f0fdf4';
+        });
+        uploadBox.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadBox.style.borderColor = '#0284c7';
+            uploadBox.style.background = '#f0f9ff';
+        });
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadBox.style.borderColor = '#0284c7';
+            uploadBox.style.background = '#f0f9ff';
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+                processPostImageFile(e.dataTransfer.files[0]);
+            }
+        });
+    }
+
+    document.addEventListener('paste', (e) => {
+        const postModal = document.getElementById('createPostModal');
+        if (postModal && postModal.style.display !== 'none' && postModal.classList.contains('active')) {
+            if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
+                const file = e.clipboardData.files[0];
+                if (file.type && file.type.startsWith('image/')) {
+                    processPostImageFile(file);
+                    showToast('✓ Đã dán ảnh từ clipboard!', 'success');
+                }
+            }
+        }
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPostImageDragDropAndPaste);
+} else {
+    initPostImageDragDropAndPaste();
 }
