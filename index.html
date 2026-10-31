@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -15,8 +15,21 @@
     <div class="system-ambient-bg" id="systemAmbientBg" aria-hidden="true" style="display:none;">
         <div class="system-bg-layer"></div>
         <div class="system-bg-overlay"></div>
-        <!-- Dải Aurora Loang Màu Mềm Mại Toàn Cảnh -->
+        <!-- 4 Quả Cầu Loang Màu Đa Sắc Chuyển Động (Chromatic Mesh Blobs) -->
+        <div class="system-bg-glow-orb orb-1"></div>
+        <div class="system-bg-glow-orb orb-2"></div>
+        <div class="system-bg-glow-orb orb-3"></div>
+        <div class="system-bg-glow-orb orb-4"></div>
+        <!-- Dải Aurora Loang Màu Mềm Mại -->
         <div class="system-bg-aurora"></div>
+        <div class="system-bg-sparkles">
+            <span class="sparkle s1"></span>
+            <span class="sparkle s2"></span>
+            <span class="sparkle s3"></span>
+            <span class="sparkle s4"></span>
+            <span class="sparkle s5"></span>
+            <span class="sparkle s6"></span>
+        </div>
     </div>
 
     <!-- ===================================================================
@@ -114,7 +127,7 @@
                         <div class="auth-input-wrap">
                             <span class="auth-input-icon"></span>
                             <input type="email" id="authEmailInput" class="auth-input" 
-                                   placeholder="Ví dụ: 6351074829@st.utc2.edu.vn" value="" required autocomplete="username">
+                                   placeholder="Ví dụ: 6651071091@st.utc2.edu.vn" value="" required autocomplete="username">
                         </div>
                     </div>
 
@@ -231,7 +244,7 @@
                 <button class="nav-item-btn" data-tab="game" onclick="switchNavTab('game')">
                     <span></span> Kéo Thả Săn Xu
                 </button>
-                <button class="nav-item-btn admin-tab" id="navAdminTab" data-tab="admin" onclick="switchNavTab('admin')" style="display:none;">
+                <button class="nav-item-btn admin-tab" data-tab="admin" onclick="switchNavTab('admin')">
                     <span></span> Quản Trị Admin
                 </button>
                 <button class="nav-item-btn" data-tab="profile" onclick="switchNavTab('profile')">
@@ -470,7 +483,7 @@
              Admin có quyền: Cảnh cáo tài khoản, Xóa bài rác/phá giá, Nhắc nhở, Duyệt kiểm chứng uy tín
              Admin KHÔNG có quyền truy cập tin nhắn riêng tư sinh viên
              ========================================== -->
-        <div class="admin-dashboard-container" id="adminDashboardSection" style="display: none;">
+        <div class="admin-dashboard-container" id="adminDashboardSection">
             <!-- Header Huy Hiệu Quản Trị Viên Cấp Cao -->
             <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color:#ffffff; border-radius:12px; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; box-shadow:0 8px 24px rgba(245, 158, 11, 0.25);">
                 <div style="display:flex; align-items:center; gap:14px;">
@@ -478,7 +491,7 @@
                     <div>
                         <div style="font-size:16.5px; font-weight:800; letter-spacing:0.3px;">PHÂN HỆ QUẢN TRỊ VIÊN HỆ THỐNG HAND UTC2</div>
                         <div style="font-size:13px; opacity:0.95; margin-top:2px;">
-                            Tài khoản quản trị được ủy quyền duy nhất: <strong style="background:rgba(255,255,255,0.25); padding:2px 8px; border-radius:6px; font-family:monospace; font-size:13.5px;">Quản Trị Viên Hệ Thống UTC2</strong>
+                            Tài khoản quản trị được ủy quyền duy nhất: <strong style="background:rgba(255,255,255,0.25); padding:2px 8px; border-radius:6px; font-family:monospace; font-size:13.5px;">6651071091@st.utc2.edu.vn</strong>
                         </div>
                     </div>
                 </div>
@@ -802,19 +815,6 @@
                 <!-- Messages rendered dynamically -->
             </div>
 
-            <!-- Thanh tiện ích chốt đơn & Điểm hẹn giao dịch an toàn tại UTC2 -->
-            <div class="chat-quick-actions-bar">
-                <button type="button" class="chat-action-pill-btn primary-meetup" onclick="openSafeMeetupPicker()">
-                    📍 Điểm Hẹn An Toàn UTC2
-                </button>
-                <button type="button" class="chat-action-pill-btn" onclick="quickSendChatText('Cho mình xin số điện thoại/Zalo để liên hệ khi đến điểm hẹn nha!')">
-                    📞 Xin SĐT/Zalo
-                </button>
-                <button type="button" class="chat-action-pill-btn" onclick="quickSendChatText('Món đồ này còn không bạn ơi? Có bớt chút đỉnh tiền xăng xe cho sinh viên không nè?')">
-                    💬 Hỏi Còn Đồ
-                </button>
-            </div>
-
             <!-- Khung nhập tin nhắn thủ công -->
             <div class="chat-input-bar">
                 <input type="text" id="chatInputText" placeholder="Nhập tin nhắn trao đổi đồ..." onkeydown="if(event.key==='Enter') sendManualMessage()">
@@ -1064,7 +1064,6 @@
                         <div style="position:absolute; top:6px; left:6px; background:rgba(22,163,74,0.92); color:#fff; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:4px;">
                             ✓ Đã chọn ảnh TimeMark
                         </div>
-                        <div id="timemarkLaserScanLine" class="ocr-scanner-laser" style="display:none;"></div>
                     </div>
 
                     <!-- AI OCR Scanner Feedback Box -->
@@ -1119,9 +1118,8 @@
             <h4 id="zoomImageTitle" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:10px; text-align:left;">
                 🔍 Xem Chi Tiết Ảnh Xác Thực TimeMark
             </h4>
-            <div style="position:relative; background:#0f172a; border-radius:10px; padding:10px; display:flex; justify-content:center; align-items:center; min-height:280px; max-height:70vh; overflow:auto;">
-                <img id="zoomImageElement" src="" alt="Ảnh phóng to" style="max-width:100%; max-height:65vh; object-fit:contain; border-radius:6px;">
-                <div id="zoomLaserScanLine" class="ocr-scanner-laser" style="display:none;"></div>
+            <div style="background:#0f172a; border-radius:10px; padding:10px; display:flex; justify-content:center; align-items:center; min-height:280px; max-height:75vh; overflow:auto;">
+                <img id="zoomImageElement" src="" alt="Ảnh phóng to" style="max-width:100%; max-height:70vh; object-fit:contain; border-radius:6px;">
             </div>
 
             <!-- BẢNG PHÂN TÍCH AI / OCR SOI CHỮ VIẾT TẬP TRUNG CHO ADMIN -->
@@ -1173,7 +1171,7 @@
                         📧 Gmail / MSSV Quản Trị Viên:
                     </label>
                     <input type="text" id="adminModalEmailInput" class="hero-search-input" 
-                           placeholder="Nhập Gmail Quản Trị Viên..." 
+                           placeholder="Nhập Gmail Admin (VD: 6651071091@st.utc2.edu.vn)..." 
                            style="padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; box-shadow:none; width:100%; font-size:13px;"
                            autocomplete="username" required>
                 </div>
@@ -1650,8 +1648,6 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- SCRIPTS -->
-    <!-- Tesseract.js: Client-Side AI/OCR Engine Quét Chữ Viết TimeMark Ngay Trên Trình Duyệt -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-client.js"></script>
     <script src="online-sync.js"></script>
