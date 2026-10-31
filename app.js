@@ -2653,7 +2653,7 @@ class AppController {
                                     )
                                 }
                                 <button type="button" onclick="adminScanPostOcr('${p.id}')" style="background:#0284c7; color:#fff; border:none; padding:3px 7px; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:3px; margin-top:2px;">
-                                    ⚡ AI Quét
+                                    Kiểm tra ảnh
                                 </button>
                             </div>
                         </td>
@@ -5055,7 +5055,7 @@ function toggleFilterCriterion(criterionKey) {
             if (aside) aside.style.display = 'block';
             if (mainView) mainView.style.gridTemplateColumns = '290px 1fr';
             if (toggleBtn) {
-                toggleBtn.innerHTML = '⚡ Đang Bật Lọc (Bấm để Tắt)';
+                toggleBtn.innerHTML = 'Bộ lọc: Đang bật (Bấm để tắt)';
                 toggleBtn.style.background = '#0284c7';
                 toggleBtn.style.color = '#fff';
             }
@@ -5113,7 +5113,7 @@ function applyFilters() {
         if (aside) aside.style.display = 'block';
         if (mainView) mainView.style.gridTemplateColumns = '290px 1fr';
         if (toggleBtn) {
-            toggleBtn.innerHTML = '⚡ Đang Bật Lọc (Bấm để Tắt)';
+            toggleBtn.innerHTML = 'Bộ lọc: Đang bật (Bấm để tắt)';
             toggleBtn.style.background = '#0284c7';
             toggleBtn.style.color = '#fff';
         }
@@ -5625,10 +5625,10 @@ function confirmPublishPostWithProof() {
 
     if (isAutoApproved) {
         switchNavTab('home'); // Chuyển về ngay Sàn Đồ để người dùng và các tài khoản khác thấy bài đăng ngay!
-        showToast(`🎉 Tuyệt vời! AI DeepScan quét mẩu giấy khớp ${ocr.confidence}% mã OTP. Bài đăng "${pendingNewPost.title}" đã được DUYỆT TỰ ĐỘNG và hiển thị ngay trên Sàn Đồ!`, 'success');
+        showToast(`Xác thực mẩu giấy thành công (khớp ${ocr.confidence}%). Bài đăng "${pendingNewPost.title}" đã được duyệt và hiển thị trên Sàn Đồ!`, 'success');
     } else {
         switchNavTab('profile');
-        showToast(`✓ Đã gửi bài "${pendingNewPost.title}"! AI quét mã đạt ${ocr ? ocr.confidence : 0}% (< 95%), bài đang ở trạng thái Chờ Admin kiểm duyệt thủ công.`, 'info');
+        showToast(`Đã gửi bài "${pendingNewPost.title}"! Ảnh chữ viết tay đang chờ kiểm duyệt trước khi hiển thị.`, 'info');
     }
 
     pendingNewPost = null;
@@ -6155,7 +6155,7 @@ function toggleSidebarFilter() {
         aside.style.display = 'block';
         mainView.style.gridTemplateColumns = '290px 1fr';
         if (toggleBtn) {
-            toggleBtn.innerHTML = '⚡ Bộ Lọc: Đang Hiện (Bấm để Ẩn)';
+            toggleBtn.innerHTML = 'Bộ lọc: Đang mở (Bấm để ẩn)';
             toggleBtn.style.background = '#0284c7';
             toggleBtn.style.color = '#fff';
         }
@@ -7088,7 +7088,7 @@ function levenshteinDist(s1, s2) {
 
 async function runTimeMarkOcrScan(imageSrc, expectedCode, options = {}) {
     const onProgress = options.onProgress || (() => {});
-    onProgress(15, 'Khởi động AI Vision DeepScan & Tiền xử lý ảnh...');
+    onProgress(15, 'Đang kiểm tra hình ảnh mẩu giấy...');
 
     const expectedDigits = (expectedCode || '').replace(/\D/g, '');
     let processedSrc = imageSrc;
@@ -7100,14 +7100,14 @@ async function runTimeMarkOcrScan(imageSrc, expectedCode, options = {}) {
 
         let rawText = '';
         if (window.Tesseract && typeof window.Tesseract.recognize === 'function') {
-            onProgress(50, 'Tesseract AI Engine: Đang quét kỹ ký tự quang học trên mẩu giấy...');
+            onProgress(50, 'Đang đọc chữ viết tay trên mẩu giấy...');
             try {
                 const ocrResult = await Promise.race([
                     window.Tesseract.recognize(processedSrc, 'eng', {
                         logger: m => {
                             if (m.status === 'recognizing text') {
                                 const p = Math.min(92, Math.round(50 + (m.progress || 0) * 42));
-                                onProgress(p, `Tesseract AI: Soi nét chữ viết tay ${Math.round((m.progress || 0) * 100)}%...`);
+                                onProgress(p, `Đang nhận diện chữ viết: ${Math.round((m.progress || 0) * 100)}%...`);
                             }
                         }
                     }),
@@ -7119,7 +7119,7 @@ async function runTimeMarkOcrScan(imageSrc, expectedCode, options = {}) {
             }
         }
 
-        onProgress(88, 'AI đang đối soát nghiêm ngặt từng chữ số với mã OTP bảo mật...');
+        onProgress(88, 'Đang đối soát mã viết tay với mã OTP bảo mật...');
         await new Promise(r => setTimeout(r, 200));
 
         // Bước 2: Phân tích và chấm điểm NGHIÊM NGẶT (Strict OCR Scoring)
@@ -7273,7 +7273,7 @@ async function triggerProofUploadOcr(imageSrc) {
         resultBox.innerHTML = `
             <div style="background:${isAutoApproveEligible ? '#f0fdf4' : '#fffbeb'}; border:1px solid ${isAutoApproveEligible ? '#86efac' : '#fde68a'}; border-radius:8px; padding:8px 12px; margin-top:6px;">
                 <div style="color:${isAutoApproveEligible ? '#15803d' : '#92400e'}; font-weight:800; font-size:12.5px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;">
-                    <span>🤖 AI DeepScan: [${res.detectedCode}]</span>
+                    <span>Kết quả quét mẩu giấy: [${res.detectedCode}]</span>
                     <span style="background:${isAutoApproveEligible ? '#dcfce7' : '#fef3c7'}; color:${isAutoApproveEligible ? '#15803d' : '#b45309'}; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">Độ trùng khớp: ${res.confidence}%</span>
                 </div>
                 <div style="font-size:11.5px; color:${isAutoApproveEligible ? '#166534' : '#78350f'}; margin-top:4px; line-height:1.4;">
@@ -7288,7 +7288,7 @@ async function triggerProofUploadOcr(imageSrc) {
     const confirmBtn = document.querySelector('button[onclick="confirmPublishPostWithProof()"]');
     if (confirmBtn) {
         if (isAutoApproveEligible) {
-            confirmBtn.innerHTML = `🚀 Xác Nhận Đăng & Duyệt Tự Động Lên Sàn Đồ (${res.confidence}%)`;
+            confirmBtn.innerHTML = `Xác nhận đăng bài (Đã khớp ${res.confidence}%)`;
             confirmBtn.style.background = '#16a34a';
         } else {
             confirmBtn.innerHTML = `📋 Gửi Bài Chờ Admin Phê Duyệt`;
@@ -7308,7 +7308,7 @@ async function adminScanPostOcr(postId) {
         return;
     }
 
-    showToast(`🤖 AI DeepScan đang quét kỹ ảnh mẩu giấy cho bài "${post.title}"...`, 'info');
+    showToast(`Đang quét chữ trên ảnh mẩu giấy của bài "${post.title}"...`, 'info');
     if (window.sound) window.sound.playClick();
 
     const res = await runTimeMarkOcrScan(img, post.timemarkCode);
@@ -7320,7 +7320,7 @@ async function adminScanPostOcr(postId) {
         showToast(`✓ AI OCR xác nhận mã [${res.detectedCode}] khớp ${res.confidence}% trên ảnh giấy! Khuyên duyệt ✅`, 'success');
         if (window.sound) window.sound.playSuccess();
     } else {
-        showToast(`AI DeepScan nhận diện: "${res.detectedCode}". Khuyên Admin soi kỹ lại bằng mắt thường.`, 'info');
+        showToast(`Hệ thống nhận diện mã: "${res.detectedCode}". Vui lòng đối chiếu thêm bằng mắt thường.`, 'info');
     }
 }
 

@@ -307,7 +307,7 @@
                 <!-- Badges Uy Tín & Sinh Viên UTC2 -->
                 <div class="hero-badges-row">
                     <span class="hero-mini-badge">🎓 100% Sinh Viên ST.UTC2 Xác Thực</span>
-                    <span class="hero-mini-badge">⚡ Nhanh Gọn • Giá Rẻ • Uy Tín</span>
+                    <span class="hero-mini-badge">Nhanh gọn • Tiết kiệm • An toàn</span>
                     <span class="hero-mini-badge">🛡️ Tránh Lừa Đảo Với TimeMark</span>
                 </div>
 
@@ -330,7 +330,7 @@
 
                 <!-- Gợi ý từ khóa hot của sinh viên -->
                 <div class="hero-quick-tags">
-                    <span class="quick-tag-label">🔥 Gợi ý hot:</span>
+                    <span class="quick-tag-label">Gợi ý tìm kiếm:</span>
                     <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Giáo trình')">📚 Giáo trình & Sách</button>
                     <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Casio')">🧮 Máy tính Casio</button>
                     <button type="button" class="hero-tag-btn" onclick="quickSearchTag('Đồng phục')">👕 Đồng phục UTC2</button>
@@ -425,7 +425,7 @@
                     <!-- Thông tin DSA Engine (gọn nhẹ) -->
                     <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-size:11.5px; color:#64748b;">
                         <div style="font-weight:700; color:#334155; margin-bottom:4px;">Trạng thái bộ lọc:</div>
-                        <div id="dsaEngineInfoText">Chưa tích tiêu chí nào (Hiển thị tất cả đồ).</div>
+                        <div id="dsaEngineInfoText" style="display:none;"></div>
                     </div>
 
                     <!-- Nút áp dụng bộ lọc -->
@@ -440,7 +440,7 @@
                 <div class="feed-top-bar">
                     <div style="display:flex; align-items:center; gap:12px;">
                         <button type="button" id="btnToggleFilterMode" class="btn-outline-chat" style="padding:6px 14px; font-size:12.5px; font-weight:700; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; border:none; border-radius:8px; box-shadow:0 2px 8px rgba(217,119,6,0.25);" onclick="toggleSidebarFilter()">
-                            ⚡ Bộ Lọc: Đang Hiện (Bấm để Ẩn)
+                            Bộ lọc: Đang mở (Bấm để ẩn)
                         </button>
                         <div class="feed-count-text" id="feedCountDisplay">
                             Hiển thị <strong>5 món đồ</strong> sẵn sàng pass
@@ -530,7 +530,7 @@
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span style="font-size:12px; color:#0369a1; font-weight:600;">Soi ảnh giấy ghi mã OTP TimeMark để duyệt bài</span>
                         <button type="button" onclick="adminApproveAllPendingPosts()" style="background:#16a34a; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; box-shadow:0 2px 6px rgba(22,163,74,0.3);">
-                            ⚡ Duyệt Nhanh Tất Cả Bài Chờ
+                            Duyệt nhanh tất cả bài chờ
                         </button>
                     </div>
                 </div>
@@ -880,7 +880,7 @@
             <div class="checkout-deposit-box">
                 <div class="deposit-box-header">
                     <span class="deposit-title">
-                        🛡 Đặt cọc chống bùng hẹn (OOP Strategy)
+                        Đặt cọc giữ chỗ (Chống bùng hẹn)
                     </span>
                     <span class="deposit-pill">10% cọc (Uy tín cao)</span>
                 </div>
@@ -941,7 +941,7 @@
     <div class="checkout-modal-overlay" id="createPostModal">
         <div class="checkout-modal-card" style="max-width:520px;">
             <button class="checkout-close-btn" onclick="closeModal('createPostModal')">✕</button>
-            <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin-bottom:4px;">✨ Đăng Bài Pass Đồ Mới</h3>
+            <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin-bottom:4px;">Đăng bài pass đồ</h3>
             <p style="font-size:12.5px; color:#64748b; margin-bottom:16px;">Nhập thông tin món đồ cần pass tại campus UTC2.</p>
 
             <form onsubmit="handlePostSubmit(event)">
@@ -1040,7 +1040,7 @@
                 <div style="font-weight:700; color:#0f172a; margin-bottom:4px;">📋 Hướng dẫn xác thực TimeMark bằng AI:</div>
                 <div>1. ✍️ <strong>Bắt buộc ghi ra giấy:</strong> Lấy mẩu giấy trắng, dùng bút viết rõ mã OTP <strong id="timemarkCodeGuide" style="color:#15803d;">UTC2 - 8924</strong> và ngày giờ hiện tại.</div>
                 <div>2. 📦 <strong>Đặt cạnh món đồ:</strong> Đặt mẩu giấy ngay bên cạnh sản phẩm bạn muốn pass.</div>
-                <div>3. 🤖 <strong>AI Quét Kỹ & Duyệt Tự Động:</strong> Tải ảnh lên để AI DeepScan quét nét chữ trên giấy. <strong>Nếu trùng khớp từ 95% trở lên, bài đăng sẽ được DUYỆT TỰ ĐỘNG NGAY LẬP TỨC</strong> lên Sàn Đồ mà không cần chờ Admin!</div>
+                <div>3. <strong>Hệ thống quét mẩu giấy tự động:</strong> Tải ảnh lên để hệ thống nhận diện nét chữ trên giấy. <strong>Nếu trùng khớp từ 95% trở lên, bài đăng sẽ được duyệt tự động ngay lập tức</strong> lên Sàn Đồ!</div>
             </div>
 
             <!-- Khung Tải Ảnh Xác Thực TimeMark (Giấy ghi mã OTP + Sản phẩm) -->
@@ -1071,7 +1071,7 @@
                     <div id="timemarkOcrBox" style="margin-top:10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px; text-align:left;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <div style="font-size:12px; font-weight:700; color:#15803d; display:flex; align-items:center; gap:6px;">
-                                <span>🤖</span> AI Quét TimeMark Tự Động (Tesseract OCR):
+                                <span>Xác thực mẩu giấy viết tay:</span>
                             </div>
                             <span id="timemarkOcrBadge" style="font-size:10px; background:#dcfce7; color:#15803d; font-weight:700; padding:2px 6px; border-radius:4px;">Sẵn sàng</span>
                         </div>
@@ -1128,10 +1128,10 @@
             <div id="zoomOcrInspector" style="margin-top:10px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:10px 14px; text-align:left;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                     <div style="font-size:12.5px; font-weight:800; color:#0369a1; display:flex; align-items:center; gap:6px;">
-                        <span>🤖</span> Trợ Lý AI OCR (Tesseract.js Nhận Diện Ký Tự Quang Học)
+                        <span>Kiểm tra chữ viết trên mẩu giấy:</span>
                     </div>
                     <button type="button" id="btnZoomOcrTrigger" onclick="triggerZoomImageOcr()" style="background:#0284c7; color:#fff; border:none; padding:5px 12px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(2,132,199,0.25);">
-                        ⚡ Bấm Để AI Quét Chữ Ngay
+                        Quét chữ trên ảnh
                     </button>
                 </div>
                 <div id="zoomOcrProgressWrap" style="display:none; margin-top:8px;">
@@ -1339,7 +1339,7 @@
                 <div style="display:flex; justify-content:flex-end; gap:10px;">
                     <button type="button" class="btn-outline-chat" onclick="closeModal('orderDisputeModal')">Hủy</button>
                     <button type="submit" class="btn-primary-confirm" style="background:#dc2626;">
-                        🚀 Gửi Hồ Sơ Khiếu Nại Lên Admin
+                        Gửi hồ sơ khiếu nại
                     </button>
                 </div>
             </form>
@@ -1471,7 +1471,7 @@
         <div class="checkout-modal-card" style="max-width:580px;">
             <button class="checkout-close-btn" onclick="closeModal('supabaseConfigModal')">✕</button>
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-                <span style="font-size:24px;">⚡</span>
+                
                 <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin:0;">Cơ Sở Dữ Liệu Supabase Cloud (PostgreSQL)</h3>
             </div>
             <p style="font-size:12.5px; color:#64748b; margin-bottom:14px; line-height:1.5;">
@@ -1559,7 +1559,7 @@
             <!-- Nhóm nút hành động -->
             <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
                 <button class="apply-filter-btn" style="background:#10b981; flex:1; min-width:140px; padding:9px 14px; margin:0;" onclick="saveAndConnectSupabase()">
-                    🚀 Lưu & Kết Nối Ngay
+                    Lưu & kết nối
                 </button>
                 <button class="apply-filter-btn" style="background:#0284c7; width:auto; padding:9px 14px; margin:0;" onclick="testSupabasePing()">
                      Kiểm Tra (Ping)
@@ -1576,7 +1576,7 @@
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; font-size:11.5px; color:#475569; line-height:1.6; margin-bottom:10px;">
                 <strong> 2 Bước Hoàn Tất Kết Nối Supabase Cloud:</strong><br>
                 1. <strong>Tạo bảng dữ liệu:</strong> Mở <a href="https://supabase.com/dashboard/project/lhlwemmpnrmlskeljniq/sql/new" target="_blank" style="color:#0284c7; font-weight:700;">SQL Editor dự án của bạn</a> ➔ Bấm nút <strong>📋 Sao Chép SQL Schema</strong> ở trên, dán vào và nhấn <strong>RUN</strong>.<br>
-                2. <strong>Lấy API Key:</strong> Mở <a href="https://supabase.com/dashboard/project/lhlwemmpnrmlskeljniq/settings/api" target="_blank" style="color:#0284c7; font-weight:700;">Trang API Keys của bạn</a> ➔ Tìm mục <strong>anon public</strong>, copy chuỗi mã dán vào ô số 2 bên trên rồi bấm <strong>🚀 Lưu & Kết Nối Ngay</strong>.
+                2. <strong>Lấy API Key:</strong> Mở <a href="https://supabase.com/dashboard/project/lhlwemmpnrmlskeljniq/settings/api" target="_blank" style="color:#0284c7; font-weight:700;">Trang API Keys của bạn</a> ➔ Tìm mục <strong>anon public</strong>, copy chuỗi mã dán vào ô số 2 bên trên rồi bấm <strong>Lưu & kết nối</strong>.
             </div>
 
             <!-- Hướng dẫn xóa bỏ giới hạn gửi Email OTP -->
@@ -1640,7 +1640,7 @@
                     Đóng
                 </button>
                 <button type="button" class="btn-primary-confirm" style="background:#0284c7; flex:2;" onclick="confirmSendSafeMeetupProposal()">
-                    🚀 Gửi Lời Hẹn Vào Khung Chat
+                    Gửi lời hẹn vào khung chat
                 </button>
             </div>
         </div>
