@@ -230,12 +230,28 @@
                 // Format dữ liệu tương thích với giao diện app.js
                 return data.map(item => {
                     let clientStatus = 'approved';
-                    if (item.status === 'hidden') clientStatus = 'pending';
-                    else if (item.status === 'available') clientStatus = 'approved';
-                    else if (item.status === 'deleted') clientStatus = 'deleted';
-                    else if (item.status === 'deposited') clientStatus = 'deposited';
-                    else if (item.status === 'sold') clientStatus = 'sold';
-                    else clientStatus = item.status || 'approved';
+                    let rejectReason = '';
+                    const rawDesc = item.description || '';
+
+                    if (item.status === 'hidden') {
+                        if (rawDesc.includes('[BỊ TỪ CHỐI')) {
+                            clientStatus = 'rejected';
+                            const m = rawDesc.match(/\[BỊ TỪ CHỐI[^:]*:\s*([^\]]+)\]/i);
+                            if (m) rejectReason = m[1].trim();
+                        } else {
+                            clientStatus = 'pending';
+                        }
+                    } else if (item.status === 'available') {
+                        clientStatus = 'approved';
+                    } else if (item.status === 'deleted') {
+                        clientStatus = 'deleted';
+                    } else if (item.status === 'deposited') {
+                        clientStatus = 'deposited';
+                    } else if (item.status === 'sold') {
+                        clientStatus = 'sold';
+                    } else {
+                        clientStatus = item.status || 'approved';
+                    }
 
                     return {
                         id: item.id,
@@ -253,7 +269,8 @@
                         expiryDays: Number(item.expiry_days) || 7,
                         imageUrl: item.image_url,
                         timemarkProofUrl: item.timemark_proof_url || '',
-                        description: item.description,
+                        description: rawDesc.replace(/^\[BỊ TỪ CHỐI[^\]]*\]\s*/i, ''),
+                        rejectReason: rejectReason,
                         status: clientStatus
                     };
                 });
@@ -307,26 +324,46 @@
             }
         },
 
-        updateProductStatus: async function (productId, status) {
+        updateProductStatus: async function (productId, status, reason = '') {
             const client = this.getClient();
             if (!client) return false;
             try {
-                // Ánh xạ trạng thái phù hợp với CHECK constraint PostgreSQL:
                 let dbStatus = status;
-                if (status === 'approved') dbStatus = 'available';
-                else if (status === 'pending' || status === 'rejected') dbStatus = 'hidden';
-                else if (status === 'deleted') dbStatus = 'deleted';
+                const updatePayload = {};
+
+                if (status === 'approved') {
+                    dbStatus = 'available';
+                    updatePayload.status = dbStatus;
+                } else if (status === 'rejected') {
+                    dbStatus = 'hidden';
+                    updatePayload.status = dbStatus;
+                    try {
+                        const { data: currP } = await client.from('products').select('description').eq('id', productId).maybeSingle();
+                        const cleanDesc = (currP && currP.description) ? currP.description.replace(/^\[BỊ TỪ CHỐI[^\]]*\]\s*/i, '') : '';
+                        updatePayload.description = `[BỊ TỪ CHỐI DUYỆT: ${reason || 'Ảnh TimeMark không hợp lệ'}] ${cleanDesc}`.trim();
+                    } catch (e) {
+                        updatePayload.description = `[BỊ TỪ CHỐI DUYỆT: ${reason || 'Ảnh TimeMark không hợp lệ'}]`;
+                    }
+                } else if (status === 'pending') {
+                    dbStatus = 'hidden';
+                    updatePayload.status = dbStatus;
+                } else if (status === 'deleted') {
+                    dbStatus = 'deleted';
+                    updatePayload.status = dbStatus;
+                } else {
+                    updatePayload.status = dbStatus;
+                }
 
                 const { error } = await client
                     .from('products')
-                    .update({ status: dbStatus })
+                    .update(updatePayload)
                     .eq('id', productId);
 
                 if (error) throw error;
-                console.log(`✅ [Supabase] Đã cập nhật trạng thái sản phẩm ${productId} -> ${dbStatus} (Client: ${status})`);
+                console.log(`✅ [Supabase] Đã cập nhật trạng thái sản phẩm ${productId} -> ${dbStatus} (${status})`);
                 return true;
             } catch (err) {
-                console.error('❌ [Supabase] Lỗi cập nhật trạng thái sản phẩm:', err);
+                console.error('❌ Lỗi khi cập nhật trạng thái sản phẩm:', err);
                 return false;
             }
         },

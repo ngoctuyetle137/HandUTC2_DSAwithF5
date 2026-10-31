@@ -601,10 +601,24 @@ class AppController {
             if (payload.eventType === 'INSERT') {
                 const newP = payload.new;
                 let clientStatus = 'approved';
-                if (newP.status === 'hidden') clientStatus = 'pending';
-                else if (newP.status === 'available') clientStatus = 'approved';
-                else if (newP.status === 'deleted') clientStatus = 'deleted';
-                else clientStatus = newP.status || 'approved';
+                let rejectReason = '';
+                const rawDesc = newP.description || '';
+
+                if (newP.status === 'hidden') {
+                    if (rawDesc.includes('[BỊ TỪ CHỐI')) {
+                        clientStatus = 'rejected';
+                        const m = rawDesc.match(/\[BỊ TỪ CHỐI[^:]*:\s*([^\]]+)\]/i);
+                        if (m) rejectReason = m[1].trim();
+                    } else {
+                        clientStatus = 'pending';
+                    }
+                } else if (newP.status === 'available') {
+                    clientStatus = 'approved';
+                } else if (newP.status === 'deleted') {
+                    clientStatus = 'deleted';
+                } else {
+                    clientStatus = newP.status || 'approved';
+                }
 
                 if (!this.products.some(p => p.id === newP.id)) {
                     this.products.unshift({
@@ -643,10 +657,24 @@ class AppController {
             } else if (payload.eventType === 'UPDATE') {
                 const updatedP = payload.new;
                 let clientStatus = 'approved';
-                if (updatedP.status === 'hidden') clientStatus = 'pending';
-                else if (updatedP.status === 'available') clientStatus = 'approved';
-                else if (updatedP.status === 'deleted') clientStatus = 'deleted';
-                else clientStatus = updatedP.status || 'approved';
+                let rejectReason = '';
+                const rawDesc = updatedP.description || '';
+
+                if (updatedP.status === 'hidden') {
+                    if (rawDesc.includes('[BỊ TỪ CHỐI')) {
+                        clientStatus = 'rejected';
+                        const m = rawDesc.match(/\[BỊ TỪ CHỐI[^:]*:\s*([^\]]+)\]/i);
+                        if (m) rejectReason = m[1].trim();
+                    } else {
+                        clientStatus = 'pending';
+                    }
+                } else if (updatedP.status === 'available') {
+                    clientStatus = 'approved';
+                } else if (updatedP.status === 'deleted') {
+                    clientStatus = 'deleted';
+                } else {
+                    clientStatus = updatedP.status || 'approved';
+                }
 
                 if (clientStatus === 'deleted') {
                     this.products = this.products.filter(p => p.id !== updatedP.id);
@@ -654,6 +682,7 @@ class AppController {
                     const idx = this.products.findIndex(p => p.id === updatedP.id);
                     if (idx !== -1) {
                         this.products[idx].status = clientStatus;
+                        if (rejectReason) this.products[idx].rejectReason = rejectReason;
                         if (updatedP.title) this.products[idx].title = updatedP.title;
                         if (updatedP.price) this.products[idx].price = Number(updatedP.price);
                         if (clientStatus === 'approved') {
@@ -4085,38 +4114,96 @@ function adminRejectPost(postId) {
     const post = window.app.products.find(p => p.id === postId);
     if (!post) return;
 
-    const reason = prompt(`Nhập lý do từ chối duyệt bài "${post.title}":`, 'Ảnh chụp TimeMark không rõ chữ viết tay mã OTP hoặc không trùng khớp sản phẩm.');
-    if (reason === null) return;
+    const reasonInput = prompt(`Nhập lý do từ chối duyệt bài "${post.title}":`, 'Ảnh chụp TimeMark không rõ chữ viết tay mã OTP hoặc không trùng khớp sản phẩm.');
+    if (reasonInput === null) return; // Bấm Cancel hủy thao tác
 
+    const finalReason = reasonInput.trim() || 'Ảnh chụp TimeMark không rõ chữ viết tay mã OTP hoặc không trùng khớp sản phẩm.';
+
+    // 1. Cập nhật trạng thái bài đăng sang 'rejected' ngay lập tức
     post.status = 'rejected';
-    post.rejectReason = reason;
+    post.rejectReason = finalReason;
 
+    // 2. Lưu vào storage và render lại toàn bộ giao diện: BÀI NÀY SẼ KHÔNG CÒN HIỆN TRÊN HÀNG ĐỢI CHỜ DUYỆT!
     window.app.saveProducts();
     window.app.rebuildDSACache();
     window.app.renderProducts();
     window.app.renderAdminDashboard();
     window.app.renderProfile();
 
-    // Gửi thông báo tới người bán: bài đăng bị từ chối duyệt
+    // 3. Gửi thông báo trực tiếp tới tài khoản người bán
     window.app.addNotification({
         targetName: post.seller,
         targetEmail: post.sellerEmail,
-        title: 'Bị từ chối duyệt bài đăng',
-        message: `Bài đăng "${post.title}" của bạn bị Admin từ chối duyệt. Lý do: ${reason}`,
+        title: 'Bài đăng bị từ chối duyệt',
+        message: `Bài đăng "${post.title}" của bạn đã bị Admin từ chối duyệt. Lý do: ${finalReason}`,
         type: 'post_rejected',
         relatedId: post.id
     });
 
-    if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
-        window.UniPassSupabase.updateProductStatus(postId, 'rejected');
+    // 4. Gửi tin nhắn trực tiếp từ Quản Trị Viên tới người bán trong Hộp Thư Tin Nhắn
+    try {
+        const adminName = (window.app.user && window.app.user.name) || 'Quản Trị Viên UTC2';
+        const adminEmail = (window.app.user && window.app.user.email) || '6651071091@st.utc2.edu.vn';
+        const notifChatText = `[HỆ THỐNG UTC2HAND] Bài đăng "${post.title}" của bạn đã bị từ chối duyệt.\nLý do: ${finalReason}.\nBạn hãy chụp lại ảnh sản phẩm kèm mẩu giấy ghi rõ mã OTP TimeMark để được duyệt tự động.`;
+        
+        const autoMsg = {
+            id: 'MSG_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            sender: adminName,
+            senderEmail: adminEmail,
+            receiver: post.seller,
+            receiverEmail: post.sellerEmail,
+            text: notifChatText,
+            timestamp: Date.now(),
+            timeStr: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            isSystem: true
+        };
+
+        window.app.chatMessages.push(autoMsg);
+        window.app.saveChats();
+        window.app.renderChatInbox();
+
+        if (window.UniPassSupabase && window.UniPassSupabase.isConfigured() && window.UniPassSupabase.sendChatMessage) {
+            window.UniPassSupabase.sendChatMessage(autoMsg);
+        }
+    } catch (e) {
+        console.warn('Lỗi khi gửi tin nhắn từ chối bài:', e);
     }
 
+    // 5. Cập nhật lên Supabase Cloud (lưu lý do từ chối để đồng bộ mọi máy)
+    if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+        window.UniPassSupabase.updateProductStatus(postId, 'rejected', finalReason);
+
+        if (window.UniPassSupabase.addWarning) {
+            window.UniPassSupabase.addWarning({
+                targetName: post.seller,
+                targetEmail: post.sellerEmail,
+                reason: `Bài đăng "${post.title}" bị từ chối duyệt: ${finalReason}`,
+                penaltyPoints: 0
+            });
+        }
+    }
+
+    // 6. Phát sóng Realtime đa máy
     if (window.UniPassOnlineSync) {
-        window.UniPassOnlineSync.broadcastRejectPost(postId, reason);
+        window.UniPassOnlineSync.broadcastRejectPost(postId, finalReason);
     }
 
     if (window.sound) window.sound.playWarning();
-    showToast(`Đã từ chối duyệt bài "${post.title}"!`, 'info');
+    showToast(`Đã từ chối duyệt bài "${post.title}" và thông báo tới tác giả bài đăng!`, 'info');
+}
+
+function zoomRejectCurrentPost() {
+    if (!currentZoomPostId) return;
+    const postId = currentZoomPostId;
+    closeModal('zoomImageModal');
+    adminRejectPost(postId);
+}
+
+function zoomApproveCurrentPost() {
+    if (!currentZoomPostId) return;
+    const postId = currentZoomPostId;
+    closeModal('zoomImageModal');
+    adminApprovePost(postId);
 }
 
 let currentZoomPostId = null;
@@ -4134,6 +4221,18 @@ function openZoomImageModal(imgSrc, title, postId, expectedCode) {
     if (!currentZoomExpectedCode && title && title.includes('Mã:')) {
         const m = title.match(/Mã:\s*(UTC2\s*-\s*\d{4})/i);
         if (m) currentZoomExpectedCode = m[1];
+    }
+
+    const zoomRejectBtn = document.getElementById('zoomModalRejectBtn');
+    const zoomApproveBtn = document.getElementById('zoomModalApproveBtn');
+    if (currentZoomPostId && window.app && window.app.products) {
+        const post = window.app.products.find(p => p.id === currentZoomPostId);
+        const isPending = post && post.status === 'pending';
+        if (zoomRejectBtn) zoomRejectBtn.style.display = isPending ? 'inline-block' : 'none';
+        if (zoomApproveBtn) zoomApproveBtn.style.display = isPending ? 'inline-block' : 'none';
+    } else {
+        if (zoomRejectBtn) zoomRejectBtn.style.display = 'none';
+        if (zoomApproveBtn) zoomApproveBtn.style.display = 'none';
     }
 
     // Reset AI OCR inspector inside Zoom modal
