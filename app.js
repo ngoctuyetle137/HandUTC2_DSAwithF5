@@ -1942,9 +1942,6 @@ class AppController {
                     <div class="card-image-wrapper">
                         <img src="${item.imageUrl}" alt="${item.title}" loading="lazy">
                         <span class="card-badge-cat">${getCategoryName(item.category)}</span>
-                        <span class="card-badge-timemark">
-                            <span class="badge-pulse-dot"></span> TimeMark: ${item.timemarkCode}
-                        </span>
                     </div>
                     <div class="card-content">
                         <h4 class="card-title-text" title="${item.title}">${item.title}</h4>
