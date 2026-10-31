@@ -188,7 +188,7 @@
 
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                             <a href="https://mail.google.com" target="_blank" class="apply-filter-btn" style="background:#ea4335; width:auto; padding:6px 14px; margin:0; text-decoration:none; font-size:11.5px; display:inline-flex; align-items:center; gap:6px; font-weight:700;">
-                                <span></span> Mở Hộp Thư Gmail ➔
+                                <span></span> Mở Hộp Thư Gmail
                             </a>
                             <span style="font-size:11px; color:#64748b;" id="otpTimerText">Mã hiệu lực 5 phút</span>
                         </div>
@@ -271,7 +271,7 @@
                     <div class="notification-dropdown-menu" id="notificationDropdownMenu" style="display:none;">
                         <div class="notification-dropdown-header">
                             <div style="font-weight:800; font-size:13.5px; display:flex; align-items:center; gap:6px;">
-                                <span>🔔</span> Thông Báo Hoạt Động
+                                <span></span> Thông Báo Hoạt Động
                             </div>
                             <div style="display:flex; gap:6px;">
                                 <button class="notif-header-btn" onclick="markAllNotificationsAsRead()" title="Đánh dấu tất cả đã đọc">Đã đọc</button>
@@ -299,7 +299,7 @@
                     <div class="user-avatar-circle" id="userAvatarText">U</div>
                     <div style="font-size:12px; line-height:1.2;">
                         <div id="navUserName" style="font-weight:700;">Sinh viên UTC2</div>
-                        <div style="color:var(--gold); font-size:11px;">🪙 <span id="navUserCoins">20</span> Xu</div>
+                        <div style="color:var(--gold); font-size:11px;"><span id="navUserCoins">20</span> Xu</div>
                     </div>
                 </div>
 
@@ -529,7 +529,7 @@
             <div class="admin-panel-card" style="border: 2px solid #0284c7; box-shadow: 0 4px 16px rgba(2,132,199,0.12);">
                 <div class="admin-panel-header" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 14px 18px; border-bottom: 1px solid #bae6fd;">
                     <div class="admin-panel-title" style="color: #0369a1;">
-                        <span>🛡️</span> Phê Duyệt Bài Đăng Chờ Duyệt (Kiểm Tra Mã OTP & Ảnh TimeMark)
+                        <span></span> Phê Duyệt Bài Đăng Chờ Duyệt (Kiểm Tra Mã OTP & Ảnh TimeMark)
                         <span id="adminPendingBadge" style="background:#ef4444; color:#fff; font-size:11px; padding:2px 8px; border-radius:12px; margin-left:8px; font-weight:800;">0 bài chờ</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
@@ -592,13 +592,13 @@
                 <div class="admin-panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <div>
                         <div class="admin-panel-title" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <span>👥</span> Danh Sách Toàn Bộ Tài Khoản Đã Đăng Ký
+                            <span></span> Danh Sách Toàn Bộ Tài Khoản Đã Đăng Ký
                             <span style="background:#e0f2fe; color:#0284c7; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:700;">💡 Bấm vào tài khoản bất kỳ để xem trang cá nhân & bài đăng</span>
                         </div>
                         <span style="font-size:12px; color:#64748b;" id="adminUserCountSubtitle">Đang nạp danh sách tài khoản...</span>
                     </div>
                     <button type="button" class="btn-outline-chat" style="font-size:11.5px; padding:6px 14px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" onclick="window.app && window.app.syncUsersFromCloud(true)">
-                        <span id="syncUserSpin">🔄</span> Đồng Bộ Tài Khoản Từ Cloud
+                        <span id="syncUserSpin"></span> Đồng Bộ Tài Khoản Từ Cloud
                     </button>
                 </div>
 
@@ -655,7 +655,7 @@
         <div class="game-tab-view" id="gameSectionView">
             <div style="text-align:center;">
                 <h2 style="font-size:24px; font-weight:800; color:#0284c7;">
-                    🎮 CHƠI GAME NHẬN THƯỞNG
+                    CHƠI GAME NHẬN THƯỞNG
                 </h2>
                 <p style="font-size:13.5px; color:#64748b; margin-top:4px;">
                     Chơi game phá gạch: Đạt <strong>trên 1000 điểm</strong> nhận ngay <strong>10 xu</strong>. 
@@ -672,7 +672,7 @@
                     ▶ Bắt Đầu Chơi / Chơi Lại
                 </button>
                 <button class="btn-outline-chat" style="padding:10px 20px;" onclick="switchNavTab('home')">
-                    🛍 Quay Lại Mua Đồ
+                    Quay Lại Sàn Đồ
                 </button>
             </div>
         </div>
@@ -686,18 +686,18 @@
                     <div style="display:flex; align-items:center; gap:14px;">
                         <div style="position:relative; cursor:pointer;" onclick="triggerAvatarUpload()" title="Nhấp để tải ảnh đại diện">
                             <div class="user-avatar-circle" style="width:62px; height:62px; font-size:24px; border:2.5px solid #f59e0b; box-shadow:0 3px 12px rgba(245,158,11,0.25);" id="profileAvatarCircle">U</div>
-                            <div class="avatar-edit-badge" title="Tải ảnh đại diện">📷</div>
+                            <div class="avatar-edit-badge" title="Tải ảnh đại diện"></div>
                             <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)">
                         </div>
                         <div>
                             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">
                                 <h3 id="profileFullName" style="font-size:18px; color:#0f172a; margin:0;">Sinh viên UTC2</h3>
-                                <button type="button" class="btn-change-avatar-text" onclick="triggerAvatarUpload()">📷 Đổi ảnh đại diện</button>
+                                <button type="button" class="btn-change-avatar-text" onclick="triggerAvatarUpload()">Đổi ảnh đại diện</button>
                                 <button type="button" class="btn-remove-avatar-text" id="btnRemoveAvatar" style="display:none;" onclick="removeUserAvatar()">Gỡ ảnh</button>
                             </div>
                             <div style="font-size:12.5px; color:#64748b;" id="profileEmail">sinhvien@st.utc2.edu.vn</div>
                             <div style="margin-top:4px; font-size:12.5px; color:#16a34a; font-weight:700;">
-                                🛡 Điểm Uy Tín: <span id="profileRepScore">95</span>/100
+                                Điểm uy tín: <span id="profileRepScore">95</span>/100
                             </div>
                         </div>
                     </div>
@@ -735,14 +735,14 @@
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                     <div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <h4 style="font-size:14px; color:#d97706; margin:0;">📦 Bài đăng của tôi</h4>
+                            <h4 style="font-size:14px; color:#d97706; margin:0;">Bài đăng của tôi</h4>
                             <span style="font-size:11px; color:#d97706; background:#fffbeb; padding:2px 8px; border-radius:4px; border:1px solid #fef3c7; font-weight:700;">⏳ Tự xóa sau 7 ngày duyệt</span>
                         </div>
                         <div id="myPostsListContainer"></div>
                     </div>
                     <div id="profileDepositOrdersBlock">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <h4 style="font-size:14px; color:#d97706; margin:0;">📜 Đơn đặt cọc & Mua bán</h4>
+                            <h4 style="font-size:14px; color:#d97706; margin:0;">Đơn đặt cọc & Mua bán</h4>
                             <span id="profileDepositTotalBadge" style="font-size:11.5px; font-weight:700; color:#b45309; background:#fef3c7; padding:2px 8px; border-radius:4px; border:1px solid #fde68a;">0 đơn</span>
                         </div>
                         <div id="purchaseHistoryContainer"></div>
@@ -760,7 +760,7 @@
         <div id="chatConversationsView" class="chat-view-panel">
             <div class="chat-header">
                 <div>
-                    <h4 style="font-size:14px; font-weight:700; margin:0;">💬 Hộp Thư Tin Nhắn</h4>
+                    <h4 style="font-size:14px; font-weight:700; margin:0;">Hộp thư tin nhắn</h4>
                     <div class="chat-partner-sub" id="chatInboxSubtitle">Tất cả tài khoản liên hệ trao đổi đồ</div>
                 </div>
                 <button class="checkout-close-btn" style="position:static; width:28px; height:28px; background:rgba(255,255,255,0.2); color:#fff;" onclick="closeChatWindow()">✕</button>
@@ -769,7 +769,7 @@
             <div class="chat-search-wrap" style="padding:10px 12px; background:#f8fafc; border-bottom:1px solid #e2e8f0;">
                 <div style="position:relative; display:flex; gap:6px;">
                     <input type="text" id="chatUserSearchInput" 
-                           placeholder="🔍 Tìm Gmail (VD: 6651071065@st.utc2.edu.vn)..." 
+                           placeholder="Tìm Gmail (VD: 6651071065@st.utc2.edu.vn)..." 
                            style="flex:1; padding:8px 11px; font-size:12.5px; border:1.5px solid #cbd5e1; border-radius:8px; outline:none; transition:border-color 0.2s;" 
                            onfocus="this.style.borderColor='#0284c7'" 
                            onblur="this.style.borderColor='#cbd5e1'" 
@@ -824,12 +824,12 @@
 
             <div class="checkout-image-preview">
                 <img id="modalProductImage" src="" alt="Sản phẩm">
-                <span class="checkout-image-timemark" id="modalProductTimeMark" style="display:none;"></span>
+                <span class="checkout-image-timemark" id="modalProductTimeMark" style="display:none;" style="display:none;"></span>
             </div>
 
             <div class="checkout-tags-row">
                 <span class="tag-blue" id="modalProductCategory">Giáo trình</span>
-                <span class="tag-green">✓ Đã kiểm duyệt ảnh thật</span>
+                <span class="tag-green">Đã kiểm duyệt ảnh thật</span>
                 <span class="tag-orange" id="modalProductExpiry">Hết hạn sau: 6 ngày</span>
             </div>
 
@@ -842,7 +842,7 @@
 
             <!-- Mô tả chi tiết món đồ -->
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; margin-bottom:14px;">
-                <div style="font-size:11.5px; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:4px;">📝 Mô tả chi tiết sản phẩm:</div>
+                <div style="font-size:11.5px; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:4px;">Mô tả chi tiết sản phẩm:</div>
                 <div id="modalProductDescription" style="font-size:13px; color:#334155; line-height:1.5; white-space:pre-line;">
                     Món đồ được đăng pass trực tiếp tại campus UTC2.
                 </div>
@@ -858,7 +858,7 @@
                 </div>
                 <div class="checkout-info-row">
                     <span>Điểm uy tín người bán:</span>
-                    <span id="modalSellerRep" style="color:#16a34a; font-weight:700;">★ 98/100</span>
+                    <span id="modalSellerRep" style="color:#16a34a; font-weight:700;">98/100</span>
                 </div>
                 <div class="checkout-info-row">
                     <span>Địa điểm hẹn giao nhận:</span>
@@ -892,7 +892,7 @@
                 <label class="coin-discount-checkbox-row">
                     <input type="checkbox" id="useCoinDiscountCheckbox" checked onchange="updateCheckoutCalculations()">
                     <span id="coinDiscountLabelText">
-                        🪙 Dùng 30% số xu hiện có để giảm giá mặt hàng
+                        Dùng 30% số xu hiện có để giảm giá mặt hàng
                     </span>
                 </label>
 
@@ -916,7 +916,7 @@
 
             <div class="checkout-actions-row">
                 <button class="btn-outline-chat" onclick="openChatFromModal()">
-                    💬 Nhắn tin hẹn gặp
+                    Nhắn tin hẹn gặp
                 </button>
                 <button class="btn-primary-confirm" id="confirmDepositBtn" onclick="confirmDepositOrder()">
                      Đặt Cọc & Giữ Chỗ
@@ -976,7 +976,7 @@
                     <div class="file-upload-box" id="postImageUploadBox">
                         <input type="file" id="postImageFileInput" accept="image/*" onchange="handlePostImageFileSelect(event)">
                         <div id="fileUploadPromptContent">
-                            <div class="file-upload-icon">📷</div>
+                            <div class="file-upload-icon" style="font-size:13px; font-weight:700; color:#64748b;">Chọn ảnh từ máy</div>
                             <div class="file-upload-text">Bấm vào đây để chọn ảnh món đồ từ máy / điện thoại</div>
                             <div class="file-upload-subtext">Hỗ trợ JPG, PNG, WebP (Ảnh rõ nét sản phẩm bạn muốn pass)</div>
                         </div>
@@ -996,7 +996,7 @@
                 <div style="display:flex; justify-content:flex-end; gap:10px;">
                     <button type="button" class="btn-outline-chat" onclick="closeModal('createPostModal')">Hủy</button>
                     <button type="submit" class="btn-primary-confirm" style="background:#0284c7;">
-                        Tiếp Tục: Nhận Mã OTP TimeMark ➔
+                        Tiếp Tục: Nhận Mã OTP TimeMark
                     </button>
                 </div>
             </form>
@@ -1007,7 +1007,7 @@
     <div class="checkout-modal-overlay" id="timemarkCodeModal">
         <div class="checkout-modal-card" style="max-width:540px; text-align:center; padding:24px;">
             <button class="checkout-close-btn" onclick="closeModal('timemarkCodeModal')">✕</button>
-            <div style="font-size:36px; margin-bottom:4px;">📸</div>
+            
             <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin-bottom:4px;">Mã Xác Thực TimeMark & Chụp Ảnh Chống Lừa Đảo</h3>
             <p style="font-size:12.5px; color:#64748b; margin-bottom:12px;">Hệ thống cấp mã định danh bảo mật và phát lệnh gửi về Gmail của bạn</p>
 
@@ -1027,22 +1027,22 @@
 
             <!-- Hướng Dẫn 3 Bước Thực Hiện -->
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; text-align:left; font-size:12px; color:#334155; line-height:1.5; margin-bottom:14px;">
-                <div style="font-weight:700; color:#0f172a; margin-bottom:4px;">📋 Hướng dẫn xác thực TimeMark bằng AI:</div>
-                <div>1. ✍️ <strong>Bắt buộc ghi ra giấy:</strong> Lấy mẩu giấy trắng, dùng bút viết rõ mã OTP <strong id="timemarkCodeGuide" style="color:#15803d;">UTC2 - 8924</strong> và ngày giờ hiện tại.</div>
-                <div>2. 📦 <strong>Đặt cạnh món đồ:</strong> Đặt mẩu giấy ngay bên cạnh sản phẩm bạn muốn pass.</div>
+                <div style="font-weight:700; color:#0f172a; margin-bottom:4px;">Hướng dẫn xác thực TimeMark:</div>
+                <div>1. <strong>Ghi mã ra giấy:</strong> Lấy mẩu giấy trắng, dùng bút viết rõ mã OTP <strong id="timemarkCodeGuide" style="color:#15803d;">UTC2 - 8924</strong> và ngày giờ hiện tại.</div>
+                <div>2. <strong>Đặt cạnh món đồ:</strong> Đặt mẩu giấy ngay bên cạnh sản phẩm bạn muốn pass.</div>
                 <div>3. <strong>Hệ thống quét mẩu giấy tự động:</strong> Tải ảnh lên để hệ thống nhận diện nét chữ trên giấy. <strong>Nếu trùng khớp từ 95% trở lên, bài đăng sẽ được duyệt tự động ngay lập tức</strong> lên Sàn Đồ!</div>
             </div>
 
             <!-- Khung Tải Ảnh Xác Thực TimeMark (Giấy ghi mã OTP + Sản phẩm) -->
             <div style="margin-bottom:16px; text-align:left;">
                 <label style="display:block; font-size:12.5px; font-weight:700; color:#0f172a; margin-bottom:6px;">
-                    📷 Hình ảnh xác thực TimeMark (Chụp giấy ghi mã OTP + Sản phẩm) *
+                    Hình ảnh xác thực TimeMark (Chụp giấy ghi mã OTP + Sản phẩm) *
                 </label>
                 
                 <input type="file" id="timemarkProofFileInput" accept="image/*" capture="environment" style="display:none;" onchange="handleTimeMarkProofImageSelect(event)">
 
                 <div id="timemarkProofUploadPrompt" onclick="document.getElementById('timemarkProofFileInput').click()" style="border:2px dashed #93c5fd; border-radius:10px; padding:18px; text-align:center; background:#f0f9ff; cursor:pointer; transition:all 0.2s ease;">
-                    <div style="font-size:32px; margin-bottom:4px;">📷</div>
+                    
                     <div style="font-size:13px; font-weight:700; color:#0284c7;">Bấm để chụp ảnh hoặc tải ảnh từ thiết bị</div>
                     <div style="font-size:11px; color:#64748b; margin-top:2px;">Bắt buộc phải có ảnh giấy ghi mã OTP đặt cạnh đồ vật để Admin duyệt</div>
                 </div>
@@ -1052,7 +1052,7 @@
                     <div style="position:relative; display:inline-block; max-width:100%;">
                         <img id="timemarkProofPreviewImg" src="" alt="Ảnh xác thực TimeMark" style="max-height:220px; max-width:100%; border-radius:8px; object-fit:contain; border:1px solid #e2e8f0; cursor:pointer;" onclick="openZoomImageModal(this.src, 'Ảnh xác thực TimeMark')">
                         <div style="position:absolute; top:6px; left:6px; background:rgba(22,163,74,0.92); color:#fff; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:4px;">
-                            ✓ Đã chọn ảnh TimeMark
+                            Đã chọn ảnh TimeMark
                         </div>
                     </div>
 
@@ -1077,7 +1077,7 @@
 
                     <div style="margin-top:8px; display:flex; justify-content:center; gap:8px;">
                         <button type="button" class="btn-outline-chat" style="padding:5px 12px; font-size:11.5px;" onclick="document.getElementById('timemarkProofFileInput').click()">
-                            🔄 Chọn / Chụp lại ảnh khác
+                            Chọn / Chụp lại ảnh khác
                         </button>
                         <button type="button" class="btn-outline-chat" style="padding:5px 12px; font-size:11.5px; color:#ef4444; border-color:#fca5a5;" onclick="removeTimeMarkProofImage()">
                             ✕ Xóa ảnh này
@@ -1106,7 +1106,7 @@
         <div class="checkout-modal-card" style="max-width:720px; text-align:center; padding:18px;">
             <button class="checkout-close-btn" onclick="closeModal('zoomImageModal')">✕</button>
             <h4 id="zoomImageTitle" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:10px; text-align:left;">
-                🔍 Xem Chi Tiết Ảnh Xác Thực TimeMark
+                Xem Chi Tiết Ảnh Xác Thực TimeMark
             </h4>
             <div style="background:#0f172a; border-radius:10px; padding:10px; display:flex; justify-content:center; align-items:center; min-height:280px; max-height:75vh; overflow:auto;">
                 <img id="zoomImageElement" src="" alt="Ảnh phóng to" style="max-width:100%; max-height:70vh; object-fit:contain; border-radius:6px;">
@@ -1149,7 +1149,7 @@
     <div class="checkout-modal-overlay" id="adminAccessDeniedModal">
         <div class="checkout-modal-card" style="max-width:460px; text-align:center;">
             <button class="checkout-close-btn" onclick="closeModal('adminAccessDeniedModal')">✕</button>
-            <div style="font-size:42px; margin-bottom:8px;">🛡️</div>
+            
             <h3 style="font-size:19px; font-weight:800; color:#0f172a; margin-bottom:6px;">Xác Thực Quyền Quản Trị Viên</h3>
             <p style="font-size:13px; color:#64748b; line-height:1.5; margin-bottom:18px;">
                 Khu vực Quản trị hệ thống HandUTC2 yêu cầu nhập chính xác <strong>Gmail Quản Trị Viên</strong> và <strong>Mật khẩu</strong> để truy cập.
@@ -1158,7 +1158,7 @@
             <form onsubmit="event.preventDefault(); loginAsOfficialAdmin();" style="text-align:left;">
                 <div style="margin-bottom:14px;">
                     <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:5px;">
-                        📧 Gmail / MSSV Quản Trị Viên:
+                        Gmail / MSSV Quản Trị Viên:
                     </label>
                     <input type="text" id="adminModalEmailInput" class="hero-search-input" 
                            placeholder="Nhập Gmail Admin (VD: 6651071091@st.utc2.edu.vn)..." 
@@ -1168,7 +1168,7 @@
 
                 <div style="margin-bottom:14px;">
                     <label style="display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:5px;">
-                        🔑 Mật Khẩu Quản Trị Viên:
+                        Mật Khẩu Quản Trị Viên:
                     </label>
                     <input type="password" id="adminModalPasswordInput" class="hero-search-input" 
                            placeholder="Nhập mật khẩu Admin..." 
@@ -1177,7 +1177,7 @@
                 </div>
 
                 <div id="adminDeniedErrorMsg" style="color:#ef4444; font-size:12px; font-weight:700; margin-bottom:12px; display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:8px 12px;">
-                    ⚠ Gmail hoặc Mật khẩu Quản trị viên không chính xác!
+                    Gmail hoặc Mật khẩu Quản trị viên không chính xác!
                 </div>
 
                 <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
@@ -1234,7 +1234,7 @@
                 </div>
                 <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; text-align:center;">
                     <div style="font-size:11px; color:#64748b; font-weight:700; text-transform:uppercase;">Trạng Thái</div>
-                    <div style="font-size:13.5px; font-weight:800; color:#16a34a; margin-top:6px;">✓ Bình thường</div>
+                    <div style="font-size:13.5px; font-weight:800; color:#16a34a; margin-top:6px;">Bình thường</div>
                     <div style="font-size:10.5px; color:#64748b; margin-top:2px;">Đã xác thực</div>
                 </div>
             </div>
@@ -1243,7 +1243,7 @@
             <div style="margin-bottom:18px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <h4 style="font-size:15px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:6px;">
-                        📦 Các bài đã đăng của tài khoản này
+                        Các bài đã đăng của tài khoản này
                         <span id="adminModalPostsBadge" style="background:#e0f2fe; color:#0284c7; font-size:11px; padding:2px 8px; border-radius:10px; font-weight:700;">0 bài</span>
                     </h4>
                 </div>
@@ -1255,13 +1255,13 @@
             <!-- Hành động của Admin đối với tài khoản này -->
             <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; padding-top:14px; border-top:1px solid #e2e8f0;">
                 <button type="button" class="btn-outline-chat" id="adminModalChatBtn" style="font-weight:700; color:#0284c7; border-color:#93c5fd;">
-                    💬 Nhắn Tin Trực Tiếp
+                    Nhắn Tin Trực Tiếp
                 </button>
                 <button type="button" class="btn-admin-warning" id="adminModalWarnBtn" style="padding:8px 14px;">
-                    ⚠️ Cảnh Cáo (-2đ)
+                    Cảnh Cáo (-2đ)
                 </button>
                 <button type="button" class="btn-admin-success" id="adminModalRemindBtn" style="padding:8px 14px;">
-                    💬 Nhắc Nhở
+                    Nhắc Nhở
                 </button>
                 <button type="button" class="apply-filter-btn" style="width:auto; padding:8px 18px; margin:0; background:#64748b;" onclick="closeModal('adminUserProfileModal')">
                     Đóng
@@ -1469,7 +1469,7 @@
             <!-- Trạng thái kết nối hiện tại -->
             <div id="supabaseConnectionStatusBox" style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:12.5px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span id="supabaseStatusBadge" style="font-weight:700; color:#15803d;">🟢 Trạng thái: Bộ nhớ đệm cục bộ (Sẵn sàng đồng bộ Cloud)</span>
+                    <span id="supabaseStatusBadge" style="font-weight:700; color:#15803d;">Trạng thái: Bộ nhớ đệm cục bộ (Sẵn sàng đồng bộ Cloud)</span>
                     <span id="supabasePingTime" style="font-size:11.5px; color:#64748b;">Ping: -- ms</span>
                 </div>
                 <div id="supabaseDetailText" style="font-size:11.5px; color:#475569; margin-top:4px;">
@@ -1491,7 +1491,7 @@
                         2. Supabase Anon Public Key (API Key) *
                     </label>
                     <a href="https://supabase.com/dashboard/project/lhlwemmpnrmlskeljniq/settings/api" target="_blank" style="font-size:11.5px; color:#0284c7; font-weight:700; text-decoration:underline;">
-                        🔗 Lấy Key tại đây ➔
+                        Lấy Key tại đây
                     </a>
                 </div>
                 <input type="password" id="supabaseKeyInput" class="hero-search-input" style="padding:8px 12px; border:1px solid #cbd5e1; box-shadow:none; font-family:monospace; font-size:12px;" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobHdlbW1wbnJtbHNrZWxqbmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNzIyNTYsImV4cCI6MjEwNjg0ODI1Nn0.OBOpRm80_LZ9vmt3hgKUuDqPkeAzDHPkYS_MoacHeDo" placeholder="Dán mã anon key bắt đầu bằng eyJhbGciOi...">
@@ -1585,7 +1585,7 @@
             <button class="checkout-close-btn" onclick="closeModal('safeMeetupModal')">✕</button>
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
                 <div style="width:42px; height:42px; border-radius:50%; background:#e0f2fe; color:#0284c7; font-size:22px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                    📍
+                    
                 </div>
                 <div>
                     <h3 style="font-size:17px; font-weight:800; color:#0f172a; margin:0;">Điểm Hẹn Giao Dịch An Toàn UTC2</h3>
@@ -1594,7 +1594,7 @@
             </div>
 
             <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:8px 12px; font-size:11.5px; color:#1e40af; margin-bottom:14px; line-height:1.45;">
-                🛡️ <strong>Khuyến nghị an toàn sinh viên UTC2:</strong> Ưu tiên giao dịch tại các sảnh lớn, thư viện hoặc căn tin trường vào ban ngày để kiểm tra đồ kỹ lưỡng trước khi chuyển tiền!
+                <strong>Khuyến nghị an toàn sinh viên UTC2:</strong> Ưu tiên giao dịch tại các sảnh lớn, thư viện hoặc căn tin trường vào ban ngày để kiểm tra đồ kỹ lưỡng trước khi chuyển tiền!
             </div>
 
             <!-- Danh sách 7 điểm hẹn UTC2 -->
@@ -1610,10 +1610,10 @@
                 2. Chọn khung giờ hẹn nhận đồ:
             </label>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px;">
-                <button type="button" class="btn-time-slot" onclick="selectMeetupTimeSlot(this, 'Giờ ra chơi tiết 3-4 (9h15 - 9h30)')" style="padding:6px 10px; font-size:11.5px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; cursor:pointer; text-align:left;">⚡ Giờ ra chơi (9h15 - 9h30)</button>
-                <button type="button" class="btn-time-slot active" onclick="selectMeetupTimeSlot(this, 'Giờ nghỉ trưa (11h30 - 12h30)')" style="padding:6px 10px; font-size:11.5px; border:1.5px solid #0284c7; border-radius:6px; background:#f0f9ff; color:#0369a1; font-weight:700; cursor:pointer; text-align:left;">☀️ Nghỉ trưa (11h30 - 12h30)</button>
-                <button type="button" class="btn-time-slot" onclick="selectMeetupTimeSlot(this, 'Chiều tan học (16h30 - 17h30)')" style="padding:6px 10px; font-size:11.5px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; cursor:pointer; text-align:left;">🌅 Tan học (16h30 - 17h30)</button>
-                <button type="button" class="btn-time-slot" onclick="selectMeetupTimeSlot(this, 'Buổi tối (18h30 - 19h30)')" style="padding:6px 10px; font-size:11.5px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; cursor:pointer; text-align:left;">🌙 Buổi tối (18h30 - 19h30)</button>
+                <button type="button" class="btn-time-slot" onclick="selectMeetupTimeSlot(this, 'Giờ ra chơi tiết 3-4 (9h15 - 9h30)')" style="padding:6px 10px; font-size:11.5px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; cursor:pointer; text-align:left;">Giờ ra chơi (9h15 - 9h30)</button>
+                <button type="button" class="btn-time-slot active" onclick="selectMeetupTimeSlot(this, 'Giờ nghỉ trưa (11h30 - 12h30)')" style="padding:6px 10px; font-size:11.5px; border:1.5px solid #0284c7; border-radius:6px; background:#f0f9ff; color:#0369a1; font-weight:700; cursor:pointer; text-align:left;">Nghỉ trưa (11h30 - 12h30)</button>
+                <button type="button" class="btn-time-slot" onclick="selectMeetupTimeSlot(this, 'Chiều tan học (16h30 - 17h30)')" style="padding:6px 10px; font-size:11.5px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; cursor:pointer; text-align:left;">Tan học (16h30 - 17h30)</button>
+                <button type="button" class="btn-time-slot" onclick="selectMeetupTimeSlot(this, 'Buổi tối (18h30 - 19h30)')" style="padding:6px 10px; font-size:11.5px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; cursor:pointer; text-align:left;">Buổi tối (18h30 - 19h30)</button>
             </div>
             <input type="text" id="customMeetupTimeInput" placeholder="Hoặc tự gõ giờ hẹn khác (VD: 14h chiều nay tại bàn tròn)..." style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; margin-bottom:14px;">
 

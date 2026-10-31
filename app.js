@@ -421,7 +421,7 @@ class AppController {
         const spinEl = document.getElementById('syncUserSpin');
         if (spinEl) spinEl.style.display = 'inline-block';
         if (spinEl) spinEl.style.transform = 'rotate(360deg)';
-        if (manual) showToast('🔄 Đang đồng bộ danh sách tài khoản từ Supabase Cloud...', 'info');
+        if (manual) showToast('Đang đồng bộ danh sách tài khoản từ Supabase Cloud...', 'info');
 
         if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
             try {
@@ -467,7 +467,7 @@ class AppController {
                     this.renderChatMessages();
                     console.log(`✅ [Supabase] Đã đồng bộ ${cloudProfiles.length} tài khoản từ Cloud! Tổng tài khoản: ${this.registeredUsers.length}`);
                     if (manual) {
-                        showToast(`✓ Đã nạp thành công ${this.registeredUsers.length} tài khoản từ Supabase Cloud!`, 'success');
+                        showToast(`Đã nạp thành công ${this.registeredUsers.length} tài khoản từ Supabase Cloud!`, 'success');
                     }
                 }
             } catch (err) {
@@ -518,12 +518,12 @@ class AppController {
                     otpInput.value = 'CONFIRMED';
                 }
                 if (otpBadge) {
-                    otpBadge.innerText = 'Đã Xác Thực ✓';
+                    otpBadge.innerText = 'Đã Xác Thực';
                     otpBadge.style.background = '#dcfce7';
                     otpBadge.style.color = '#15803d';
                 }
 
-                showToast(`✓ Đã xác thực thành công Gmail ${supaUser.email} từ liên kết Supabase!`, 'success');
+                showToast(`Đã xác thực thành công Gmail ${supaUser.email} từ liên kết Supabase!`, 'success');
             });
         }
 
@@ -634,10 +634,10 @@ class AppController {
                     if (window.sound) window.sound.playNotification();
                     if (clientStatus === 'pending') {
                         if (this.user && this.user.role === 'admin') {
-                            showToast(`🛡️ [BÀI ĐĂNG CHỜ DUYỆT] Có bài đăng mới "${newP.title}" kèm ảnh TimeMark đang chờ duyệt!`, 'warning');
+                            showToast(`[Bài đăng chờ duyệt] Có bài đăng mới "${newP.title}" kèm ảnh TimeMark đang chờ duyệt!`, 'warning');
                         }
                     } else {
-                        showToast(`📦 Có bài đăng pass đồ mới: "${newP.title}"!`, 'info');
+                        showToast(`Có bài đăng pass đồ mới: "${newP.title}"!`, 'info');
                     }
                 }
             } else if (payload.eventType === 'UPDATE') {
@@ -752,7 +752,7 @@ class AppController {
                     this.updateDepositBadge();
                     if (ord.seller_name === this.user.name) {
                         if (window.sound) window.sound.playSuccess();
-                        showToast(`🤝 Sinh viên ${ord.buyer_name} vừa đặt cọc giữ chỗ món "${ord.product_title}"!`, 'success');
+                        showToast(`Sinh viên ${ord.buyer_name} vừa đặt cọc giữ chỗ món "${ord.product_title}"!`, 'success');
                     }
                 }
             } else if (payload.eventType === 'UPDATE') {
@@ -771,7 +771,7 @@ class AppController {
                 const warn = payload.new;
                 if (warn.target_name === this.user.name || warn.target_email === this.user.email) {
                     if (window.sound) window.sound.playWarning();
-                    showToast(`⚠️ CẢNH CÁO TỪ ADMIN: ${warn.reason} (-${warn.penalty_points} điểm uy tín)`, 'danger');
+                    showToast(`Cảnh báo từ Admin: ${warn.reason} (-${warn.penalty_points} điểm uy tín)`, 'danger');
                     this.user.reputation = Math.max(0, (this.user.reputation || 95) - Number(warn.penalty_points));
                     this.updateUserUI();
                 }
@@ -836,10 +836,10 @@ class AppController {
                 if (window.sound) window.sound.playNotification();
                 if (post.status === 'pending') {
                     if (this.user && this.user.role === 'admin') {
-                        showToast(`🛡️ [BÀI ĐĂNG CHỜ DUYỆT] ${post.seller} vừa gửi bài "${post.title}" kèm ảnh TimeMark!`, 'warning');
+                        showToast(`[Bài đăng chờ duyệt] ${post.seller} vừa gửi bài "${post.title}" kèm ảnh TimeMark!`, 'warning');
                     }
                 } else {
-                    showToast(`📦 [MÁY KHÁC VỪA ĐĂNG] ${post.seller} pass: "${post.title}"!`, 'info');
+                    showToast(`[Bài đăng mới] ${post.seller} pass: "${post.title}"!`, 'info');
                 }
             }
         });
@@ -875,7 +875,7 @@ class AppController {
             this.renderAdminDashboard();
             this.renderProfile();
             if (window.sound) window.sound.playSuccess();
-            showToast(`🎉 Bài đăng "${(post && post.title) || 'Mới'}" vừa được Admin phê duyệt và xuất hiện trên trang chính!`, 'info');
+            showToast(`Bài đăng "${(post && post.title) || 'Mới'}" vừa được Admin phê duyệt và xuất hiện trên trang chính!`, 'info');
         });
 
         // 1c. Nhận sự kiện bài đăng bị Admin từ chối TimeMark
@@ -911,7 +911,7 @@ class AppController {
                 this.rebuildDSACache();
                 this.renderProducts();
                 this.renderAdminDashboard();
-                showToast(`🗑️ Bài đăng vi phạm vừa bị Admin gỡ trên toàn hệ thống.`, 'info');
+                showToast(`Bài đăng vi phạm vừa bị Admin gỡ trên toàn hệ thống.`, 'info');
             }
         });
 
@@ -960,7 +960,7 @@ class AppController {
 
                 if (order.seller === this.user.name || order.sellerEmail === this.user.email) {
                     if (window.sound) window.sound.playSuccess();
-                    showToast(`🤝 [ĐƠN ĐẶT CỌC MỚI] ${order.buyer} vừa đặt cọc món "${order.productTitle}"! Vui lòng vào mục Cá Nhân bấm Xác Nhận Đơn Hàng.`, 'success');
+                    showToast(`[Đơn đặt cọc mới] ${order.buyer} vừa đặt cọc món "${order.productTitle}"! Vui lòng vào mục Cá Nhân bấm Xác Nhận Đơn Hàng.`, 'success');
                 }
             }
         });
@@ -981,13 +981,13 @@ class AppController {
             if (this.user) {
                 if (order.buyer === this.user.name && order.sellerAccepted && order.status === 'in_trade') {
                     if (window.sound) window.sound.playSuccess();
-                    showToast(`🎉 Người bán ${order.seller} đã xác nhận đơn hàng "${order.productTitle}"! Hai bạn hãy gặp nhau trao đổi đồ.`, 'success');
+                    showToast(`Người bán ${order.seller} đã xác nhận đơn hàng "${order.productTitle}"! Hai bạn hãy gặp nhau trao đổi đồ.`, 'success');
                 }
                 if (order.status === 'completed' && (order.buyer === this.user.name || order.seller === this.user.name)) {
                     this.cleanupCompletedOrdersChats();
                     this.renderChatMessages();
                     if (window.sound) window.sound.playSuccess();
-                    showToast(`🎉 Giao dịch đơn "${order.productTitle}" đã hoàn tất 100%! Bài đăng và lịch sử tin nhắn đã tự động dọn dẹp.`, 'success');
+                    showToast(`Giao dịch đơn "${order.productTitle}" đã hoàn tất 100%! Bài đăng và lịch sử tin nhắn đã tự động dọn dẹp.`, 'success');
                 }
             }
         });
@@ -1006,7 +1006,7 @@ class AppController {
                 this.renderAdminDashboard();
                 if (this.user && this.user.role === 'admin') {
                     if (window.sound) window.sound.playNotification();
-                    showToast(`🚨 [KHIẾU NẠI MỚI GỬI ADMIN]: ${dispute.reporterName} tố cáo ${dispute.accusedName} (${dispute.reason})!`, 'danger');
+                    showToast(`[Khiếu nại gửi Admin]: ${dispute.reporterName} tố cáo ${dispute.accusedName} (${dispute.reason})!`, 'danger');
                 }
             }
         });
@@ -1027,7 +1027,7 @@ class AppController {
             if (!warning) return;
             if (warning.targetName === this.user.name || warning.targetEmail === this.user.email) {
                 if (window.sound) window.sound.playWarning();
-                showToast(`⚠️ CẢNH CÁO TỪ ADMIN: ${warning.reason} (-${warning.penaltyPoints || 2} điểm)`, 'danger');
+                showToast(`Cảnh báo từ Admin: ${warning.reason} (-${warning.penaltyPoints || 2} điểm)`, 'danger');
                 this.user.reputation = Math.max(0, (this.user.reputation || 95) - (warning.penaltyPoints || 2));
                 this.updateUserUI();
             }
@@ -1103,7 +1103,7 @@ class AppController {
         } else if (data.type === 'USER_WARNED') {
             if (data.targetName === this.user.name) {
                 if (window.sound) window.sound.playWarning();
-                showToast(`⚠️ THÔNG BÁO TỪ ADMIN: ${data.message}`, 'danger');
+                showToast(`Thông báo từ Admin: ${data.message}`, 'danger');
             }
         }
     }
@@ -1175,7 +1175,7 @@ class AppController {
 
             this.renderChatInbox();
             this.updateChatUnreadBadge();
-            showToast(`💬 [MESSENGER] ${senderName} vừa gửi tin nhắn! Bấm vào cuộc trò chuyện để xem chi tiết.`, 'info');
+            showToast(`[Tin nhắn] ${senderName} vừa gửi tin nhắn! Bấm vào cuộc trò chuyện để xem chi tiết.`, 'info');
         }
     }
 
@@ -1473,7 +1473,7 @@ class AppController {
         // Nếu thông báo hướng tới tài khoản hiện tại -> phát âm thanh & hiển thị Toast
         if (this.user && (this.user.name === targetName || this.user.email === targetEmail)) {
             if (window.sound) window.sound.playNotification();
-            showToast(`🔔 [THÔNG BÁO] ${title}: ${message}`, (type === 'warning' || type === 'post_rejected') ? 'danger' : 'info');
+            showToast(`[Thông báo] ${title}: ${message}`, (type === 'warning' || type === 'post_rejected') ? 'danger' : 'info');
         }
     }
 
@@ -1485,7 +1485,7 @@ class AppController {
         if (!this.user) {
             const emptyHtml = `
                 <div style="text-align:center; padding:24px 12px; color:#64748b; font-size:12px;">
-                    <div style="font-size:32px; margin-bottom:6px;">🔒</div>
+                    
                     <strong>Vui lòng đăng nhập</strong><br>Đăng nhập để xem thông báo hoạt động của bạn.
                 </div>
             `;
@@ -1503,7 +1503,7 @@ class AppController {
         if (userNotifs.length === 0) {
             const noNotifHtml = `
                 <div style="text-align:center; padding:28px 14px; color:#64748b; font-size:12px;">
-                    <div style="font-size:32px; margin-bottom:8px;">📭</div>
+                    
                     <strong style="color:#0f172a; font-size:13px; display:block; margin-bottom:4px;">Chưa có thông báo nào</strong>
                     <p style="margin:0; font-size:11.5px; color:#64748b; line-height:1.4;">
                         Khi có người cọc đơn, bài đăng được duyệt, hoặc đơn hàng hoàn tất, thông báo sẽ hiển thị tại đây.
@@ -1516,32 +1516,32 @@ class AppController {
         }
 
         const renderItemHtml = (n) => {
-            let icon = '🔔';
+            let icon = '';
             let iconBg = '#e0f2fe';
             let iconCol = '#0284c7';
 
             if (n.type === 'order_deposit') {
-                icon = '🛒';
+                icon = '';
                 iconBg = '#fef3c7';
                 iconCol = '#b45309';
             } else if (n.type === 'order_update') {
-                icon = '🤝';
+                icon = '';
                 iconBg = '#dcfce7';
                 iconCol = '#15803d';
             } else if (n.type === 'post_approved') {
-                icon = '✅';
+                icon = '';
                 iconBg = '#dcfce7';
                 iconCol = '#15803d';
             } else if (n.type === 'post_rejected') {
-                icon = '❌';
+                icon = '';
                 iconBg = '#fee2e2';
                 iconCol = '#dc2626';
             } else if (n.type === 'post_expired') {
-                icon = '⏳';
+                icon = '';
                 iconBg = '#fff7ed';
                 iconCol = '#ea580c';
             } else if (n.type === 'warning') {
-                icon = '⚠️';
+                icon = '';
                 iconBg = '#fee2e2';
                 iconCol = '#dc2626';
             }
@@ -1580,7 +1580,7 @@ class AppController {
         this.saveNotifications();
         this.updateNotificationBadge();
         this.renderNotifications();
-        showToast('✓ Đã đánh dấu tất cả thông báo là đã đọc!', 'info');
+        showToast('Đã đánh dấu tất cả thông báo là đã đọc!', 'info');
     }
 
     clearAllUserNotifications() {
@@ -1593,7 +1593,7 @@ class AppController {
         this.saveNotifications();
         this.updateNotificationBadge();
         this.renderNotifications();
-        showToast('🗑 Đã xóa toàn bộ thông báo hoạt động của bạn!', 'info');
+        showToast('Đã xóa toàn bộ thông báo hoạt động của bạn!', 'info');
     }
 
     // ==========================================
@@ -1640,7 +1640,7 @@ class AppController {
         const bg = isUrgent ? '#fff7ed' : '#fffbeb';
         const col = isUrgent ? '#c2410c' : '#b45309';
         const border = isUrgent ? '#ffedd5' : '#fef3c7';
-        const label = isUrgent ? '⚠️ Sắp hết hạn' : '⏳ Hết hạn sau';
+        const label = isUrgent ? 'Sắp hết hạn' : 'Hết hạn sau';
 
         return {
             text: `${label}: ${countdownStr}`,
@@ -1895,7 +1895,7 @@ class AppController {
         if (list.length === 0) {
             container.innerHTML = `
                 <div style="grid-column: 1/-1; text-align: center; padding: 45px 20px; background:#fffbeb; border:1.5px dashed #fde68a; border-radius:14px; color: #475569;">
-                    <div style="font-size: 36px; margin-bottom: 8px;">🔍</div>
+                    
                     <h4 style="color:#0f172a; font-size:16px; margin:0 0 6px 0;">
                         ${hasSearch ? `Không tìm thấy món đồ nào phù hợp với từ khóa "${escapeHtml(this.searchKeyword)}"` : 'Không có món đồ nào trong khoảng lọc này'}
                     </h4>
@@ -1935,7 +1935,7 @@ class AppController {
             );
             const sellerAvatarHtml = (sellerUser && sellerUser.avatarUrl) ?
                 `<img src="${sellerUser.avatarUrl}" alt="${item.seller}" class="seller-avatar-badge">` :
-                `<span style="margin-right:4px;">👤</span>`;
+                ``;
 
             return `
                 <div class="uni-product-card" onclick="openCheckoutModal('${item.id}')">
@@ -1964,15 +1964,15 @@ class AppController {
                             <span class="card-seller-name" style="display:inline-flex; align-items:center;">
                                 ${sellerAvatarHtml}
                                 <span>${item.seller}</span>
-                                <span class="verified-sv-tag" title="Sinh viên ST.UTC2 đã xác minh">✓ SV</span>
+                                <span class="verified-sv-tag" title="Sinh viên ST.UTC2 đã xác minh">SV UTC2</span>
                             </span>
                             <span class="card-rep-badge" title="Đánh giá uy tín sinh viên">
-                                 ★${starScore} (${reviewCount})
+                                 ${starScore}/5 (${reviewCount})
                             </span>
                         </div>
 
                         <div class="card-location-row">
-                            <span>📍 ${item.location}</span>
+                            <span>${item.location}</span>
                         </div>
 
                         <div class="card-trust-guarantee">
@@ -2015,7 +2015,7 @@ class AppController {
                         statusBadge = `<span style="background:#fee2e2; color:#b91c1c; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">❌ Bị từ chối: ${p.rejectReason || 'Không hợp lệ'}</span>`;
                     } else {
                         const countdown = this.formatPostExpiryCountdown(p);
-                        statusBadge = `<span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">✅ Đã duyệt</span> ${countdown.html}`;
+                        statusBadge = `<span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">Đã duyệt</span> ${countdown.html}`;
                     }
 
                     return `
@@ -2669,7 +2669,7 @@ class AppController {
                         </td>
                         <td>
                             <div style="font-size:11.5px; color:#475569;">${p.createdTimeStr || 'Vừa xong'}</div>
-                            <span style="background:#fef3c7; color:#b45309; padding:2px 6px; border-radius:4px; font-size:10.5px; font-weight:700;">⏳ Chờ duyệt</span>
+                            <span style="background:#fef3c7; color:#b45309; padding:2px 6px; border-radius:4px; font-size:10.5px; font-weight:700;">Chờ duyệt</span>
                         </td>
                         <td>
                             <div style="display:flex; flex-direction:column; gap:5px;">
@@ -4409,7 +4409,7 @@ function openCheckoutModal(productId) {
     document.getElementById('modalProductTitle').innerText = item.title;
     document.getElementById('modalProductPrice').innerText = `${formatNumber(item.price)} VNĐ`;
     document.getElementById('modalSellerName').innerText = item.seller;
-    document.getElementById('modalSellerRep').innerText = `★ ${item.sellerRep}/100`;
+    document.getElementById('modalSellerRep').innerText = `${item.sellerRep}/100`;
 
     const sellerUserForModal = (window.app.registeredUsers || []).find(u => 
         (item.sellerEmail && u.email && u.email.toLowerCase() === item.sellerEmail.toLowerCase()) ||
@@ -4445,7 +4445,7 @@ function openCheckoutModal(productId) {
         confirmBtn.style.background = '#94a3b8';
         confirmBtn.disabled = true;
     } else {
-        confirmBtn.innerText = '🤝 Đặt Cọc & Giữ Chỗ';
+        confirmBtn.innerText = 'Đặt Cọc & Giữ Chỗ';
         confirmBtn.style.background = '#6366f1';
         confirmBtn.disabled = false;
     }
@@ -4490,10 +4490,10 @@ function updateCheckoutCalculations() {
         if (availableCoins <= 0 || coinsToUse <= 0) {
             coinCheckbox.checked = false;
             coinCheckbox.disabled = true;
-            coinLabel.innerHTML = `<span style="color:#64748b;">🪙 Bạn hiện có <strong>0 Xu</strong> (Chưa đủ xu để giảm giá mặt hàng)</span>`;
+            coinLabel.innerHTML = `<span style="color:#64748b;">Bạn hiện có <strong>0 Xu</strong> (Chưa đủ xu để giảm giá mặt hàng)</span>`;
         } else {
             coinCheckbox.disabled = false;
-            coinLabel.innerHTML = `🪙 Dùng <strong>${formatNumber(coinsToUse)} Xu</strong> (30% trong tổng ${formatNumber(availableCoins)} Xu hiện có) để giảm <strong style="color:#16a34a;">-${formatNumber(discountVND)} đ</strong>`;
+            coinLabel.innerHTML = `Dùng <strong>${formatNumber(coinsToUse)} Xu</strong> (30% trong tổng ${formatNumber(availableCoins)} Xu hiện có) để giảm <strong style="color:#16a34a;">-${formatNumber(discountVND)} đ</strong>`;
         }
     }
 
@@ -4749,7 +4749,7 @@ function confirmTradeComplete(orderId, role) {
         }
 
         if (window.sound) window.sound.playSuccess();
-        showToast(`🎉 Giao dịch thành công 100%! Cả hai bên đã xác nhận hoàn tất. Bài đăng "${order.productTitle}" và lịch sử chat đã được tự động dọn dẹp bảo mật (+2 điểm uy tín)!`, 'success');
+        showToast(`Giao dịch thành công 100%! Cả hai bên đã xác nhận hoàn tất. Bài đăng "${order.productTitle}" và lịch sử chat đã được tự động dọn dẹp bảo mật (+2 điểm uy tín)!`, 'success');
     } else {
         // Chỉ mới 1 bên xác nhận
         order.status = 'pending_mutual';
@@ -5908,7 +5908,7 @@ function openAdminUserProfileModal(userIdentifier) {
                 if (p.status === 'pending') {
                     statusBg = '#fef3c7';
                     statusColor = '#b45309';
-                    statusText = '⏳ Chờ duyệt TimeMark';
+                    statusText = 'Chờ duyệt TimeMark';
                 } else if (p.status === 'completed') {
                     statusBg = '#e0f2fe';
                     statusColor = '#0369a1';
