@@ -2026,7 +2026,7 @@ class AppController {
                                 ${statusBadge}
                             </div>
                             <div style="color:#0284c7; font-size:11.5px; margin-top:3px;">
-                                ${formatNumber(p.price)} đ • TimeMark: <strong>${p.timemarkCode}</strong>
+                                ${formatNumber(p.price)} đ
                                 ${p.timemarkProofUrl ? ` • <a href="javascript:void(0)" onclick="openZoomImageModal('${p.timemarkProofUrl}', 'Ảnh TimeMark: ${p.title}')" style="color:#16a34a; font-weight:700; text-decoration:underline;">🔍 Xem ảnh TimeMark đã chụp</a>` : ''}
                             </div>
                         </div>
@@ -4403,7 +4403,7 @@ function openCheckoutModal(productId) {
     currentCheckoutProduct = item;
 
     document.getElementById('modalProductImage').src = item.imageUrl;
-    document.getElementById('modalProductTimeMark').innerText = `✓ Xác minh TimeMark: ${item.timemarkCode}`;
+    // modalProductTimeMark hidden
     document.getElementById('modalProductCategory').innerText = getCategoryName(item.category);
     document.getElementById('modalProductExpiry').innerText = `Hết hạn sau: ${item.expiryDays} ngày`;
     document.getElementById('modalProductTitle').innerText = item.title;
