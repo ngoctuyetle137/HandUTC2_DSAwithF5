@@ -1603,7 +1603,7 @@ class AppController {
         if (!post) {
             return {
                 text: 'Còn 7 ngày',
-                html: '<span style="background:#fffbeb; color:#d97706; padding:2px 7px; border-radius:4px; font-weight:700; font-size:11px;">⏳ Hết hạn sau: 7 ngày</span>',
+                html: '<span style="background:#fffbeb; color:#d97706; padding:2px 7px; border-radius:4px; font-weight:700; font-size:11px;">Hết hạn sau: 7 ngày</span>',
                 isExpired: false
             };
         }
@@ -1618,7 +1618,7 @@ class AppController {
                 text: 'Đã hết hạn 7 ngày',
                 isExpired: true,
                 isUrgent: true,
-                html: '<span style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; padding:2px 7px; border-radius:4px; font-weight:700; font-size:11px;">⚠️ Đã hết hạn (Tự xóa)</span>'
+                html: '<span style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; padding:2px 7px; border-radius:4px; font-weight:700; font-size:11px;">Đã hết hạn</span>'
             };
         }
 
@@ -1970,7 +1970,7 @@ class AppController {
                                 <span class="verified-sv-tag" title="Sinh viên ST.UTC2 đã xác minh">✓ SV</span>
                             </span>
                             <span class="card-rep-badge" title="Đánh giá uy tín sinh viên">
-                                ⭐ ${starScore} (${reviewCount})
+                                 ★${starScore} (${reviewCount})
                             </span>
                         </div>
 
@@ -1979,7 +1979,7 @@ class AppController {
                         </div>
 
                         <div class="card-trust-guarantee">
-                            <span>🛡️ Kiểm tra hàng trực tiếp tại trường</span>
+                            <span>Kiểm tra hàng trực tiếp tại trường</span>
                         </div>
 
                         <div class="card-expiry-row">
@@ -1987,7 +1987,7 @@ class AppController {
                         </div>
 
                         <button class="card-cta-btn" onclick="event.stopPropagation(); openCheckoutModal('${item.id}')">
-                            ${isMyItem ? '👀 Xem chi tiết (Đồ của bạn) ➔' : '🛒 Mua Ngay / Xem Chi Tiết ➔'}
+                            ${isMyItem ? 'Xem chi tiết (Đồ của bạn)' : 'Xem chi tiết'}
                         </button>
                     </div>
                 </div>
