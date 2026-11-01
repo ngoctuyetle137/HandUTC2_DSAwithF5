@@ -539,8 +539,6 @@ class AppController {
                 const cloudIds = new Set(cloudProducts.map(p => p.id));
                 const localOnly = this.products.filter(p => !cloudIds.has(p.id));
                 this.products = [...localOnly, ...cloudProducts];
-                // Sắp xếp bài mới nhất lên trên cùng trước khi lưu và hiển thị
-                this.products.sort((a, b) => getProductTimestamp(b) - getProductTimestamp(a));
                 this.saveProducts();
                 this.rebuildDSACache();
                 this.renderProducts();
@@ -1847,44 +1845,7 @@ class AppController {
     }
 
     // Lọc sản phẩm
-    function getProductTimestamp(p) {
-    if (!p) return 0;
-    // 1. Ưu tiên approvedAt (thời điểm bài được Admin / AI duyệt lên sàn)
-    if (typeof p.approvedAt === 'number' && p.approvedAt > 0) return p.approvedAt;
-    if (p.approvedAt) {
-        const t = new Date(p.approvedAt).getTime();
-        if (!isNaN(t) && t > 0) return t;
-    }
-    // 2. submittedAt (thời điểm bài được đăng lên hệ thống)
-    if (typeof p.submittedAt === 'number' && p.submittedAt > 0) return p.submittedAt;
-    if (p.submittedAt) {
-        const t = new Date(p.submittedAt).getTime();
-        if (!isNaN(t) && t > 0) return t;
-    }
-    // 3. created_at từ Supabase Cloud
-    if (p.created_at) {
-        const t = new Date(p.created_at).getTime();
-        if (!isNaN(t) && t > 0) return t;
-    }
-    if (p.createdAt) {
-        const t = new Date(p.createdAt).getTime();
-        if (!isNaN(t) && t > 0) return t;
-    }
-    // 4. Trích xuất timestamp từ id dạng P_1730000000000 (do Date.now() tạo ra)
-    if (typeof p.id === 'string' && p.id.startsWith('P_')) {
-        const num = parseInt(p.id.replace('P_', ''));
-        if (!isNaN(num) && num > 1000000000) return num;
-    }
-    // 5. Đối với các bài demo tĩnh ban đầu (gán mốc thời gian cũ hơn để bài người dùng đăng luôn vượt lên trên)
-    const baseDemoTime = 1730000000000;
-    if (p.id === 'P02') return baseDemoTime + 3600000;
-    if (p.id === 'P01') return baseDemoTime;
-    if (p.id === 'P03') return baseDemoTime - 3600000;
-    if (p.id === 'P04') return baseDemoTime - 7200000;
-    return 0;
-}
-
-getFilteredItems() {
+    getFilteredItems() {
         // Chỉ lấy các bài đã được Admin phê duyệt (Loại bỏ các bài đang chờ duyệt TimeMark hoặc bị từ chối)
         const baseApprovedProducts = this.products.filter(p => p.status !== 'pending' && p.status !== 'rejected');
         let items = [...baseApprovedProducts];
@@ -1922,9 +1883,6 @@ getFilteredItems() {
             items.sort((a, b) => b.price - a.price);
         } else if (this.sortBy === 'distance') {
             items.sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
-        } else {
-            // Mặc định hoặc 'newest': BÀI MỚI ĐĂNG / MỚI DUYỆT NHẤT LUÔN LUÔN Ở TRÊN CÙNG
-            items.sort((a, b) => getProductTimestamp(b) - getProductTimestamp(a));
         }
 
         return items;
@@ -4126,7 +4084,6 @@ function adminApproveAllPendingPosts() {
     pendingList.forEach(p => {
         p.status = 'approved';
         p.approvedAt = Date.now();
-        p.submittedAt = p.submittedAt || Date.now();
         window.app.addNotification({
             targetName: p.seller,
             targetEmail: p.sellerEmail,
@@ -4143,7 +4100,6 @@ function adminApproveAllPendingPosts() {
         }
     });
 
-    window.app.products.sort((a, b) => getProductTimestamp(b) - getProductTimestamp(a));
     window.app.saveProducts();
     window.app.rebuildDSACache();
     window.app.renderProducts();
@@ -4151,7 +4107,7 @@ function adminApproveAllPendingPosts() {
     window.app.renderProfile();
 
     if (window.sound) window.sound.playSuccess();
-    showToast(`Đã duyệt toàn bộ ${pendingList.length} bài đăng lên trang chính!`, 'success');
+    showToast(`✓ Đã duyệt toàn bộ ${pendingList.length} bài đăng lên trang chính!`, 'success');
 }
 
 function adminRejectPost(postId) {

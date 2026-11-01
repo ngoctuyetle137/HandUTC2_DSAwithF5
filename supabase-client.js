@@ -271,9 +271,6 @@
                         timemarkProofUrl: item.timemark_proof_url || '',
                         description: rawDesc.replace(/^\[BỊ TỪ CHỐI[^\]]*\]\s*/i, ''),
                         rejectReason: rejectReason,
-                        created_at: item.created_at,
-                        approvedAt: item.created_at ? new Date(item.created_at).getTime() : Date.now(),
-                        submittedAt: item.created_at ? new Date(item.created_at).getTime() : Date.now(),
                         status: clientStatus
                     };
                 });
