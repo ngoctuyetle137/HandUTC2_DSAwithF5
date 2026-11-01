@@ -1783,6 +1783,23 @@ class AppController {
         if (profEmail) profEmail.innerText = this.user.email;
         if (profRep) profRep.innerText = this.user.reputation;
         
+        const profCoin = document.getElementById('profileCoinScore');
+        if (profCoin) profCoin.innerText = this.user.coins || 0;
+
+        const repAlertBox = document.getElementById('profileReputationAlertBox');
+        if (repAlertBox) {
+            const r = this.user.reputation !== undefined ? this.user.reputation : 95;
+            if (r < 60) {
+                repAlertBox.style.display = 'block';
+                repAlertBox.innerHTML = '<span style="display:inline-block; background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:6px; font-weight:700; border:1px solid #fecaca;">Uy tín dưới 60: Bị khóa đăng bán & đặt cọc (Hãy đổi 50 xu để gỡ khóa)</span>';
+            } else if (r < 90) {
+                repAlertBox.style.display = 'block';
+                repAlertBox.innerHTML = '<span style="display:inline-block; background:#fef3c7; color:#92400e; padding:4px 10px; border-radius:6px; font-weight:700; border:1px solid #fde68a;">Uy tín dưới 90: Bị khóa quyền đặt cọc (Hãy đăng bán hoặc đổi 50 xu để nâng điểm)</span>';
+            } else {
+                repAlertBox.style.display = 'none';
+            }
+        }
+        
         if (profAvatar) {
             if (customAvatar) {
                 profAvatar.innerHTML = `<img src="${customAvatar}" alt="${this.user.name}" class="avatar-img-fit">`;
@@ -4004,19 +4021,51 @@ function openChatFromModal() {
 }
 
 // ==========================================
-// 6. ADMIN DASHBOARD LOGIC (XÓA BÀI, CẢNH CÁO, DUYỆT KHÁNG NGHỊ)
+// 6. ADMIN DASHBOARD LOGIC (XÓA BÀI, CẢNH CÁO, DUYỆT KHÁNG NGHỊ & UNDO STACK)
 // ==========================================
-function adminDeletePost(postId) {
-    const post = window.app.products.find(p => p.id === postId);
-    if (!post) return;
+// 1. Khởi tạo Undo Stack (Cấu trúc dữ liệu Stack LIFO)
+let adminUndoStack = [];
 
-    const reason = prompt(`Nhập lý do xóa bài đăng "${post.title}":`, 'Vi phạm quy định: Không chụp ảnh kèm mã TimeMark thực tế');
+function renderAdminPosts() {
+    if (window.app && typeof window.app.renderAdminDashboard === 'function') {
+        window.app.renderAdminDashboard();
+    }
+}
+window.renderAdminPosts = renderAdminPosts;
+
+// 2. Hàm khi Admin bấm nút Xóa bài đăng
+function deletePost(postId) {
+    adminDeletePost(postId);
+}
+window.deletePost = deletePost;
+
+function adminDeletePost(postId) {
+    const postsData = (window.app && window.app.products) ? window.app.products : [];
+    // Tìm vị trí bài viết trong mảng dữ liệu hiện tại
+    const postIndex = postsData.findIndex(p => p.id === postId);
+    if (postIndex === -1) return;
+
+    const deletedPost = postsData[postIndex];
+
+    const reason = prompt(`Nhập lý do xóa bài đăng "${deletedPost.title}":`, 'Vi phạm quy định: Không chụp ảnh kèm mã TimeMark thực tế');
     if (reason === null) return;
 
-    window.app.products = window.app.products.filter(p => p.id !== postId);
-    window.app.saveProducts();
-    window.app.renderProducts();
-    window.app.renderAdminDashboard();
+    // PUSH vào Undo Stack (Lưu cả thông tin và vị trí cũ)
+    adminUndoStack.push({ post: deletedPost, index: postIndex, reason: reason });
+
+    // Xóa khỏi danh sách hiển thị
+    postsData.splice(postIndex, 1);
+
+    if (window.app) {
+        window.app.saveProducts();
+        window.app.rebuildDSACache();
+        window.app.renderProducts();
+    }
+    renderAdminPosts(); // Vẽ lại bảng
+
+    // Hiện nút Hoàn tác
+    const btnUndo = document.getElementById('btnAdminUndo');
+    if (btnUndo) btnUndo.style.display = 'inline-block';
 
     // Đồng bộ xóa bài lên mạng đa máy
     if (window.UniPassOnlineSync) {
@@ -4029,16 +4078,75 @@ function adminDeletePost(postId) {
     }
 
     if (window.sound) window.sound.playSuccess();
-    showToast(`Admin đã xóa bài đăng "${post.title}". Lý do: ${reason}`, 'success');
+    alert(`Đã xóa bài "${deletedPost.title}". Bạn có thể bấm Hoàn tác nếu xóa nhầm!`);
+    if (typeof showToast === 'function') {
+        showToast(`Đã xóa bài "${deletedPost.title}". Bạn có thể bấm Hoàn tác nếu xóa nhầm!`, 'info');
+    }
 
-    if (window.app.syncChannel) {
+    if (window.app && window.app.syncChannel) {
         window.app.syncChannel.postMessage({
             type: 'USER_WARNED',
-            targetName: post.seller,
-            message: `Bài đăng "${post.title}" của bạn đã bị Admin gỡ bỏ vì: ${reason}.`
+            targetName: deletedPost.seller,
+            message: `Bài đăng "${deletedPost.title}" của bạn đã bị Admin gỡ bỏ vì: ${reason}.`
         });
     }
 }
+window.adminDeletePost = adminDeletePost;
+
+// 3. Hàm khi Admin bấm nút "Hoàn tác (Undo)" hoặc nhấn Ctrl + Z
+function undoDeletePost() {
+    if (adminUndoStack.length === 0) {
+        alert("Không có thao tác nào để hoàn tác!");
+        return;
+    }
+
+    // POP phần tử trên đỉnh Stack ra (LIFO)
+    const lastAction = adminUndoStack.pop();
+    const postsData = (window.app && window.app.products) ? window.app.products : [];
+
+    // Khôi phục lại đúng vị trí cũ trong danh sách
+    const insertIdx = Math.min(lastAction.index, postsData.length);
+    postsData.splice(insertIdx, 0, lastAction.post);
+
+    if (window.app) {
+        window.app.saveProducts();
+        window.app.rebuildDSACache();
+        window.app.renderProducts();
+    }
+    renderAdminPosts(); // Cập nhật lại giao diện
+
+    // Đồng bộ phục hồi lại lên Supabase Cloud & Đa máy
+    if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+        window.UniPassSupabase.addProduct(lastAction.post);
+    }
+    if (window.UniPassOnlineSync) {
+        window.UniPassOnlineSync.broadcastNewPost(lastAction.post);
+    }
+
+    if (window.sound) window.sound.playSuccess();
+    alert(`Đã khôi phục thành công bài: "${lastAction.post.title}"`);
+    if (typeof showToast === 'function') {
+        showToast(`↩ Đã khôi phục bài: "${lastAction.post.title}"`, 'success');
+    }
+
+    // Nếu Stack rỗng thì ẩn nút Undo đi
+    if (adminUndoStack.length === 0) {
+        const btnUndo = document.getElementById('btnAdminUndo');
+        if (btnUndo) btnUndo.style.display = 'none';
+    }
+}
+window.undoDeletePost = undoDeletePost;
+
+// 4. Bắt sự kiện phím tắt Ctrl + Z
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        // Chỉ kích hoạt khi Undo stack có phần tử
+        if (adminUndoStack.length > 0) {
+            e.preventDefault();
+            undoDeletePost();
+        }
+    }
+});
 
 function adminApprovePost(postId) {
     const post = window.app.products.find(p => p.id === postId);
@@ -4047,14 +4155,17 @@ function adminApprovePost(postId) {
     post.status = 'approved';
     post.approvedAt = Date.now();
 
-    // Thưởng 1 điểm uy tín cho người bán vì làm đúng quy trình TimeMark chống lừa đảo
+    // Thưởng 5 điểm uy tín cho người bán vì đăng bán thành công
     const seller = window.app.registeredUsers.find(u => u.name === post.seller || u.email === post.sellerEmail);
     if (seller) {
-        seller.reputation = Math.min(100, (seller.reputation || 95) + 1);
+        seller.reputation = Math.min(100, (seller.reputation || 95) + 5);
         window.app.saveUsers();
         if (window.app.user && (window.app.user.email === seller.email || window.app.user.name === seller.name)) {
             window.app.user.reputation = seller.reputation;
             window.app.updateUserUI();
+        }
+        if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+            window.UniPassSupabase.upsertProfile(seller);
         }
     }
 
@@ -4072,7 +4183,7 @@ function adminApprovePost(postId) {
         targetName: post.seller,
         targetEmail: post.sellerEmail,
         title: 'Bài đăng đã được duyệt!',
-        message: `Bài đăng "${post.title}" của bạn đã được Admin phê duyệt TimeMark và hiển thị lên trang chính (+1 điểm uy tín). Bài sẽ tự động xóa sau 7 ngày kể từ lúc duyệt.`,
+        message: `Bài đăng "${post.title}" của bạn đã được Admin phê duyệt TimeMark và hiển thị lên trang chính (+5 điểm uy tín). Bài sẽ tự động xóa sau 7 ngày kể từ lúc duyệt.`,
         type: 'post_approved',
         relatedId: post.id
     });
@@ -4086,7 +4197,7 @@ function adminApprovePost(postId) {
     }
 
     if (window.sound) window.sound.playSuccess();
-    showToast(`✓ Đã duyệt bài "${post.title}"! Bài đăng đã chính thức hiển thị trên trang chính (+1 điểm uy tín cho ${post.seller})!`, 'success');
+    showToast(`✓ Đã duyệt bài "${post.title}"! Đăng bán thành công (+5 điểm uy tín cho ${post.seller})!`, 'success');
 }
 
 function adminApproveAllPendingPosts() {
@@ -4099,11 +4210,18 @@ function adminApproveAllPendingPosts() {
     pendingList.forEach(p => {
         p.status = 'approved';
         p.approvedAt = Date.now();
+        const seller = window.app.registeredUsers.find(u => u.name === p.seller || u.email === p.sellerEmail);
+        if (seller) {
+            seller.reputation = Math.min(100, (seller.reputation || 95) + 5);
+            if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+                window.UniPassSupabase.upsertProfile(seller);
+            }
+        }
         window.app.addNotification({
             targetName: p.seller,
             targetEmail: p.sellerEmail,
             title: 'Bài đăng đã được duyệt!',
-            message: `Bài đăng "${p.title}" của bạn đã được Admin phê duyệt TimeMark và hiển thị lên trang chính (+1 điểm uy tín). Bài sẽ tự động xóa sau 7 ngày kể từ lúc duyệt.`,
+            message: `Bài đăng "${p.title}" của bạn đã được Admin phê duyệt TimeMark và hiển thị lên trang chính (+5 điểm uy tín). Bài sẽ tự động xóa sau 7 ngày kể từ lúc duyệt.`,
             type: 'post_approved',
             relatedId: p.id
         });
@@ -4115,6 +4233,13 @@ function adminApproveAllPendingPosts() {
         }
     });
 
+    window.app.saveUsers();
+    if (window.app.user) {
+        const myU = window.app.registeredUsers.find(u => u.email === window.app.user.email);
+        if (myU) window.app.user.reputation = myU.reputation;
+        window.app.updateUserUI();
+    }
+
     window.app.saveProducts();
     window.app.rebuildDSACache();
     window.app.renderProducts();
@@ -4122,7 +4247,7 @@ function adminApproveAllPendingPosts() {
     window.app.renderProfile();
 
     if (window.sound) window.sound.playSuccess();
-    showToast(`✓ Đã duyệt toàn bộ ${pendingList.length} bài đăng lên trang chính!`, 'success');
+    showToast(`✓ Đã duyệt toàn bộ ${pendingList.length} bài đăng lên trang chính (+5 điểm uy tín)!`, 'success');
 }
 
 function adminRejectPost(postId) {
@@ -4636,8 +4761,13 @@ function updateCheckoutCalculations() {
 function confirmDepositOrder() {
     if (!currentCheckoutProduct) return;
 
-    if (window.app.user.reputation < 90) {
-        showToast('Điểm uy tín dưới 90! Bạn bị khóa quyền đặt cọc.', 'danger');
+    const userRep = (window.app && window.app.user) ? (window.app.user.reputation !== undefined ? window.app.user.reputation : 95) : 95;
+    if (userRep < 60) {
+        showToast(`Điểm uy tín của bạn là ${userRep}/100 (dưới 60 điểm)! Bạn bị khóa cả quyền đăng bán và đặt cọc. Hãy đổi 50 xu để nâng 5 điểm uy tín!`, 'danger');
+        return;
+    }
+    if (userRep < 90) {
+        showToast(`Điểm uy tín của bạn là ${userRep}/100 (dưới 90 điểm)! Bạn bị tạm khóa quyền đặt cọc. Hãy đăng bán đồ thành công (+5 điểm) hoặc đổi 50 xu để nâng điểm!`, 'danger');
         return;
     }
 
@@ -5602,6 +5732,12 @@ function handlePostSubmit(e) {
         return;
     }
 
+    const currentRep = window.app.user.reputation !== undefined ? window.app.user.reputation : 95;
+    if (currentRep < 60) {
+        showToast(`Điểm uy tín của bạn là ${currentRep}/100 (dưới 60 điểm)! Bạn bị tạm khóa quyền đăng bán đồ và đặt cọc. Hãy đổi 50 xu để nâng +5 điểm uy tín!`, 'danger');
+        return;
+    }
+
     const title = document.getElementById('newPostTitle').value.trim();
     const rawPrice = document.getElementById('newPostPrice').value;
     const price = parseInt(String(rawPrice).replace(/[^\d]/g, '')) || 0;
@@ -5689,11 +5825,14 @@ function confirmPublishPostWithProof() {
         pendingNewPost.approvedAt = Date.now();
         pendingNewPost.autoApprovedByAI = true;
 
-        // Thưởng 1 điểm uy tín cho người bán vì chụp ảnh xác thực mẩu giấy viết tay chuẩn xác
+        // Thưởng 5 điểm uy tín cho người bán vì đăng bán thành công
         if (window.app.user) {
-            window.app.user.reputation = Math.min(100, (window.app.user.reputation || 95) + 1);
+            window.app.user.reputation = Math.min(100, (window.app.user.reputation || 95) + 5);
             window.app.saveUsers();
             window.app.updateUserUI();
+            if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+                window.UniPassSupabase.upsertProfile(window.app.user);
+            }
         }
     } else {
         pendingNewPost.status = 'pending'; // ⏳ Nếu độ khớp < 95%: Chờ Admin kiểm duyệt thủ công
@@ -5736,10 +5875,10 @@ function confirmPublishPostWithProof() {
 
     if (isAutoApproved) {
         switchNavTab('home'); // Chuyển về ngay Sàn Đồ để người dùng và các tài khoản khác thấy bài đăng ngay!
-        showToast(`Xác thực mẩu giấy thành công (khớp ${ocr.confidence}%). Bài đăng "${pendingNewPost.title}" đã được duyệt và hiển thị trên Sàn Đồ!`, 'success');
+        showToast(`Xác thực mẩu giấy thành công (khớp ${ocr.confidence}%). Bài đăng "${pendingNewPost.title}" đã được duyệt lên Sàn Đồ (+5 điểm uy tín)!`, 'success');
     } else {
         switchNavTab('profile');
-        showToast(`Đã gửi bài "${pendingNewPost.title}"! Ảnh chữ viết tay đang chờ kiểm duyệt trước khi hiển thị.`, 'info');
+        showToast(`Đã gửi bài "${pendingNewPost.title}"! Đang chờ Admin duyệt TimeMark (sẽ được +5 điểm uy tín khi duyệt).`, 'info');
     }
 
     pendingNewPost = null;
@@ -5771,6 +5910,17 @@ function removePost(id) {
 }
 
 function openModal(id) {
+    if (id === 'createPostModal') {
+        if (!window.app || !window.app.user) {
+            showToast('Vui lòng đăng nhập trước khi đăng bài pass đồ!', 'warning');
+            return;
+        }
+        const rep = window.app.user.reputation !== undefined ? window.app.user.reputation : 95;
+        if (rep < 60) {
+            showToast(`Điểm uy tín của bạn là ${rep}/100 (dưới 60 điểm)! Bạn bị khóa quyền đăng bán và đặt cọc. Hãy đổi 50 xu để nâng 5 điểm uy tín!`, 'danger');
+            return;
+        }
+    }
     const el = document.getElementById(id);
     if (el) el.classList.add('active');
 }
@@ -5780,9 +5930,82 @@ function closeModal(id) {
     if (el) el.classList.remove('active');
 }
 
-function openReputationRules() {
-    showToast('Điểm uy tín: 95 mặc định, max 100. <90 sẽ bị khóa quyền cọc & pass đồ!', 'info');
+function openCreatePostModal() {
+    if (!window.app || !window.app.user) {
+        showToast('Vui lòng đăng nhập trước khi đăng bài pass đồ!', 'warning');
+        return;
+    }
+    const rep = window.app.user.reputation !== undefined ? window.app.user.reputation : 95;
+    if (rep < 60) {
+        showToast(`Điểm uy tín của bạn là ${rep}/100 (dưới 60 điểm)! Bạn bị tạm khóa quyền đăng bán và đặt cọc. Hãy đổi 50 xu để nâng +5 điểm uy tín!`, 'danger');
+        return;
+    }
+    openModal('createPostModal');
 }
+window.openCreatePostModal = openCreatePostModal;
+
+function openReputationRules() {
+    const modal = document.getElementById('reputationRulesModal');
+    if (modal) {
+        modal.classList.add('active');
+    } else {
+        showToast('Quy chế uy tín: Dưới 90 khóa cọc, dưới 60 khóa cọc & bán. Đăng bán thành công +5 điểm hoặc đổi 50 xu = +5 điểm!', 'info');
+    }
+}
+window.openReputationRules = openReputationRules;
+
+function exchangeCoinsForReputation() {
+    if (!window.app || !window.app.user) {
+        showToast('Vui lòng đăng nhập trước khi đổi xu nâng điểm uy tín!', 'warning');
+        return;
+    }
+
+    const u = window.app.user;
+    const currentRep = u.reputation !== undefined ? u.reputation : 95;
+    const currentCoins = u.coins || 0;
+
+    if (currentRep >= 100) {
+        showToast('Điểm uy tín của bạn đã đạt mức tối đa 100/100, không cần đổi thêm!', 'info');
+        return;
+    }
+
+    const COST_COINS = 50;
+    const BONUS_REP = 5;
+
+    if (currentCoins < COST_COINS) {
+        showToast(`Bạn không đủ xu! Cần ${COST_COINS} Xu để nâng +${BONUS_REP} điểm uy tín (Hiện có ${currentCoins} Xu). Hãy vào tab "Kéo Thả Săn Xu" để kiếm thêm xu nhé!`, 'warning');
+        return;
+    }
+
+    u.coins = Math.max(0, currentCoins - COST_COINS);
+    u.reputation = Math.min(100, currentRep + BONUS_REP);
+
+    // Đồng bộ vào registeredUsers
+    const regUser = window.app.registeredUsers.find(ru => ru.email === u.email);
+    if (regUser) {
+        regUser.coins = u.coins;
+        regUser.reputation = u.reputation;
+    }
+    window.app.saveUsers();
+    window.app.updateUserUI();
+    if (typeof window.app.renderProfile === 'function') {
+        window.app.renderProfile();
+    }
+
+    // Đồng bộ lên Supabase nếu có
+    if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+        window.UniPassSupabase.upsertProfile(u);
+    }
+
+    // Đồng bộ Realtime P2P
+    if (window.UniPassOnlineSync) {
+        window.UniPassOnlineSync.broadcastUserRegistered(u);
+    }
+
+    if (window.sound) window.sound.playSuccess();
+    showToast(`Đã dùng 50 Xu nâng +5 điểm uy tín! Điểm uy tín hiện tại: ${u.reputation}/100 (Còn lại: ${u.coins} Xu).`, 'success');
+}
+window.exchangeCoinsForReputation = exchangeCoinsForReputation;
 
 // ==========================================
 // TÍNH NĂNG TẢI ẢNH ĐẠI DIỆN CÁ NHÂN (AVATAR)

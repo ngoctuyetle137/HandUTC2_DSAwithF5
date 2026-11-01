@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -232,7 +232,7 @@
                 <button class="nav-item-btn active" data-tab="home" onclick="switchNavTab('home')">
                     <span></span> Săn Đồ
                 </button>
-                <button class="nav-item-btn" data-tab="post" onclick="openModal('createPostModal')">
+                <button class="nav-item-btn" data-tab="post" onclick="openCreatePostModal()">
                     <span></span> Đăng Bài & TimeMark
                 </button>
                 <button class="nav-item-btn" data-tab="chat" onclick="openChatBetweenUsers()">
@@ -561,11 +561,18 @@
 
             <!-- Panel 1: Quản Lý & Xóa Bài Đăng Rác / Phá Giá -->
             <div class="admin-panel-card">
-                <div class="admin-panel-header">
-                    <div class="admin-panel-title">
-                        <span></span> Quản Lý Toàn Bộ Bài Đăng Đã Duyệt (Tin Hoạt Động)
+                <div class="admin-panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <div class="admin-panel-title">
+                            <span></span> Quản Lý Toàn Bộ Bài Đăng Đã Duyệt (Tin Hoạt Động)
+                        </div>
+                        <span style="font-size:12px; color:#64748b;">Admin có quyền xóa bài đăng vi phạm TimeMark hoặc phá giá</span>
                     </div>
-                    <span style="font-size:12px; color:#64748b;">Admin có quyền xóa bài đăng vi phạm TimeMark hoặc phá giá</span>
+                    <div>
+                        <button id="btnAdminUndo" onclick="undoDeletePost()" style="display: none; background: #e67e22; color: #fff; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer;">
+                            ↩ Hoàn tác xóa bài (Undo)
+                        </button>
+                    </div>
                 </div>
 
                 <div style="overflow-x:auto;">
@@ -699,14 +706,22 @@
                             <div style="margin-top:4px; font-size:12.5px; color:#16a34a; font-weight:700;">
                                 Điểm uy tín: <span id="profileRepScore">95</span>/100
                             </div>
+                            <div style="margin-top:2px; font-size:12.5px; color:#d97706; font-weight:700;">
+                                Số dư: <span id="profileCoinScore">20</span> Xu
+                            </div>
+                            <div id="profileReputationAlertBox" style="margin-top:6px; font-size:11.5px; display:none;">
+                            </div>
                         </div>
                     </div>
 
                     <div style="display:flex; gap:10px;">
+                        <button class="btn-outline-chat" style="font-size:12px; padding:8px 14px; background:#fffbeb; color:#b45309; border-color:#fde68a; font-weight:700;" onclick="exchangeCoinsForReputation()" title="Dùng 50 xu để cộng +5 điểm uy tín">
+                            Đổi 50 Xu (+5 Uy Tín)
+                        </button>
                         <button class="btn-outline-chat" style="font-size:12px; padding:8px 14px;" onclick="openReputationRules()">
                             Quy chế uy tín
                         </button>
-                        <button class="apply-filter-btn" style="background:linear-gradient(135deg, #f59e0b, #d97706); width:auto; font-size:12px; padding:8px 16px;" onclick="openModal('createPostModal')">
+                        <button class="apply-filter-btn" style="background:linear-gradient(135deg, #f59e0b, #d97706); width:auto; font-size:12px; padding:8px 16px;" onclick="openCreatePostModal()">
                             + Đăng Đồ Pass
                         </button>
                     </div>
@@ -928,6 +943,48 @@
     <!-- ==========================================
          MODAL ĐĂNG BÀI PASS ĐỒ (TIMEMARK)
          ========================================== -->
+    <!-- ==========================================
+         MODAL QUY CHẾ ĐIỂM UY TÍN UTC2HAND
+         ========================================== -->
+    <div class="checkout-modal-overlay" id="reputationRulesModal">
+        <div class="checkout-modal-card" style="max-width:500px;">
+            <button class="checkout-close-btn" onclick="closeModal('reputationRulesModal')">✕</button>
+            <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin-bottom:6px;">Quy Chế Điểm Uy Tín UTC2Hand</h3>
+            <p style="font-size:12.5px; color:#64748b; margin-bottom:14px;">Bảo vệ quyền lợi sinh viên và văn hóa trao đổi đồ dùng minh bạch tại UTC2.</p>
+            
+            <div style="display:flex; flex-direction:column; gap:10px; font-size:13px; color:#334155;">
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px;">
+                    <strong style="color:#166534;">Điểm ban đầu & Tối đa:</strong>
+                    <div style="margin-top:2px; font-size:12.5px; color:#14532d;">Tài khoản mới bắt đầu với <strong>95 điểm</strong>, điểm tối đa là <strong>100 điểm</strong>.</div>
+                </div>
+
+                <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 12px;">
+                    <strong style="color:#b45309;">Dưới 90 điểm: Khóa quyền đặt cọc</strong>
+                    <div style="margin-top:2px; font-size:12.5px; color:#92400e;">Khi điểm uy tín &lt; 90, bạn không được đặt cọc mua hàng để bảo đảm tính nghiêm túc của giao dịch.</div>
+                </div>
+
+                <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 12px;">
+                    <strong style="color:#b91c1c;">Dưới 60 điểm: Khóa cả Đăng bán & Đặt cọc</strong>
+                    <div style="margin-top:2px; font-size:12.5px; color:#991b1b;">Khi điểm uy tín &lt; 60, tài khoản bị tạm khóa cả quyền đăng đồ pass và quyền đặt cọc.</div>
+                </div>
+
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px;">
+                    <strong style="color:#0f172a;">Cách khôi phục và nâng điểm uy tín:</strong>
+                    <ul style="margin:4px 0 0 18px; padding:0; font-size:12.5px; color:#475569; line-height:1.6;">
+                        <li><strong>Đăng bán thành công:</strong> Khi bài đăng được duyệt thành công lên trang chính, bạn được <strong>cộng ngay +5 điểm uy tín</strong>.</li>
+                        <li><strong>Đổi xu nâng điểm:</strong> Dùng <strong>50 Xu = +5 điểm uy tín</strong> (bấm nút "Đổi 50 Xu" ở trang Cá nhân).</li>
+                        <li><strong>Kiếm thêm xu:</strong> Chơi mini-game "Kéo Thả Săn Xu" để tích lũy xu miễn phí.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" class="btn-outline-chat" onclick="closeModal('reputationRulesModal')">Đã hiểu</button>
+                <button type="button" class="apply-filter-btn" style="width:auto; padding:8px 16px; background:#d97706;" onclick="closeModal('reputationRulesModal'); exchangeCoinsForReputation();">Đổi 50 Xu Ngay</button>
+            </div>
+        </div>
+    </div>
+
     <div class="checkout-modal-overlay" id="createPostModal">
         <div class="checkout-modal-card" style="max-width:520px;">
             <button class="checkout-close-btn" onclick="closeModal('createPostModal')">✕</button>
