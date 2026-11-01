@@ -1883,6 +1883,21 @@ class AppController {
             items.sort((a, b) => b.price - a.price);
         } else if (this.sortBy === 'distance') {
             items.sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
+        } else if (this.sortBy === 'newest') {
+            items.sort((a, b) => {
+                const getTime = (p) => {
+                    if (p.approvedAt) return Number(p.approvedAt);
+                    if (p.submittedAt) return Number(p.submittedAt);
+                    if (p.id && String(p.id).startsWith('P_')) {
+                        const ts = parseInt(String(p.id).replace('P_', ''));
+                        if (!isNaN(ts)) return ts;
+                    }
+                    return 0;
+                };
+                const diff = getTime(b) - getTime(a);
+                if (diff !== 0) return diff;
+                return this.products.indexOf(a) - this.products.indexOf(b);
+            });
         }
 
         return items;
