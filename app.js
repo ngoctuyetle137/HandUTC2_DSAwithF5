@@ -1987,10 +1987,9 @@ class AppController {
             const isMyItem = this.user ? (item.seller === this.user.name) : false;
             const activeOrder = (this.depositOrders || []).find(o => 
                 o.productId === item.id && 
-                o.status !== 'cancelled' && 
-                o.status !== 'closed_penalized'
+                ['pending_seller', 'in_trade'].includes(o.status)
             );
-            const isDeposited = !!activeOrder || !!item.isDeposited;
+            const isDeposited = (!!activeOrder && item.isDeposited !== false) || (item.isDeposited === true && !activeOrder);
             const origPrice = item.originalPrice || Math.round((item.price * 1.5) / 10000) * 10000;
             const discountPct = (origPrice > item.price) ? Math.round((1 - item.price / origPrice) * 100) : 0;
             const starScore = ((item.sellerRep || 90) / 20).toFixed(1);
@@ -4575,6 +4574,74 @@ function adminPenalizeDispute(dispId) {
         }
     }
 
+    // 1. CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG: HỦY ĐƠN VI PHẠM
+    const order = window.app.depositOrders.find(o => 
+        o.id === dispute.orderId || 
+        (dispute.orderCode && o.orderCode === dispute.orderCode)
+    );
+    if (order) {
+        order.status = 'dispute_penalized';
+        order.isPenalized = true;
+        order.disputeResolvedAt = Date.now();
+    }
+    window.app.saveOrders();
+
+    // 2. BÀI VIẾT QUAY TRỞ LẠI BÁN BÌNH THƯỜNG TRÊN SÀN ĐỒ
+    const targetProductId = (order && order.productId) ? order.productId : dispute.productId;
+    let product = targetProductId ? window.app.products.find(p => p.id === targetProductId) : null;
+
+    if (product) {
+        product.isDeposited = false;
+        delete product.isDeposited;
+        delete product.depositOrderId;
+        product.status = 'approved'; // Mở bán lại bình thường
+    } else if (order) {
+        // Nếu bài viết đã bị gỡ trước đó: Khôi phục lại ngay lên đầu sàn đồ
+        product = {
+            id: order.productId,
+            title: order.productTitle,
+            price: order.productPrice || 50000,
+            originalPrice: Math.round((order.productPrice || 50000) * 1.5),
+            category: 'GiaoTrinh',
+            timemarkCode: 'UTC2-' + Math.floor(1000 + Math.random() * 9000),
+            seller: order.seller,
+            sellerEmail: order.sellerEmail,
+            sellerRep: 95,
+            location: order.meetLocation || 'Campus UTC2',
+            distanceKm: 0.5,
+            expiryDays: 7,
+            imageUrl: order.productImageUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=60',
+            description: 'Mặt hàng được mở bán lại bình thường sau khi Admin xử lý khiếu nại.',
+            status: 'approved',
+            isDeposited: false
+        };
+        window.app.products.unshift(product);
+    }
+
+    if (product) {
+        // Gửi thông báo tới người bán: bài đăng đã được mở bán lại bình thường
+        window.app.addNotification({
+            targetName: product.seller,
+            targetEmail: product.sellerEmail,
+            title: 'Bài đăng quay trở lại bán bình thường!',
+            message: `Admin đã duyệt xử phạt vi phạm đối phương (-${pointsToDeduct}đ uy tín). Món đồ "${product.title}" của bạn đã được mở bán bình thường trở lại trên Sàn Đồ.`,
+            type: 'post_approved',
+            relatedId: product.id
+        });
+
+        if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+            window.UniPassSupabase.updateProductStatus(product.id, 'approved');
+        }
+        if (window.UniPassOnlineSync) {
+            window.UniPassOnlineSync.broadcastApprovePost(product.id, product);
+        }
+    }
+
+    window.app.saveProducts();
+    window.app.rebuildDSACache();
+    window.app.renderProducts();
+    window.app.renderProfile();
+
     // Ghi nhận cảnh cáo chính thức trong hệ thống Admin
     const warning = {
         id: 'WARN_' + Date.now(),
@@ -4604,7 +4671,7 @@ function adminPenalizeDispute(dispId) {
     window.app.renderAdminDashboard();
 
     if (window.sound) window.sound.playWarning();
-    showToast(`⚖️ Admin đã duyệt khiếu nại! Đã trừ ${pointsToDeduct} điểm uy tín của ${accusedName} và ghi nhận cảnh cáo.`, 'success');
+    showToast(`⚖️ Admin đã duyệt khiếu nại! Đã trừ ${pointsToDeduct}đ uy tín của ${accusedName}. Bài đăng "${product ? product.title : ''}" đã quay trở lại bán bình thường trên Sàn Đồ!`, 'success');
 }
 
 function adminApproveDispute(dispId) {
@@ -4700,8 +4767,7 @@ function openCheckoutModal(productId) {
     const confirmBtn = document.getElementById('confirmDepositBtn');
     const activeOrder = (window.app && window.app.depositOrders) ? window.app.depositOrders.find(o => 
         o.productId === item.id && 
-        o.status !== 'cancelled' && 
-        o.status !== 'closed_penalized'
+        ['pending_seller', 'in_trade'].includes(o.status)
     ) : null;
 
     if (isMine) {
@@ -4804,8 +4870,7 @@ function confirmDepositOrder() {
     // 1. Kiểm tra xem món đồ đã có người khác đặt cọc trước hay chưa
     const existingActiveOrder = (window.app && window.app.depositOrders) ? window.app.depositOrders.find(o => 
         o.productId === currentCheckoutProduct.id && 
-        o.status !== 'cancelled' && 
-        o.status !== 'closed_penalized'
+        ['pending_seller', 'in_trade'].includes(o.status)
     ) : null;
 
     if (existingActiveOrder) {
@@ -5161,19 +5226,18 @@ function reportUnconfirmedTrade(orderId) {
         window.UniPassOnlineSync.broadcastWarning(warning);
     }
 
-    // Đóng giao dịch và gỡ bài đăng nếu còn
+    // Đóng giao dịch và mở lại bài đăng bình thường cho người bán
     order.status = 'closed_penalized';
     if (order.productId) {
-        window.app.products = window.app.products.filter(p => p.id !== order.productId);
+        const prod = window.app.products.find(p => p.id === order.productId);
+        if (prod) {
+            prod.isDeposited = false;
+            delete prod.isDeposited;
+            prod.status = 'approved';
+        }
         window.app.saveProducts();
         window.app.rebuildDSACache();
         window.app.renderProducts();
-        if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
-            window.UniPassSupabase.deleteProduct(order.productId);
-        }
-        if (window.UniPassOnlineSync) {
-            window.UniPassOnlineSync.broadcastDeletePost(order.productId);
-        }
     }
 
     window.app.saveOrders();
