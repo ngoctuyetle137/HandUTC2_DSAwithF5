@@ -25,11 +25,28 @@
     let isConnected = false;
     let reconnectTimer = null;
     let pollTimer = null;
-    const processedMessageIds = new Set();
+    // Lưu bền vững danh sách ID tin nhắn ntfy đã xử lý để không bao giờ xử lý lặp khi tải lại trang
+    const PROCESSED_SYNC_IDS_KEY = 'unipass_processed_sync_ids';
+    function loadProcessedSyncIds() {
+        try {
+            const raw = localStorage.getItem(PROCESSED_SYNC_IDS_KEY);
+            return new Set(raw ? JSON.parse(raw) : []);
+        } catch (e) {
+            return new Set();
+        }
+    }
+    function saveProcessedSyncIds(set) {
+        try {
+            const arr = Array.from(set).slice(-500);
+            localStorage.setItem(PROCESSED_SYNC_IDS_KEY, JSON.stringify(arr));
+        } catch (e) {}
+    }
+    const processedMessageIds = loadProcessedSyncIds();
     const listeners = {};
 
     const UniPassOnlineSync = {
         clientId: CLIENT_ID,
+        isCatchingUp: false,
 
         // Đăng ký lắng nghe sự kiện
         on: function (eventType, callback) {
@@ -38,10 +55,10 @@
         },
 
         // Phát sự kiện nội bộ tới các listener
-        emit: function (eventType, data) {
+        emit: function (eventType, data, isHistorical = false) {
             if (listeners[eventType]) {
                 listeners[eventType].forEach(cb => {
-                    try { cb(data); } catch (e) { console.error('Lỗi listener:', e); }
+                    try { cb(data, isHistorical); } catch (e) { console.error('Lỗi listener:', e); }
                 });
             }
         },
@@ -120,6 +137,7 @@
 
         // Nạp lịch sử các sự kiện gần nhất (để máy mới mở nhận được bài đã đăng trước đó)
         catchUpHistory: async function () {
+            this.isCatchingUp = true;
             try {
                 const response = await fetch(POLL_ENDPOINT);
                 if (!response.ok) return;
@@ -127,21 +145,26 @@
                 const text = await response.text();
                 const lines = text.trim().split('\n');
 
-                lines.forEach(line => {
-                    if (!line.trim()) return;
+                for (const line of lines) {
+                    if (!line.trim()) continue;
                     try {
                         const raw = JSON.parse(line);
                         if (raw.event === 'message') {
                             if (raw.attachment && raw.attachment.url) {
-                                fetch(raw.attachment.url).then(r => r.text()).then(txt => this.handleIncomingRawMessage(txt, raw.id)).catch(() => {});
+                                try {
+                                    const txt = await (await fetch(raw.attachment.url)).text();
+                                    this.handleIncomingRawMessage(txt, raw.id, true);
+                                } catch (e) {}
                             } else if (raw.message) {
-                                this.handleIncomingRawMessage(raw.message, raw.id);
+                                this.handleIncomingRawMessage(raw.message, raw.id, true);
                             }
                         }
                     } catch (e) {}
-                });
+                }
             } catch (err) {
                 console.warn('⚠️ [Online Sync] Lỗi nạp lịch sử:', err);
+            } finally {
+                this.isCatchingUp = false;
             }
         },
 

@@ -221,6 +221,32 @@ const USERS_REGISTRY = {
 };
 
 // ==========================================
+// Quản lý lịch sử các thông báo Toast đã từng hiển thị lên màn hình
+// Đảm bảo mỗi thông báo/sự kiện chỉ hiện lên màn hình 1 lần duy nhất, các lần đăng nhập sau không hiện lại
+function hasToastBeenShown(toastKey) {
+    if (!toastKey) return false;
+    try {
+        const raw = localStorage.getItem('unipass_shown_toast_keys');
+        const list = raw ? JSON.parse(raw) : [];
+        return list.includes(toastKey);
+    } catch (e) {
+        return false;
+    }
+}
+
+function markToastAsShown(toastKey) {
+    if (!toastKey) return;
+    try {
+        const raw = localStorage.getItem('unipass_shown_toast_keys');
+        const list = raw ? JSON.parse(raw) : [];
+        if (!list.includes(toastKey)) {
+            list.push(toastKey);
+            localStorage.setItem('unipass_shown_toast_keys', JSON.stringify(list.slice(-500)));
+        }
+    } catch (e) {}
+}
+
+// ==========================================
 // 2. STATE MANAGER TRUNG TÂM
 // ==========================================
 class AppController {
@@ -363,7 +389,15 @@ class AppController {
         // Tải thông báo người dùng
         const savedNotifs = localStorage.getItem('unipass_user_notifications');
         if (savedNotifs) {
-            try { this.notifications = JSON.parse(savedNotifs); } catch (e) { this.notifications = []; }
+            try {
+                this.notifications = JSON.parse(savedNotifs);
+                // Đánh dấu toàn bộ thông báo lịch sử của tài khoản là đã hiển thị để khi đăng nhập không bao giờ bắn toast lại
+                if (Array.isArray(this.notifications)) {
+                    this.notifications.forEach(n => {
+                        if (n && n.id) markToastAsShown('notif_' + n.id);
+                    });
+                }
+            } catch (e) { this.notifications = []; }
         } else {
             this.notifications = [];
         }
@@ -851,7 +885,7 @@ class AppController {
         if (!window.UniPassOnlineSync) return;
 
         // 1. Nhận bài đăng mới từ Máy B, C, D... tức thì
-        window.UniPassOnlineSync.on('NEW_POST', (post) => {
+        window.UniPassOnlineSync.on('NEW_POST', (post, isHistorical) => {
             if (!post || !post.id) return;
             const exists = this.products.some(p => p.id === post.id);
             if (!exists) {
@@ -862,19 +896,27 @@ class AppController {
                 this.renderAdminDashboard();
                 this.renderProfile();
 
-                if (window.sound) window.sound.playNotification();
-                if (post.status === 'pending') {
-                    if (this.user && this.user.role === 'admin') {
-                        showToast(`[Bài đăng chờ duyệt] ${post.seller} vừa gửi bài "${post.title}" kèm ảnh TimeMark!`, 'warning');
+                // Chỉ hiển thị Toast khi người dùng ĐÃ ĐĂNG NHẬP, không phải nạp lịch sử cũ và chưa từng hiện
+                const isCatchingUp = isHistorical || (window.UniPassOnlineSync && window.UniPassOnlineSync.isCatchingUp);
+                if (this.user && !isCatchingUp) {
+                    const postToastKey = 'toast_post_' + post.id;
+                    if (!hasToastBeenShown(postToastKey)) {
+                        markToastAsShown(postToastKey);
+                        if (window.sound) window.sound.playNotification();
+                        if (post.status === 'pending') {
+                            if (this.user.role === 'admin') {
+                                showToast(`[Bài đăng chờ duyệt] ${post.seller} vừa gửi bài "${post.title}" kèm ảnh TimeMark!`, 'warning');
+                            }
+                        } else {
+                            showToast(`[Bài đăng mới] ${post.seller} pass: "${post.title}"!`, 'info');
+                        }
                     }
-                } else {
-                    showToast(`[Bài đăng mới] ${post.seller} pass: "${post.title}"!`, 'info');
                 }
             }
         });
 
         // 1b. Nhận sự kiện bài đăng được Admin phê duyệt TimeMark
-        window.UniPassOnlineSync.on('POST_APPROVED', (data) => {
+        window.UniPassOnlineSync.on('POST_APPROVED', (data, isHistorical) => {
             if (!data || !data.postId) return;
             let post = this.products.find(p => p.id === data.postId);
             if (post) {
@@ -903,8 +945,16 @@ class AppController {
             this.renderProducts();
             this.renderAdminDashboard();
             this.renderProfile();
-            if (window.sound) window.sound.playSuccess();
-            showToast(`Bài đăng "${(post && post.title) || 'Mới'}" vừa được Admin phê duyệt và xuất hiện trên trang chính!`, 'info');
+
+            const isCatchingUp = isHistorical || (window.UniPassOnlineSync && window.UniPassOnlineSync.isCatchingUp);
+            if (this.user && !isCatchingUp) {
+                const toastKey = 'toast_post_appr_' + data.postId;
+                if (!hasToastBeenShown(toastKey)) {
+                    markToastAsShown(toastKey);
+                    if (window.sound) window.sound.playSuccess();
+                    showToast(`Bài đăng "${(post && post.title) || 'Mới'}" vừa được Admin phê duyệt và xuất hiện trên trang chính!`, 'info');
+                }
+            }
         });
 
         // 1c. Nhận sự kiện bài đăng bị Admin từ chối TimeMark
@@ -931,7 +981,7 @@ class AppController {
         });
 
         // 2. Nhận lệnh xóa bài đăng trên mạng đa máy
-        window.UniPassOnlineSync.on('DELETE_POST', (postId) => {
+        window.UniPassOnlineSync.on('DELETE_POST', (postId, isHistorical) => {
             if (!postId) return;
             const prevLen = this.products.length;
             this.products = this.products.filter(p => p.id !== postId);
@@ -940,7 +990,14 @@ class AppController {
                 this.rebuildDSACache();
                 this.renderProducts();
                 this.renderAdminDashboard();
-                showToast(`Bài đăng vi phạm vừa bị Admin gỡ trên toàn hệ thống.`, 'info');
+                const isCatchingUp = isHistorical || (window.UniPassOnlineSync && window.UniPassOnlineSync.isCatchingUp);
+                if (this.user && !isCatchingUp) {
+                    const toastKey = 'toast_post_del_' + postId;
+                    if (!hasToastBeenShown(toastKey)) {
+                        markToastAsShown(toastKey);
+                        showToast(`Bài đăng vi phạm vừa bị Admin gỡ trên toàn hệ thống.`, 'info');
+                    }
+                }
             }
         });
 
@@ -987,9 +1044,13 @@ class AppController {
                     relatedId: order.id
                 });
 
-                if (order.seller === this.user.name || order.sellerEmail === this.user.email) {
-                    if (window.sound) window.sound.playSuccess();
-                    showToast(`[Đơn đặt cọc mới] ${order.buyer} vừa đặt cọc món "${order.productTitle}"! Vui lòng vào mục Cá Nhân bấm Xác Nhận Đơn Hàng.`, 'success');
+                if (this.user && (order.seller === this.user.name || order.sellerEmail === this.user.email)) {
+                    const orderToastKey = 'toast_order_dep_' + order.id;
+                    if (!hasToastBeenShown(orderToastKey)) {
+                        markToastAsShown(orderToastKey);
+                        if (window.sound) window.sound.playSuccess();
+                        showToast(`[Đơn đặt cọc mới] ${order.buyer} vừa đặt cọc món "${order.productTitle}"! Vui lòng vào mục Cá Nhân bấm Xác Nhận Đơn Hàng.`, 'success');
+                    }
                 }
             }
         });
@@ -1054,9 +1115,13 @@ class AppController {
         // 5. Nhận cảnh cáo xử phạt từ Admin
         window.UniPassOnlineSync.on('ADMIN_WARNING', (warning) => {
             if (!warning) return;
-            if (warning.targetName === this.user.name || warning.targetEmail === this.user.email) {
-                if (window.sound) window.sound.playWarning();
-                showToast(`Cảnh báo từ Admin: ${warning.reason} (-${warning.penaltyPoints || 2} điểm)`, 'danger');
+            if (this.user && (warning.targetName === this.user.name || warning.targetEmail === this.user.email)) {
+                const warnKey = 'toast_warn_' + (warning.id || (warning.targetEmail + '_' + warning.reason));
+                if (!hasToastBeenShown(warnKey)) {
+                    markToastAsShown(warnKey);
+                    if (window.sound) window.sound.playWarning();
+                    showToast(`Cảnh báo từ Admin: ${warning.reason} (-${warning.penaltyPoints || 2} điểm)`, 'danger');
+                }
                 this.user.reputation = Math.max(0, (this.user.reputation || 95) - (warning.penaltyPoints || 2));
                 this.updateUserUI();
             }
@@ -1499,10 +1564,14 @@ class AppController {
         this.updateNotificationBadge();
         this.renderNotifications();
 
-        // Nếu thông báo hướng tới tài khoản hiện tại -> phát âm thanh & hiển thị Toast
+        // Nếu thông báo hướng tới tài khoản hiện tại -> phát âm thanh & hiển thị Toast (chỉ hiện toast 1 lần duy nhất)
         if (this.user && (this.user.name === targetName || this.user.email === targetEmail)) {
-            if (window.sound) window.sound.playNotification();
-            showToast(`[Thông báo] ${title}: ${message}`, (type === 'warning' || type === 'post_rejected') ? 'danger' : 'info');
+            const notifToastKey = 'notif_' + newNotif.id;
+            if (!hasToastBeenShown(notifToastKey)) {
+                markToastAsShown(notifToastKey);
+                if (window.sound) window.sound.playNotification();
+                showToast(`[Thông báo] ${title}: ${message}`, (type === 'warning' || type === 'post_rejected') ? 'danger' : 'info');
+            }
         }
     }
 
@@ -2913,9 +2982,26 @@ function getCategoryName(cat) {
     return 'Mặt hàng';
 }
 
+let lastToastText = '';
+let lastToastTime = 0;
+
 function showToast(msg, type = 'info') {
     const box = document.getElementById('toastContainer');
-    if (!box) return;
+    if (!box || !msg) return;
+
+    const now = Date.now();
+    // Chống lặp lại thông báo giống hệt nhau trong vòng 4 giây
+    if (msg === lastToastText && (now - lastToastTime) < 4000) {
+        return;
+    }
+    lastToastText = msg;
+    lastToastTime = now;
+
+    // Giới hạn tối đa 2 toast hiển thị đồng thời trên màn hình để không che giao diện điện thoại
+    const maxToasts = 2;
+    while (box.children.length >= maxToasts) {
+        box.removeChild(box.firstChild);
+    }
 
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -2929,7 +3015,9 @@ function showToast(msg, type = 'info') {
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(100%)';
-        setTimeout(() => toast.remove(), 250);
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 250);
     }, 3200);
 }
 
