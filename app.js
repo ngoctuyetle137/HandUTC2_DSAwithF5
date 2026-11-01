@@ -1985,6 +1985,12 @@ class AppController {
 
         container.innerHTML = searchBannerHtml + list.map(item => {
             const isMyItem = this.user ? (item.seller === this.user.name) : false;
+            const activeOrder = (this.depositOrders || []).find(o => 
+                o.productId === item.id && 
+                o.status !== 'cancelled' && 
+                o.status !== 'closed_penalized'
+            );
+            const isDeposited = !!activeOrder || !!item.isDeposited;
             const origPrice = item.originalPrice || Math.round((item.price * 1.5) / 10000) * 10000;
             const discountPct = (origPrice > item.price) ? Math.round((1 - item.price / origPrice) * 100) : 0;
             const starScore = ((item.sellerRep || 90) / 20).toFixed(1);
@@ -2003,6 +2009,7 @@ class AppController {
                     <div class="card-image-wrapper">
                         <img src="${item.imageUrl}" alt="${item.title}" loading="lazy">
                         <span class="card-badge-cat">${getCategoryName(item.category)}</span>
+                        ${isDeposited ? `<span class="card-badge-cat" style="background:#dc2626; color:#fff; left:auto; right:8px; font-weight:700;">Đã có người cọc</span>` : ''}
                     </div>
                     <div class="card-content">
                         <h4 class="card-title-text" title="${item.title}">${item.title}</h4>
@@ -2044,8 +2051,8 @@ class AppController {
                             ${this.formatPostExpiryCountdown(item).html}
                         </div>
 
-                        <button class="card-cta-btn" onclick="event.stopPropagation(); openCheckoutModal('${item.id}')">
-                            ${isMyItem ? 'Xem chi tiết (Đồ của bạn)' : 'Xem chi tiết'}
+                        <button class="card-cta-btn" style="${isDeposited ? 'background:#dc2626; border-color:#b91c1c;' : ''}" onclick="event.stopPropagation(); openCheckoutModal('${item.id}')">
+                            ${isMyItem ? 'Xem chi tiết (Đồ của bạn)' : (isDeposited ? 'Đã có người cọc (Xem chi tiết)' : 'Xem chi tiết')}
                         </button>
                     </div>
                 </div>
@@ -2204,10 +2211,22 @@ class AppController {
                             <button class="btn-outline-chat" style="font-size:11px; padding:5px 9px; width:auto; margin:0; color:#0284c7; border-color:#93c5fd;" onclick="openChatBetweenUsers('${counterpartName}', { id: '${o.productId}', title: '${o.productTitle}' }, '${o.id}')">
                                 💬 Nhắn Tin Hẹn Gặp
                             </button>
-                            <button class="btn-outline-chat" style="font-size:11px; padding:5px 9px; width:auto; margin:0; color:#dc2626; border-color:#fca5a5;" onclick="openOrderDisputeModal('${o.id}')">
-                                🚨 Báo Boom Hàng / Lỗi (Admin)
-                            </button>
                         `;
+
+                        const isAlreadyReported = o.isReported || o.isPenalized || (this.adminDisputes || []).some(d => d.orderId === o.id);
+                        if (isAlreadyReported) {
+                            actionButtonsHtml += `
+                                <span style="display:inline-block; font-size:11px; color:#b91c1c; background:#fef2f2; border:1px solid #fecaca; padding:4px 8px; border-radius:4px; font-weight:700;">
+                                    🚨 Đã báo cáo vi phạm (1 lần)
+                                </span>
+                            `;
+                        } else {
+                            actionButtonsHtml += `
+                                <button class="btn-outline-chat" style="font-size:11px; padding:5px 9px; width:auto; margin:0; color:#dc2626; border-color:#fca5a5;" onclick="openOrderDisputeModal('${o.id}')">
+                                    🚨 Báo Boom Hàng / Lỗi (Admin)
+                                </button>
+                            `;
+                        }
                     } else if (o.status === 'completed') {
                         actionButtonsHtml += `
                             <button class="btn-outline-chat" style="font-size:11px; padding:5px 9px; width:auto; margin:0; color:#0284c7; border-color:#93c5fd;" onclick="openChatBetweenUsers('${counterpartName}', { id: '${o.productId}', title: '${o.productTitle}' }, '${o.id}')">
@@ -4679,14 +4698,35 @@ function openCheckoutModal(productId) {
 
     const isMine = window.app.user ? (item.seller === window.app.user.name) : false;
     const confirmBtn = document.getElementById('confirmDepositBtn');
+    const activeOrder = (window.app && window.app.depositOrders) ? window.app.depositOrders.find(o => 
+        o.productId === item.id && 
+        o.status !== 'cancelled' && 
+        o.status !== 'closed_penalized'
+    ) : null;
+
     if (isMine) {
         confirmBtn.innerText = 'Món đồ của chính bạn';
         confirmBtn.style.background = '#94a3b8';
         confirmBtn.disabled = true;
+    } else if (activeOrder) {
+        confirmBtn.innerText = 'Đơn hàng đã được cọc';
+        confirmBtn.style.background = '#dc2626';
+        confirmBtn.disabled = false; // Để người khác bấm vào sẽ hiện thông báo chính xác
     } else {
-        confirmBtn.innerText = 'Đặt Cọc & Giữ Chỗ';
-        confirmBtn.style.background = '#6366f1';
-        confirmBtn.disabled = false;
+        const userRep = (window.app && window.app.user && window.app.user.reputation !== undefined) ? window.app.user.reputation : 95;
+        if (userRep < 60) {
+            confirmBtn.innerText = 'Uy tín dưới 60 - Khóa cọc';
+            confirmBtn.style.background = '#ef4444';
+            confirmBtn.disabled = false;
+        } else if (userRep < 90) {
+            confirmBtn.innerText = 'Uy tín dưới 90 - Khóa cọc';
+            confirmBtn.style.background = '#ef4444';
+            confirmBtn.disabled = false;
+        } else {
+            confirmBtn.innerText = 'Đặt Cọc & Giữ Chỗ';
+            confirmBtn.style.background = '#6366f1';
+            confirmBtn.disabled = false;
+        }
     }
 
     const modal = document.getElementById('checkoutOrderModal');
@@ -4761,6 +4801,24 @@ function updateCheckoutCalculations() {
 function confirmDepositOrder() {
     if (!currentCheckoutProduct) return;
 
+    // 1. Kiểm tra xem món đồ đã có người khác đặt cọc trước hay chưa
+    const existingActiveOrder = (window.app && window.app.depositOrders) ? window.app.depositOrders.find(o => 
+        o.productId === currentCheckoutProduct.id && 
+        o.status !== 'cancelled' && 
+        o.status !== 'closed_penalized'
+    ) : null;
+
+    if (existingActiveOrder) {
+        showToast('Đơn hàng đã được cọc! Món đồ này đã có người đặt cọc giữ chỗ trước.', 'warning');
+        alert('Đơn hàng đã được cọc! Món đồ này đã có người đặt cọc giữ chỗ trước.');
+        const confirmBtn = document.getElementById('confirmDepositBtn');
+        if (confirmBtn) {
+            confirmBtn.innerText = 'Đơn hàng đã được cọc';
+            confirmBtn.style.background = '#dc2626';
+        }
+        return;
+    }
+
     const userRep = (window.app && window.app.user) ? (window.app.user.reputation !== undefined ? window.app.user.reputation : 95) : 95;
     if (userRep < 60) {
         showToast(`Điểm uy tín của bạn là ${userRep}/100 (dưới 60 điểm)! Bạn bị khóa cả quyền đăng bán và đặt cọc. Hãy đổi 50 xu để nâng 5 điểm uy tín!`, 'danger');
@@ -4830,6 +4888,13 @@ function confirmDepositOrder() {
 
     window.app.depositOrders.push(newOrderData);
     window.app.saveOrders();
+
+    // Đánh dấu sản phẩm là đã được cọc
+    currentCheckoutProduct.isDeposited = true;
+    const prodInList = window.app.products.find(p => p.id === currentCheckoutProduct.id);
+    if (prodInList) prodInList.isDeposited = true;
+    window.app.saveProducts();
+    window.app.renderProducts();
 
     // Gửi thông báo tới người bán: Có người thêm đơn hàng của bạn vào đơn cọc
     window.app.addNotification({
@@ -5032,6 +5097,16 @@ function reportUnconfirmedTrade(orderId) {
     const order = window.app.depositOrders.find(o => o.id === orderId);
     if (!order) return;
 
+    // KIỂM TRA: MỖI ĐƠN HÀNG CHỈ CÓ BÁO CÁO VI PHẠM 1 LẦN THÔI
+    const alreadyDisputed = (window.app.adminDisputes || []).some(d => d.orderId === orderId);
+    if (order.isReported || order.isPenalized || alreadyDisputed || order.status === 'closed_penalized') {
+        showToast('Đơn hàng này đã được báo cáo vi phạm trước đó rồi! Mỗi đơn hàng chỉ có báo cáo vi phạm 1 lần thôi.', 'warning');
+        alert('Đơn hàng này đã được báo cáo vi phạm trước đó rồi! Mỗi đơn hàng chỉ có báo cáo vi phạm 1 lần thôi.');
+        return;
+    }
+    order.isReported = true;
+    order.isPenalized = true;
+
     let delinquentName = '';
     let delinquentEmail = '';
 
@@ -5116,6 +5191,14 @@ function openOrderDisputeModal(orderId) {
     const order = window.app.depositOrders.find(o => o.id === orderId);
     if (!order) return;
 
+    // KIỂM TRA: MỖI ĐƠN HÀNG CHỈ CÓ BÁO CÁO VI PHẠM 1 LẦN THÔI
+    const alreadyDisputed = (window.app.adminDisputes || []).some(d => d.orderId === orderId);
+    if (order.isReported || order.isPenalized || alreadyDisputed) {
+        showToast('Đơn hàng này đã được báo cáo vi phạm trước đó rồi! Mỗi đơn hàng chỉ có báo cáo vi phạm 1 lần thôi.', 'warning');
+        alert('Đơn hàng này đã được báo cáo vi phạm trước đó rồi! Mỗi đơn hàng chỉ có báo cáo vi phạm 1 lần thôi.');
+        return;
+    }
+
     const isBuyer = (window.app.user.name === order.buyer || window.app.user.email === order.buyerEmail);
     const targetName = isBuyer ? order.seller : order.buyer;
     const targetEmail = isBuyer ? (order.sellerEmail || 'seller@st.utc2.edu.vn') : (order.buyerEmail || 'buyer@st.utc2.edu.vn');
@@ -5139,6 +5222,19 @@ function handleOrderDisputeSubmit(event) {
         closeModal('orderDisputeModal');
         return;
     }
+
+    // KIỂM TRA: MỖI ĐƠN HÀNG CHỈ CÓ BÁO CÁO VI PHẠM 1 LẦN THÔI
+    const alreadyDisputed = (window.app.adminDisputes || []).some(d => d.orderId === orderId);
+    if (order.isReported || order.isPenalized || alreadyDisputed) {
+        showToast('Đơn hàng này đã được báo cáo vi phạm trước đó rồi! Mỗi đơn hàng chỉ có báo cáo vi phạm 1 lần thôi.', 'warning');
+        alert('Đơn hàng này đã được báo cáo vi phạm trước đó rồi! Mỗi đơn hàng chỉ có báo cáo vi phạm 1 lần thôi.');
+        closeModal('orderDisputeModal');
+        return;
+    }
+
+    order.isReported = true;
+    order.reportedAt = Date.now();
+    window.app.saveOrders();
 
     const isBuyer = (window.app.user.name === order.buyer || window.app.user.email === order.buyerEmail);
     const targetName = isBuyer ? order.seller : order.buyer;
