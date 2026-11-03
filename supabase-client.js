@@ -558,19 +558,37 @@
         // =======================================================
         // 4. QUẢN LÝ TÀI KHOẢN PROFILES (USERS)
         // =======================================================
+        // Tải danh sách hồ sơ công khai (KHÔNG BAO GIỜ select cột password để bảo vệ mật khẩu người dùng)
         getProfiles: async function () {
             const client = this.getClient();
             if (!client) return null;
             try {
                 const { data, error } = await client
                     .from('profiles')
-                    .select('*')
+                    .select('id, email, name, mssv, phone, role, reputation, coins, avatar_letter, avatar_url, created_at')
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
                 return data || [];
             } catch (err) {
                 console.error('❌ [Supabase] Lỗi tải profiles:', err);
+                return null;
+            }
+        },
+
+        // Xác thực mật khẩu tài khoản riêng lẻ khi người dùng đăng nhập (không tải mật khẩu của người khác)
+        verifyProfilePassword: async function (email) {
+            const client = this.getClient();
+            if (!client || !email) return null;
+            try {
+                const { data, error } = await client
+                    .from('profiles')
+                    .select('password')
+                    .eq('email', email.toLowerCase().trim())
+                    .maybeSingle();
+                if (error || !data) return null;
+                return data.password;
+            } catch (err) {
                 return null;
             }
         },

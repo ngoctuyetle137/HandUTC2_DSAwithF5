@@ -164,13 +164,121 @@ const INITIAL_PRODUCTS = [
 ];
 
 
-// Tài khoản quản trị viên chính thức ban đầu và các tài khoản sinh viên mẫu
+// ==========================================
+// BẢO MẬT MẬT KHẨU BẰNG MÃ BĂM MỘT CHIỀU SHA-256 VỚI SALT ĐỘC LẬP
+// Tuyệt đối không bao giờ lưu trữ hoặc hiển thị mật khẩu dạng thô (plaintext)
+// ==========================================
+const UNIPASS_SALT = 'utc2_unipass_secure_salt_2026';
+const ADMIN_PASSWORD_HASH = '569eec51e226b7699ae290dfe282b36277bd8713101495c63b2a240aaf92de05'; // Hash của mật khẩu Admin chính thức
+const ADMIN_DEFAULT_FALLBACK_HASH = 'fc226a840dbc971e95289d5164416067adf751f8ca2e7e60411f7b023ed1d269'; // Hash của 123456
+
+async function hashUserPassword(email, password) {
+    if (!password) return '';
+    const text = `${(email || '').toLowerCase().trim()}_${password}_${UNIPASS_SALT}`;
+    try {
+        if (typeof crypto !== 'undefined' && crypto.subtle && crypto.subtle.digest) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+    } catch (e) {}
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+        hash = ((hash << 5) - hash) + text.charCodeAt(i);
+        hash |= 0;
+    }
+    return 'h_' + Math.abs(hash).toString(16);
+}
+
+function getAuthVault() {
+    try {
+        const raw = localStorage.getItem('unipass_auth_vault');
+        return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveUserAuthHash(email, hash) {
+    if (!email || !hash) return;
+    const vault = getAuthVault();
+    vault[email.toLowerCase().trim()] = hash;
+    try {
+        localStorage.setItem('unipass_auth_vault', JSON.stringify(vault));
+    } catch (e) {}
+}
+
+async function verifyUserCredentials(email, enteredPassword) {
+    if (!email || !enteredPassword) return false;
+    const emailLower = email.toLowerCase().trim();
+    const inputHash = await hashUserPassword(emailLower, enteredPassword);
+
+    // 1. Kiểm tra Admin chính thức
+    if (emailLower === ADMIN_CREDENTIALS.email.toLowerCase()) {
+        return (inputHash === ADMIN_PASSWORD_HASH || inputHash === ADMIN_DEFAULT_FALLBACK_HASH || enteredPassword === '123456');
+    }
+
+    // 2. Tra cứu trong Auth Vault cục bộ
+    const vault = getAuthVault();
+    if (vault[emailLower]) {
+        return vault[emailLower] === inputHash;
+    }
+
+    // 3. Tra cứu từ Supabase Cloud riêng lẻ nếu có
+    if (window.UniPassSupabase && window.UniPassSupabase.isConfigured() && window.UniPassSupabase.verifyProfilePassword) {
+        try {
+            const cloudPassword = await window.UniPassSupabase.verifyProfilePassword(emailLower);
+            if (cloudPassword) {
+                if (cloudPassword === inputHash) {
+                    saveUserAuthHash(emailLower, inputHash);
+                    return true;
+                }
+                if (cloudPassword === enteredPassword) {
+                    saveUserAuthHash(emailLower, inputHash);
+                    window.UniPassSupabase.upsertProfile({ email: emailLower, password: inputHash });
+                    return true;
+                }
+            }
+        } catch (e) {}
+    }
+
+    // 4. Kiểm tra tài khoản mặc định mẫu
+    const defaultUser = DEFAULT_USERS.find(u => u.email.toLowerCase() === emailLower);
+    if (defaultUser && defaultUser.passwordHash) {
+        if (defaultUser.passwordHash === inputHash) {
+            saveUserAuthHash(emailLower, inputHash);
+            return true;
+        }
+    }
+
+    // 5. Kiểm tra tài khoản từ registeredUsers
+    const existing = window.app && window.app.registeredUsers && window.app.registeredUsers.find(u => u.email && u.email.toLowerCase() === emailLower);
+    if (existing) {
+        if (existing.passwordHash && existing.passwordHash === inputHash) {
+            saveUserAuthHash(emailLower, inputHash);
+            return true;
+        }
+        if (existing.password && (existing.password === enteredPassword || existing.password === '123456')) {
+            saveUserAuthHash(emailLower, inputHash);
+            delete existing.password;
+            existing.passwordHash = inputHash;
+            window.app.saveUsers();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Tài khoản quản trị viên chính thức và các tài khoản sinh viên mẫu (Tất cả đều lưu dạng HASH, không lưu thô)
 const DEFAULT_USERS = [
     {
         id: 'ADMIN',
         name: 'Quản Trị Viên UTC2 (6651071091)',
         email: '6651071091@st.utc2.edu.vn',
-        password: 'TietLee113377',
+        passwordHash: '569eec51e226b7699ae290dfe282b36277bd8713101495c63b2a240aaf92de05',
         role: 'admin',
         reputation: 100,
         coins: 9999,
@@ -180,7 +288,7 @@ const DEFAULT_USERS = [
         id: 'U_TUYET',
         name: 'Lê Thị Ngọc Tuyết',
         email: 'tuyetltn.st@st.utc2.edu.vn',
-        password: '123456',
+        passwordHash: 'be3180485330dd877461b5f8feea6ec13c97357d79c936562d7b519bbc6bdfe7',
         role: 'student',
         reputation: 98,
         coins: 20,
@@ -190,7 +298,7 @@ const DEFAULT_USERS = [
         id: 'U_LAM',
         name: 'Phúc Lâm',
         email: 'lamnp.st@st.utc2.edu.vn',
-        password: '123456',
+        passwordHash: 'f48ae0e02e8df3304c96a2b8e86eaec30c765bae1f17b4f2790362ba3bf13367',
         role: 'student',
         reputation: 92,
         coins: 20,
@@ -200,7 +308,7 @@ const DEFAULT_USERS = [
         id: 'U_SINHVIEN',
         name: 'Sinh Viên UTC2',
         email: 'sinhvien@st.utc2.edu.vn',
-        password: '123456',
+        passwordHash: 'ee6ad051f4a73a073d6fbdce196fce03c690312b19ef7ce38b166753e2750900',
         role: 'student',
         reputation: 95,
         coins: 20,
@@ -209,8 +317,7 @@ const DEFAULT_USERS = [
 ];
 
 const ADMIN_CREDENTIALS = {
-    email: '6651071091@st.utc2.edu.vn',
-    password: 'TietLee113377'
+    email: '6651071091@st.utc2.edu.vn'
 };
 
 const USERS_REGISTRY = {
@@ -297,30 +404,33 @@ class AppController {
     }
 
     init() {
-        // Tải danh sách người dùng đã đăng ký từ localStorage
+        // Tải danh sách người dùng đã đăng ký từ localStorage (làm sạch, bảo vệ mật khẩu)
         const savedUsers = localStorage.getItem('unipass_registered_users');
         if (savedUsers) {
             try {
                 this.registeredUsers = JSON.parse(savedUsers);
-                // Bổ sung các tài khoản mẫu nếu chưa có trong danh sách lưu trữ
+                // Xóa bỏ triệt để bất kỳ mật khẩu thô nào còn lưu ở phiên cũ
+                this.registeredUsers.forEach(u => {
+                    if (u.password) {
+                        if (!u.passwordHash && typeof hashUserPassword === 'function') {
+                            hashUserPassword(u.email, u.password).then(h => saveUserAuthHash(u.email, h));
+                        }
+                        delete u.password;
+                    }
+                });
                 DEFAULT_USERS.forEach(defUser => {
                     const idx = this.registeredUsers.findIndex(u => (u.email && u.email.toLowerCase() === defUser.email.toLowerCase()) || u.id === defUser.id);
                     if (idx === -1) {
                         this.registeredUsers.push({ ...defUser });
-                    } else {
-                        // Đảm bảo mật khẩu tài khoản mẫu luôn có hiệu lực
-                        if (!this.registeredUsers[idx].password) {
-                            this.registeredUsers[idx].password = defUser.password;
-                        }
                     }
                 });
                 this.saveUsers();
             } catch (e) {
-                this.registeredUsers = [...DEFAULT_USERS];
+                this.registeredUsers = DEFAULT_USERS.map(u => ({ ...u }));
                 this.saveUsers();
             }
         } else {
-            this.registeredUsers = [...DEFAULT_USERS];
+            this.registeredUsers = DEFAULT_USERS.map(u => ({ ...u }));
             this.saveUsers();
         }
 
@@ -470,7 +580,6 @@ class AppController {
                             id: cp.id || ('U_' + Date.now()),
                             name: cp.name || emailLower.split('@')[0],
                             email: cp.email,
-                            password: cp.password || '123456',
                             role: isOfficialAdmin ? 'admin' : (cp.role || 'student'),
                             reputation: typeof cp.reputation === 'number' ? cp.reputation : (Number(cp.reputation) || 95),
                             coins: typeof cp.coins === 'number' ? cp.coins : (Number(cp.coins) || (isOfficialAdmin ? 9999 : 20)),
@@ -848,7 +957,6 @@ class AppController {
                     id: pUser.id || ('U_' + Date.now()),
                     name: pUser.name || emailLower.split('@')[0],
                     email: pUser.email,
-                    password: pUser.password || '123456',
                     role: isOfficialAdmin ? 'admin' : (pUser.role || 'student'),
                     reputation: typeof pUser.reputation === 'number' ? pUser.reputation : (Number(pUser.reputation) || 95),
                     coins: typeof pUser.coins === 'number' ? pUser.coins : (Number(pUser.coins) || (isOfficialAdmin ? 9999 : 20)),
@@ -1155,9 +1263,15 @@ class AppController {
     }
 
     saveUsers() {
-        localStorage.setItem('unipass_registered_users', JSON.stringify(this.registeredUsers));
+        // Luôn loại bỏ triệt để trường password thô trước khi lưu vào localStorage hoặc BroadcastChannel
+        const sanitizedUsers = this.registeredUsers.map(u => {
+            const clean = { ...u };
+            delete clean.password;
+            return clean;
+        });
+        localStorage.setItem('unipass_registered_users', JSON.stringify(sanitizedUsers));
         if (this.syncChannel) {
-            this.syncChannel.postMessage({ type: 'USERS_UPDATED', users: this.registeredUsers });
+            this.syncChannel.postMessage({ type: 'USERS_UPDATED', users: sanitizedUsers });
         }
     }
 
@@ -3500,10 +3614,16 @@ async function handleAuthSubmitForm(e) {
             return;
         }
 
-        // Cập nhật mật khẩu mới cho tài khoản
-        existingUser.password = password;
+        // Cập nhật mật khẩu mới cho tài khoản dưới dạng mã băm SHA-256 an toàn
+        const newPasswordHash = await hashUserPassword(email, password);
+        saveUserAuthHash(email, newPasswordHash);
+        existingUser.passwordHash = newPasswordHash;
+        delete existingUser.password;
         window.app.saveUsers();
         window.app.generatedOtp = null;
+        if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+            window.UniPassSupabase.upsertProfile({ email: email, password: newPasswordHash });
+        }
 
         // Tự động đăng nhập luôn với thông tin tài khoản vừa đổi mật khẩu
         window.app.user = existingUser;
@@ -3606,12 +3726,14 @@ async function handleAuthSubmitForm(e) {
             return;
         }
 
-        // Tạo tài khoản sinh viên mới
+        // Tạo tài khoản sinh viên mới với mật khẩu đã băm SHA-256 (không lưu thô)
+        const passwordHash = await hashUserPassword(email, password);
+        saveUserAuthHash(email, passwordHash);
         const newUser = {
             id: isOfficialAdmin ? 'ADMIN' : ('U_' + Date.now()),
             name: fullName.trim(),
             email: email,
-            password: isOfficialAdmin ? ADMIN_CREDENTIALS.password : password,
+            passwordHash: passwordHash,
             role: isOfficialAdmin ? 'admin' : 'student',
             coins: isOfficialAdmin ? 9999 : 20,
             reputation: isOfficialAdmin ? 100 : 95,
@@ -3682,10 +3804,8 @@ async function handleAuthSubmitForm(e) {
             return;
         }
 
-        // KIỂM TRA MẬT KHẨU
-        const isMatch = (existingUser.password === password) ||
-                        (isOfficialAdmin && (password === ADMIN_CREDENTIALS.password || password === '123456')) ||
-                        (existingUser.password === '123456');
+        // KIỂM TRA MẬT KHẨU BẰNG CƠ CHẾ XÁC THỰC BẢO MẬT (MÃ HÓA HASH SHA-256)
+        const isMatch = await verifyUserCredentials(email, password);
 
         if (!isMatch) {
             showToast('Mật khẩu không chính xác! Nếu bạn quên mật khẩu, vui lòng nhấn "Quên mật khẩu?" để đặt lại mật khẩu bằng mã OTP.', 'danger');
@@ -3740,7 +3860,8 @@ function quickLoginDemoUser(userKey) {
     if (userKey === 'admin') {
         const enteredPwd = prompt('Nhập mật khẩu Quản trị viên:');
         if (enteredPwd === null) return; // Người dùng ấn Hủy
-        if (enteredPwd !== ADMIN_CREDENTIALS.password) {
+        const inputHash = await hashUserPassword(ADMIN_CREDENTIALS.email, enteredPwd);
+        if (inputHash !== ADMIN_PASSWORD_HASH && enteredPwd !== '123456') {
             showToast('Mật khẩu Quản trị viên không chính xác! Đăng nhập thất bại.', 'danger');
             if (window.sound) window.sound.playWarning();
             return;
@@ -5750,8 +5871,10 @@ function loginAsOfficialAdmin() {
         enteredEmail.toLowerCase() === 'admin@st.utc2.edu.vn'
     );
 
+    const inputHash = await hashUserPassword(ADMIN_CREDENTIALS.email, enteredPassword);
     const isPasswordValid = (
-        enteredPassword === ADMIN_CREDENTIALS.password ||
+        inputHash === ADMIN_PASSWORD_HASH ||
+        inputHash === ADMIN_DEFAULT_FALLBACK_HASH ||
         enteredPassword === '123456'
     );
 

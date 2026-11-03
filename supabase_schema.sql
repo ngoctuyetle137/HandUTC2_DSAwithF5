@@ -286,10 +286,10 @@ CREATE POLICY "Public Read Vouchers" ON public.vouchers FOR SELECT USING (true);
 -- 14.1 Tài khoản Quản trị Admin chính thức & Sinh viên mẫu
 INSERT INTO public.profiles (id, email, name, mssv, phone, password, role, reputation, coins, avatar_letter)
 VALUES 
-('ADMIN', '6651071091@st.utc2.edu.vn', 'Quản Trị Viên UTC2 (6651071091)', '6651071091', '0901234567', 'TietLee113377', 'admin', 100, 9999, 'A'),
-('UA', 'tuyetltn.st@st.utc2.edu.vn', 'Lê Thị Ngọc Tuyết', '6651071001', '0912345678', '123456', 'student', 98, 170, 'T'),
-('UB', 'lamnp.st@st.utc2.edu.vn', 'Phúc Lâm', '6651071002', '0987654321', '123456', 'student', 92, 250, 'L'),
-('UC', 'annv.st@st.utc2.edu.vn', 'Nguyễn Văn An', '6651071003', '0977112233', '123456', 'student', 95, 500, 'A')
+('ADMIN', '6651071091@st.utc2.edu.vn', 'Quản Trị Viên UTC2 (6651071091)', '6651071091', '0901234567', '569eec51e226b7699ae290dfe282b36277bd8713101495c63b2a240aaf92de05', 'admin', 100, 9999, 'A'),
+('UA', 'tuyetltn.st@st.utc2.edu.vn', 'Lê Thị Ngọc Tuyết', '6651071001', '0912345678', 'be3180485330dd877461b5f8feea6ec13c97357d79c936562d7b519bbc6bdfe7', 'student', 98, 170, 'T'),
+('UB', 'lamnp.st@st.utc2.edu.vn', 'Phúc Lâm', '6651071002', '0987654321', 'f48ae0e02e8df3304c96a2b8e86eaec30c765bae1f17b4f2790362ba3bf13367', 'student', 92, 250, 'L'),
+('UC', 'annv.st@st.utc2.edu.vn', 'Nguyễn Văn An', '6651071003', '0977112233', 'ee6ad051f4a73a073d6fbdce196fce03c690312b19ef7ce38b166753e2750900', 'student', 95, 500, 'A')
 ON CONFLICT (id) DO NOTHING;
 
 -- 14.2 Danh mục hàng hóa

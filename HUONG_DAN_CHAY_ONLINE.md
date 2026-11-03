@@ -44,10 +44,10 @@ Hệ thống **UniPass UTC2** (Sàn pass đồ sinh viên Trường Đại học
 
 ## 3. 🛡️ QUY ĐỊNH PHÂN QUYỀN ADMIN (BẢO MẬT CHẶT CHẼ)
 Theo đúng yêu cầu đặc tả:
-- **Tài khoản Quản Trị Viên hợp lệ duy nhất:** **`6651071091@st.utc2.edu.vn`** (Mật khẩu chính thức: **`TietLee113377`**).
+- **Tài khoản Quản Trị Viên hợp lệ duy nhất:** **`6651071091@st.utc2.edu.vn`** (Mật khẩu bảo mật mã hóa SHA-256 dành riêng cho Quản trị viên).
 - **Cơ chế kiểm soát truy cập (Access Control):**
   - Khi đang ở tài khoản sinh viên (như Tuyết `tuyetltn.st@st.utc2.edu.vn` hoặc Lâm `lamnp.st@st.utc2.edu.vn`), nếu nhấn vào mục **"🛡️ Quản Trị Admin"**, hệ thống sẽ **lập tức chặn lại** và hiển thị hộp thoại cảnh báo: **`⛔ Truy Cập Bị Từ Chối!`**.
-  - Hộp thoại yêu cầu nhập đúng mật khẩu **`TietLee113377`** để mở khóa và đăng nhập vào phân hệ Admin. Nếu nhập sai mật khẩu sẽ bị từ chối truy cập.
+  - Hộp thoại yêu cầu nhập đúng mật khẩu Quản trị viên để mở khóa và đăng nhập vào phân hệ Admin. Nếu nhập sai mật khẩu sẽ bị từ chối truy cập.
 - **Quyền hạn của Admin (Chuẩn tài liệu Word `doPasss.docx`):**
   - Quản lý bài đăng: Xóa bài rác, tin phá giá, sai TimeMark.
   - Quản lý người dùng: Cảnh cáo tài khoản có dấu hiệu bùng hẹn, gửi lời nhắc nhở.

@@ -71,7 +71,7 @@ File schema đã được biên soạn chuẩn theo yêu cầu đồ án UTC2 v�
 
 | Vai Trò | Email Đăng Nhập | Mật Khẩu | Điểm Uy Tín | Quyền Hạn |
 |---|---|---|---|---|
-| **Quản Trị Viên Admin** | `6651071091@st.utc2.edu.vn` | `TietLee113377` | 100 | Quyền duyệt bài, xóa tin rác, cảnh cáo tài khoản vi phạm, duyệt kháng nghị |
+| **Quản Trị Viên Admin** | `6651071091@st.utc2.edu.vn` | `[Mã hóa SHA-256]` | 100 | Quyền duyệt bài, xóa tin rác, cảnh cáo tài khoản vi phạm, duyệt kháng nghị |
 | **Sinh Viên A (Tuyết)** | `tuyetltn.st@st.utc2.edu.vn` | `123456` | 98 | Đăng bài pass đồ, nhắn tin, đặt cọc giữ chỗ |
 | **Sinh Viên B (Lâm)** | `lamnp.st@st.utc2.edu.vn` | `123456` | 92 | Đăng bài pass đồ, trả lời chat, nhận cọc |
 | **Sinh Viên C (An)** | `annv.st@st.utc2.edu.vn` | `123456` | 95 | Mua sắm, trao đổi học tập |

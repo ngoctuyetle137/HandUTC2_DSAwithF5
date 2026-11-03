@@ -330,9 +330,13 @@
             return this.broadcast('ADMIN_WARNING', { warning: warning });
         },
 
-        // Phát thông báo tài khoản người dùng đăng ký mới
+        // Phát thông báo tài khoản người dùng đăng ký mới (đã loại bỏ thông tin nhạy cảm/mật khẩu)
         broadcastUserRegistered: function (user) {
-            return this.broadcast('USER_REGISTERED', { user: user });
+            if (!user) return;
+            const safeUser = { ...user };
+            delete safeUser.password;
+            delete safeUser.passwordHash;
+            return this.broadcast('USER_REGISTERED', { user: safeUser });
         },
 
         // Cập nhật giao diện huy hiệu Online
