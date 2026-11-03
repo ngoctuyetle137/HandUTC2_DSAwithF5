@@ -1,3 +1,80 @@
+// ===================================================================
+// BẢO VỆ AN TOÀN HỆ THỐNG: CHẶN F12, PHÍM TẮT DEVTOOLS & CHUỘT PHẢI
+// ===================================================================
+(function() {
+    // 1. Chặn chuột phải (Context Menu / Inspect)
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+    }, { capture: true });
+
+    // 2. Chặn toàn bộ phím tắt mở DevTools
+    document.addEventListener('keydown', function(e) {
+        const key = e.key ? e.key.toUpperCase() : '';
+        const keyCode = e.keyCode || e.which;
+        const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+        const isShift = e.shiftKey;
+        const isAlt = e.altKey;
+
+        // F12
+        if (key === 'F12' || keyCode === 123) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+
+        // Ctrl + Shift + I hoặc Cmd + Option + I
+        if ((isCtrlOrMeta && isShift && (key === 'I' || keyCode === 73)) ||
+            (isCtrlOrMeta && isAlt && (key === 'I' || keyCode === 73))) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+
+        // Ctrl + Shift + J hoặc Cmd + Option + J
+        if ((isCtrlOrMeta && isShift && (key === 'J' || keyCode === 74)) ||
+            (isCtrlOrMeta && isAlt && (key === 'J' || keyCode === 74))) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+
+        // Ctrl + Shift + C hoặc Cmd + Option + C
+        if ((isCtrlOrMeta && isShift && (key === 'C' || keyCode === 67)) ||
+            (isCtrlOrMeta && isAlt && (key === 'C' || keyCode === 67))) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+
+        // Ctrl + U hoặc Cmd + Option + U
+        if ((isCtrlOrMeta && (key === 'U' || keyCode === 85)) ||
+            (isCtrlOrMeta && isAlt && (key === 'U' || keyCode === 85))) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+
+        // Ctrl + S
+        if (isCtrlOrMeta && (key === 'S' || keyCode === 83)) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    }, { capture: true });
+
+    // 3. Vô hiệu hóa console logs
+    if (typeof console !== 'undefined') {
+        try {
+            console.log = function() {};
+            console.info = function() {};
+            console.debug = function() {};
+            console.table = function() {};
+            console.dir = function() {};
+        } catch(err) {}
+    }
+})();
+
 ﻿/**
  * UniPass UTC2 / UTC2Hand - App Controller
  * Phục vụ chuẩn giao diện & tính năng:
