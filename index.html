@@ -519,9 +519,12 @@
             <!-- CỘT BÊN PHẢI: FEED SẢN PHẨM NẰM SONG SONG BÊN CẠNH BỘ LỌC -->
             <section class="feed-main-section">
                 <div class="feed-top-bar">
-                    <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         <button type="button" id="btnToggleFilterMode" class="btn-outline-chat" style="padding:6px 14px; font-size:12.5px; font-weight:700; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; border:none; border-radius:8px; box-shadow:0 2px 8px rgba(217,119,6,0.25);" onclick="toggleSidebarFilter()">
                             Bộ lọc: Đang mở (Bấm để ẩn)
+                        </button>
+                        <button type="button" id="btnFilterDepositedOnly" class="btn-outline-chat" style="padding:6px 12px; font-size:12px; font-weight:700; border-radius:8px; border:1px solid #cbd5e1; background:#ffffff; color:#475569; display:inline-flex; align-items:center; gap:5px;" onclick="toggleDepositedFilter()">
+                            <span>🛒</span> Đồ Đã Đặt Cọc (<strong id="feedDepositedCount" style="color:#dc2626;">0</strong>)
                         </button>
                         <div class="feed-count-text" id="feedCountDisplay">
                             Hiển thị <strong>5 món đồ</strong> sẵn sàng pass
@@ -834,10 +837,89 @@
                     <div id="profileDepositOrdersBlock">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                             <h4 style="font-size:14px; color:#d97706; margin:0;">Đơn đặt cọc & Mua bán</h4>
-                            <span id="profileDepositTotalBadge" style="font-size:11.5px; font-weight:700; color:#b45309; background:#fef3c7; padding:2px 8px; border-radius:4px; border:1px solid #fde68a;">0 đơn</span>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span id="profileDepositTotalBadge" style="font-size:11.5px; font-weight:700; color:#b45309; background:#fef3c7; padding:2px 8px; border-radius:4px; border:1px solid #fde68a;">0 đơn</span>
+                                <button type="button" class="btn-outline-chat" style="font-size:11px; padding:3px 8px; color:#6366f1; border-color:#c7d2fe;" onclick="switchNavTab('orders')">Toàn màn hình ↗</button>
+                            </div>
                         </div>
                         <div id="purchaseHistoryContainer"></div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             MÀN HÌNH 5: QUẢN LÝ TẤT CẢ ĐƠN ĐẶT CỌC & MUA BÁN (ORDERS VIEW)
+             ========================================== -->
+        <div class="game-tab-view" id="ordersSectionView" style="display:none; max-width:980px;">
+            <div style="width:100%;">
+                <!-- HEADER ĐƠN CỌC -->
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:16px;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:24px;">🛒</span>
+                            <h3 style="font-size:20px; font-weight:800; color:#0f172a; margin:0;">Quản Lý Đơn Đặt Cọc & Mua Bán</h3>
+                            <span id="ordersSectionTotalBadge" style="background:#6366f1; color:#fff; font-size:12px; font-weight:700; padding:2px 10px; border-radius:12px;">0 đơn</span>
+                        </div>
+                        <p style="font-size:12.5px; color:#64748b; margin:4px 0 0 0;">
+                            Quy trình giao dịch UTC2: Người mua đặt cọc ➔ Người bán xác nhận ➔ Gặp gỡ trao đổi đồ ➔ Cả 2 cùng xác nhận (+2 điểm uy tín)
+                        </p>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="btn-outline-chat" style="font-size:12px; padding:6px 12px; display:inline-flex; align-items:center; gap:5px; background:#fff;" onclick="window.app && window.app.refreshOrdersFromCloud()">
+                            <span>🔄</span> Làm mới từ Cloud
+                        </button>
+                        <button type="button" class="btn-primary-confirm" style="width:auto; margin:0; font-size:12px; padding:6px 14px;" onclick="switchNavTab('home')">
+                            🔍 Săn Đồ Thêm
+                        </button>
+                    </div>
+                </div>
+
+                <!-- THANH TỔNG QUAN THỐNG KÊ ĐƠN HÀNG -->
+                <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+                    <div class="order-stat-pill">
+                        <span>Tổng đơn liên quan</span>
+                        <strong id="statTotalOrders">0</strong>
+                    </div>
+                    <div class="order-stat-pill" style="border-left:4px solid #b45309;">
+                        <span>Chờ người bán xác nhận</span>
+                        <strong id="statPendingSeller" style="color:#b45309;">0</strong>
+                    </div>
+                    <div class="order-stat-pill" style="border-left:4px solid #0284c7;">
+                        <span>Đang hẹn gặp trao đổi</span>
+                        <strong id="statInTrade" style="color:#0284c7;">0</strong>
+                    </div>
+                    <div class="order-stat-pill" style="border-left:4px solid #16a34a;">
+                        <span>Đã hoàn thành</span>
+                        <strong id="statCompleted" style="color:#16a34a;">0</strong>
+                    </div>
+                </div>
+
+                <!-- BỘ LỌC TRẠNG THÁI ĐƠN HÀNG -->
+                <div class="order-filter-bar" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px; border-bottom:1px solid #e2e8f0;">
+                    <button class="order-tab-btn active" data-filter="all" onclick="filterOrdersSectionTab('all')">
+                        Tất cả (<span id="cntAllOrders">0</span>)
+                    </button>
+                    <button class="order-tab-btn" data-filter="buying" onclick="filterOrdersSectionTab('buying')">
+                        🏷️ Tôi Mua (Đã cọc) (<span id="cntBuyingOrders">0</span>)
+                    </button>
+                    <button class="order-tab-btn" data-filter="selling" onclick="filterOrdersSectionTab('selling')">
+                        📦 Khách Cọc (Tôi Bán) (<span id="cntSellingOrders">0</span>)
+                    </button>
+                    <button class="order-tab-btn" data-filter="pending_seller" onclick="filterOrdersSectionTab('pending_seller')">
+                        ⏳ Chờ Xác Nhận (<span id="cntPendingSellerOrders">0</span>)
+                    </button>
+                    <button class="order-tab-btn" data-filter="in_trade" onclick="filterOrdersSectionTab('in_trade')">
+                        🔄 Đang Trao Đổi (<span id="cntInTradeOrders">0</span>)
+                    </button>
+                    <button class="order-tab-btn" data-filter="completed" onclick="filterOrdersSectionTab('completed')">
+                        ✅ Đã Hoàn Thành (<span id="cntCompletedOrders">0</span>)
+                    </button>
+                </div>
+
+                <!-- DANH SÁCH CÁC THẺ ĐƠN HÀNG -->
+                <div id="ordersSectionListContainer">
+                    <!-- Rendered by JS -->
                 </div>
             </div>
         </div>
@@ -929,6 +1011,22 @@
             </h3>
             <div class="checkout-price" id="modalProductPrice">
                 35.000 VNĐ
+            </div>
+
+            <!-- BANNER THÔNG BÁO MẶT HÀNG ĐÃ CÓ NGƯỜI ĐẶT CỌC -->
+            <div id="modalProductDepositBanner" style="display:none; background:#fef2f2; border:1.5px solid #fecaca; border-radius:10px; padding:10px 14px; margin-bottom:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:22px;">🔒</span>
+                        <div>
+                            <strong style="color:#b91c1c; font-size:13px; display:block;">Món đồ này đã có người đặt cọc giữ chỗ</strong>
+                            <span id="modalProductDepositInfoText" style="font-size:11.5px; color:#7f1d1d;">Đang trong quá trình trao đổi</span>
+                        </div>
+                    </div>
+                    <button type="button" id="btnModalViewOrder" class="btn-outline-chat" style="font-size:11.5px; padding:5px 12px; color:#dc2626; border-color:#fca5a5; background:#fff; font-weight:700;" onclick="closeCheckoutModal(); switchNavTab('orders');">
+                        Xem đơn cọc ➔
+                    </button>
+                </div>
             </div>
 
             <!-- Mô tả chi tiết món đồ -->

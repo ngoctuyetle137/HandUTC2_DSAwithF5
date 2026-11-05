@@ -1,4 +1,4 @@
-﻿/* ===================================================================
+/* ===================================================================
    UniPass UTC2 - Hệ Thống Pass Đồ Sinh Viên UTC2
    Tone Màu Chủ Đạo: Vàng Nhạt (Warm Light-Yellow / Sunny Pastel & Amber)
    Trang Đăng Nhập / Đăng Ký Sinh Viên UTC2 & Xác Thực OTP
@@ -2725,6 +2725,65 @@ body {
     align-items: center;
     gap: 4px;
     border: 1px solid #fde68a;
+}
+
+/* Order Management View Styles */
+.order-tab-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.order-tab-btn:hover {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+.order-tab-btn.active {
+    background: #6366f1;
+    color: #ffffff;
+    border-color: #6366f1;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+.order-card-modern {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.order-card-modern:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+    border-color: #cbd5e1;
+}
+.order-stat-pill {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    flex: 1;
+    min-width: 140px;
+}
+.order-stat-pill strong {
+    display: block;
+    font-size: 18px;
+    color: #0f172a;
+    margin-top: 2px;
+}
+.order-stat-pill span {
+    font-size: 11.5px;
+    color: #64748b;
 }
 
 @keyframes spin {
