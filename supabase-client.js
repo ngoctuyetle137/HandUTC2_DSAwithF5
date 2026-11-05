@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ===================================================================
  * UNIPASS UTC2 - SUPABASE CLIENT INTEGRATION ADAPTER
  * Hỗ trợ kết nối trực tiếp cơ sở dữ liệu Supabase PostgreSQL & Realtime
@@ -271,7 +271,8 @@
                         timemarkProofUrl: item.timemark_proof_url || '',
                         description: rawDesc.replace(/^\[BỊ TỪ CHỐI[^\]]*\]\s*/i, ''),
                         rejectReason: rejectReason,
-                        status: clientStatus
+                        status: clientStatus,
+                        isDeposited: (clientStatus === 'deposited')
                     };
                 });
             } catch (err) {
@@ -497,23 +498,28 @@
             const client = this.getClient();
             if (!client) return false;
             try {
+                const buyerName = order.buyer || order.buyerName || 'Sinh viên UTC2';
+                const buyerEmail = order.buyerEmail || (window.app && window.app.user ? window.app.user.email : 'student@st.utc2.edu.vn');
+                const sellerName = order.seller || order.sellerName || 'Người bán UTC2';
+                const sellerEmail = order.sellerEmail || 'seller@st.utc2.edu.vn';
+
                 const record = {
                     id: order.id || ('ORD_' + Date.now()),
                     order_code: order.orderCode || ('UTC2-' + Math.floor(100000 + Math.random() * 900000)),
                     product_id: order.productId,
                     product_title: order.productTitle,
-                    buyer_name: order.buyerName,
-                    buyer_email: order.buyerEmail || 'student@st.utc2.edu.vn',
-                    seller_name: order.sellerName,
-                    seller_email: order.sellerEmail || 'seller@st.utc2.edu.vn',
-                    product_price: order.productPrice,
-                    deposit_amount: order.depositAmount,
-                    shipping_fee: order.shippingFee || 0,
-                    discount_amount: order.discountAmount || 0,
-                    total_payment: order.totalPayment,
+                    buyer_name: buyerName,
+                    buyer_email: buyerEmail,
+                    seller_name: sellerName,
+                    seller_email: sellerEmail,
+                    product_price: Number(order.productPrice) || 0,
+                    deposit_amount: Number(order.depositAmount) || 0,
+                    shipping_fee: Number(order.shippingFee || order.shipFee || 0),
+                    discount_amount: Number(order.discountAmount || 0),
+                    total_payment: Number(order.totalPayment || order.finalTotal || 0),
                     shipping_option: order.shippingOption || 'campus',
                     meet_location: order.meetLocation || 'Cơ sở UTC2',
-                    status: 'deposited',
+                    status: order.status || 'pending_seller',
                     notes: order.notes || ''
                 };
 
@@ -524,10 +530,12 @@
                 if (error) throw error;
 
                 // Cập nhật trạng thái sản phẩm sang deposited
-                await client
-                    .from('products')
-                    .update({ status: 'deposited' })
-                    .eq('id', order.productId);
+                if (order.productId) {
+                    await client
+                        .from('products')
+                        .update({ status: 'deposited' })
+                        .eq('id', order.productId);
+                }
 
                 console.log('✅ [Supabase] Đã tạo đơn cọc trên Cloud:', record.id);
                 return true;

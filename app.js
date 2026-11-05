@@ -217,7 +217,7 @@ async function verifyUserCredentials(email, enteredPassword) {
 
     // 1. Kiểm tra Admin chính thức
     if (emailLower === ADMIN_CREDENTIALS.email.toLowerCase()) {
-        return (inputHash === ADMIN_PASSWORD_HASH || inputHash === ADMIN_DEFAULT_FALLBACK_HASH || enteredPassword === '123456');
+        return (inputHash === ADMIN_PASSWORD_HASH || inputHash === ADMIN_DEFAULT_FALLBACK_HASH);
     }
 
     // 2. Tra cứu trong Auth Vault cục bộ
@@ -260,7 +260,7 @@ async function verifyUserCredentials(email, enteredPassword) {
             saveUserAuthHash(emailLower, inputHash);
             return true;
         }
-        if (existing.password && (existing.password === enteredPassword || existing.password === '123456')) {
+        if (existing.password && (existing.password === enteredPassword )) {
             saveUserAuthHash(emailLower, inputHash);
             delete existing.password;
             existing.passwordHash = inputHash;
@@ -713,19 +713,58 @@ class AppController {
             // Tải đơn cọc từ Supabase
             const cloudOrders = await window.UniPassSupabase.getOrders();
             if (cloudOrders && Array.isArray(cloudOrders) && cloudOrders.length > 0) {
-                this.depositOrders = cloudOrders.map(o => ({
+                const mappedOrders = cloudOrders.map(o => ({
                     id: o.id,
+                    orderCode: o.order_code,
                     productId: o.product_id,
                     productTitle: o.product_title,
                     seller: o.seller_name,
+                    sellerName: o.seller_name,
+                    sellerEmail: o.seller_email,
                     buyer: o.buyer_name,
-                    depositAmount: Number(o.deposit_amount),
-                    shipFee: Number(o.shipping_fee),
-                    discountCoins: Math.round(Number(o.discount_amount) / 100),
-                    finalTotal: Number(o.total_payment),
+                    buyerName: o.buyer_name,
+                    buyerEmail: o.buyer_email,
+                    productPrice: Number(o.product_price) || 0,
+                    depositAmount: Number(o.deposit_amount) || 0,
+                    shippingFee: Number(o.shipping_fee) || 0,
+                    shipFee: Number(o.shipping_fee) || 0,
+                    discountCoins: Math.round(Number(o.discount_amount || 0) / 100),
+                    discountAmount: Number(o.discount_amount) || 0,
+                    totalPayment: Number(o.total_payment) || 0,
+                    finalTotal: Number(o.total_payment) || 0,
+                    shippingOption: o.shipping_option || 'campus',
+                    meetLocation: o.meet_location || 'Campus UTC2',
+                    status: o.status || 'pending_seller',
+                    sellerAccepted: (o.status !== 'pending_seller'),
+                    buyerCompleted: (o.status === 'completed'),
+                    sellerCompleted: (o.status === 'completed'),
+                    notes: o.notes || '',
                     timestamp: new Date(o.created_at).getTime()
                 }));
+
+                const orderMap = new Map();
+                this.depositOrders.forEach(ord => { if (ord && ord.id) orderMap.set(ord.id, ord); });
+                mappedOrders.forEach(ord => {
+                    const local = orderMap.get(ord.id);
+                    orderMap.set(ord.id, { ...local, ...ord });
+                });
+                this.depositOrders = Array.from(orderMap.values());
+                this.saveOrders();
+
+                // Đánh dấu sản phẩm tương ứng đã được cọc trên máy này
+                this.depositOrders.forEach(ord => {
+                    if (ord.productId && ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(ord.status)) {
+                        const prod = this.products.find(p => p.id === ord.productId);
+                        if (prod) {
+                            prod.isDeposited = true;
+                            prod.status = 'deposited';
+                        }
+                    }
+                });
+                this.saveProducts();
+                this.renderProducts();
                 this.updateDepositBadge();
+                this.renderProfile();
                 this.cleanupCompletedOrdersChats();
             }
 
@@ -909,31 +948,83 @@ class AppController {
             if (payload.eventType === 'INSERT') {
                 const ord = payload.new;
                 if (!this.depositOrders.some(o => o.id === ord.id)) {
-                    this.depositOrders.unshift({
+                    const newOrd = {
                         id: ord.id,
+                        orderCode: ord.order_code,
                         productId: ord.product_id,
                         productTitle: ord.product_title,
                         seller: ord.seller_name,
+                        sellerName: ord.seller_name,
+                        sellerEmail: ord.seller_email,
                         buyer: ord.buyer_name,
-                        depositAmount: Number(ord.deposit_amount),
-                        shipFee: Number(ord.shipping_fee),
-                        discountCoins: Math.round(Number(ord.discount_amount) / 100),
-                        finalTotal: Number(ord.total_payment),
+                        buyerName: ord.buyer_name,
+                        buyerEmail: ord.buyer_email,
+                        productPrice: Number(ord.product_price) || 0,
+                        depositAmount: Number(ord.deposit_amount) || 0,
+                        shippingFee: Number(ord.shipping_fee) || 0,
+                        shipFee: Number(ord.shipping_fee) || 0,
+                        discountCoins: Math.round(Number(ord.discount_amount || 0) / 100),
+                        discountAmount: Number(ord.discount_amount) || 0,
+                        totalPayment: Number(ord.total_payment) || 0,
+                        finalTotal: Number(ord.total_payment) || 0,
+                        shippingOption: ord.shipping_option || 'campus',
+                        meetLocation: ord.meet_location || 'Campus UTC2',
+                        status: ord.status || 'pending_seller',
+                        sellerAccepted: (ord.status !== 'pending_seller'),
+                        buyerCompleted: (ord.status === 'completed'),
+                        sellerCompleted: (ord.status === 'completed'),
+                        notes: ord.notes || '',
                         timestamp: new Date(ord.created_at).getTime()
-                    });
+                    };
+                    this.depositOrders.unshift(newOrd);
+                    this.saveOrders();
+
+                    // Đánh dấu sản phẩm tương ứng đã được cọc trên máy này
+                    if (ord.product_id) {
+                        const prod = this.products.find(p => p.id === ord.product_id);
+                        if (prod) {
+                            prod.isDeposited = true;
+                            prod.status = 'deposited';
+                            this.saveProducts();
+                        }
+                    }
                     this.updateDepositBadge();
-                    if (ord.seller_name === this.user.name) {
-                        if (window.sound) window.sound.playSuccess();
-                        showToast(`Sinh viên ${ord.buyer_name} vừa đặt cọc giữ chỗ món "${ord.product_title}"!`, 'success');
+                    this.renderProducts();
+                    this.renderProfile();
+
+                    if (this.user) {
+                        const myName = (this.user.name || '').trim().toLowerCase();
+                        const myEmail = (this.user.email || '').trim().toLowerCase();
+                        const sellerName = (ord.seller_name || '').trim().toLowerCase();
+                        const sellerEmail = (ord.seller_email || '').trim().toLowerCase();
+                        if ((sellerName && sellerName === myName) || (sellerEmail && sellerEmail === myEmail)) {
+                            if (window.sound) window.sound.playSuccess();
+                            showToast(`Sinh viên ${ord.buyer_name} vừa đặt cọc giữ chỗ món "${ord.product_title}"!`, 'success');
+                        }
                     }
                 }
             } else if (payload.eventType === 'UPDATE') {
                 const ord = payload.new;
                 const idx = this.depositOrders.findIndex(o => o.id === ord.id);
                 if (idx !== -1) {
-                    this.depositOrders[idx].status = ord.status;
+                    this.depositOrders[idx] = {
+                        ...this.depositOrders[idx],
+                        status: ord.status,
+                        sellerAccepted: (ord.status !== 'pending_seller'),
+                        buyerCompleted: (ord.status === 'completed'),
+                        sellerCompleted: (ord.status === 'completed'),
+                        notes: ord.notes || this.depositOrders[idx].notes
+                    };
+                    this.saveOrders();
+                    this.renderProfile();
+                    this.updateDepositBadge();
                 }
                 if (ord.status === 'completed') {
+                    if (ord.product_id) {
+                        this.products = this.products.filter(p => p.id !== ord.product_id);
+                        this.saveProducts();
+                        this.renderProducts();
+                    }
                     this.cleanupCompletedOrdersChats();
                     this.renderChatMessages();
                 }
@@ -1138,8 +1229,19 @@ class AppController {
             const exists = this.depositOrders.some(o => o.id === order.id);
             if (!exists) {
                 this.depositOrders.unshift(order);
-                localStorage.setItem('unipass_deposit_orders', JSON.stringify(this.depositOrders));
+                this.saveOrders();
+
+                // Đánh dấu sản phẩm tương ứng đã được cọc trên máy này
+                if (order.productId) {
+                    const prod = this.products.find(p => p.id === order.productId);
+                    if (prod) {
+                        prod.isDeposited = true;
+                        prod.status = 'deposited';
+                        this.saveProducts();
+                    }
+                }
                 this.updateDepositBadge();
+                this.renderProducts();
                 this.renderProfile();
 
                 // Gửi thông báo tới người bán
@@ -1152,12 +1254,18 @@ class AppController {
                     relatedId: order.id
                 });
 
-                if (this.user && (order.seller === this.user.name || order.sellerEmail === this.user.email)) {
-                    const orderToastKey = 'toast_order_dep_' + order.id;
-                    if (!hasToastBeenShown(orderToastKey)) {
-                        markToastAsShown(orderToastKey);
-                        if (window.sound) window.sound.playSuccess();
-                        showToast(`[Đơn đặt cọc mới] ${order.buyer} vừa đặt cọc món "${order.productTitle}"! Vui lòng vào mục Cá Nhân bấm Xác Nhận Đơn Hàng.`, 'success');
+                if (this.user) {
+                    const myName = (this.user.name || '').trim().toLowerCase();
+                    const myEmail = (this.user.email || '').trim().toLowerCase();
+                    const sellerName = (order.seller || '').trim().toLowerCase();
+                    const sellerEmail = (order.sellerEmail || '').trim().toLowerCase();
+                    if ((sellerName && sellerName === myName) || (sellerEmail && sellerEmail === myEmail)) {
+                        const orderToastKey = 'toast_order_dep_' + order.id;
+                        if (!hasToastBeenShown(orderToastKey)) {
+                            markToastAsShown(orderToastKey);
+                            if (window.sound) window.sound.playSuccess();
+                            showToast(`[Đơn đặt cọc mới] ${order.buyer} vừa đặt cọc món "${order.productTitle}"! Vui lòng vào mục Cá Nhân bấm Xác Nhận Đơn Hàng.`, 'success');
+                        }
                     }
                 }
             }
@@ -1168,20 +1276,35 @@ class AppController {
             if (!order || !order.id) return;
             const idx = this.depositOrders.findIndex(o => o.id === order.id);
             if (idx !== -1) {
-                this.depositOrders[idx] = order;
+                this.depositOrders[idx] = { ...this.depositOrders[idx], ...order };
             } else {
                 this.depositOrders.unshift(order);
             }
-            localStorage.setItem('unipass_deposit_orders', JSON.stringify(this.depositOrders));
+            this.saveOrders();
             this.updateDepositBadge();
             this.renderProfile();
 
+            if (order.status === 'completed' && order.productId) {
+                this.products = this.products.filter(p => p.id !== order.productId);
+                this.saveProducts();
+                this.renderProducts();
+            }
+
             if (this.user) {
-                if (order.buyer === this.user.name && order.sellerAccepted && order.status === 'in_trade') {
+                const myName = (this.user.name || '').trim().toLowerCase();
+                const myEmail = (this.user.email || '').trim().toLowerCase();
+                const buyerName = (order.buyer || '').trim().toLowerCase();
+                const buyerEmail = (order.buyerEmail || '').trim().toLowerCase();
+                const sellerName = (order.seller || '').trim().toLowerCase();
+                const sellerEmail = (order.sellerEmail || '').trim().toLowerCase();
+                const isBuyer = (buyerName && buyerName === myName) || (buyerEmail && buyerEmail === myEmail);
+                const isSeller = (sellerName && sellerName === myName) || (sellerEmail && sellerEmail === myEmail);
+
+                if (isBuyer && order.sellerAccepted && order.status === 'in_trade') {
                     if (window.sound) window.sound.playSuccess();
                     showToast(`Người bán ${order.seller} đã xác nhận đơn hàng "${order.productTitle}"! Hai bạn hãy gặp nhau trao đổi đồ.`, 'success');
                 }
-                if (order.status === 'completed' && (order.buyer === this.user.name || order.seller === this.user.name)) {
+                if (order.status === 'completed' && (isBuyer || isSeller)) {
                     this.cleanupCompletedOrdersChats();
                     this.renderChatMessages();
                     if (window.sound) window.sound.playSuccess();
@@ -1497,6 +1620,23 @@ class AppController {
         }
     }
 
+    isUserInOrder(order, user = this.user) {
+        if (!order || !user) return false;
+        const uName = (user.name || '').trim().toLowerCase();
+        const uEmail = (user.email || '').trim().toLowerCase();
+        const bName = (order.buyer || order.buyerName || '').trim().toLowerCase();
+        const bEmail = (order.buyerEmail || '').trim().toLowerCase();
+        const sName = (order.seller || order.sellerName || '').trim().toLowerCase();
+        const sEmail = (order.sellerEmail || '').trim().toLowerCase();
+
+        return Boolean(
+            (bName && uName && bName === uName) ||
+            (bEmail && uEmail && bEmail === uEmail) ||
+            (sName && uName && sName === uName) ||
+            (sEmail && uEmail && sEmail === uEmail)
+        );
+    }
+
     updateDepositBadge() {
         const badge = document.getElementById('depositOrderCount');
         const profileTotalBadge = document.getElementById('profileDepositTotalBadge');
@@ -1511,12 +1651,7 @@ class AppController {
         }
 
         // Lọc các đơn cọc liên quan đến tài khoản hiện tại (người mua HOẶC người bán)
-        const myOrders = this.depositOrders.filter(o => 
-            (o.buyer && o.buyer === this.user.name) || 
-            (o.buyerEmail && o.buyerEmail === this.user.email) ||
-            (o.seller && o.seller === this.user.name) || 
-            (o.sellerEmail && o.sellerEmail === this.user.email)
-        );
+        const myOrders = this.depositOrders.filter(o => this.isUserInOrder(o));
         const myOrderCount = myOrders.length;
 
         // Nếu tài khoản nào chưa cọc đơn hàng nào thì đơn cọc hiển thị bằng 0
@@ -2170,9 +2305,9 @@ class AppController {
             const isMyItem = this.user ? (item.seller === this.user.name) : false;
             const activeOrder = (this.depositOrders || []).find(o => 
                 o.productId === item.id && 
-                ['pending_seller', 'in_trade'].includes(o.status)
+                ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status)
             );
-            const isDeposited = (!!activeOrder && item.isDeposited !== false) || (item.isDeposited === true && !activeOrder);
+            const isDeposited = Boolean((!!activeOrder && item.isDeposited !== false) || item.isDeposited === true || item.status === 'deposited');
             const origPrice = item.originalPrice || Math.round((item.price * 1.5) / 10000) * 10000;
             const discountPct = (origPrice > item.price) ? Math.round((1 - item.price / origPrice) * 100) : 0;
             const starScore = ((item.sellerRep || 90) / 20).toFixed(1);
@@ -2289,12 +2424,7 @@ class AppController {
 
        if (history) {
             // ✅ Chỉ lấy các đơn mà tài khoản hiện tại là người mua (buyer) HOẶC người bán (seller)
-            const myOrders = this.depositOrders.filter(o => 
-                (o.buyer && o.buyer === this.user.name) || 
-                (o.buyerEmail && o.buyerEmail === this.user.email) ||
-                (o.seller && o.seller === this.user.name) || 
-                (o.sellerEmail && o.sellerEmail === this.user.email)
-            );
+            const myOrders = this.depositOrders.filter(o => this.isUserInOrder(o));
 
             const profileTotalBadge = document.getElementById('profileDepositTotalBadge');
             if (profileTotalBadge) {
@@ -2311,10 +2441,18 @@ class AppController {
                     </div>
                 `;
             } else {
+                const uName = (this.user.name || '').trim().toLowerCase();
+                const uEmail = (this.user.email || '').trim().toLowerCase();
+
                 history.innerHTML = myOrders.map(o => {
-                    const isBuyer = (this.user.name === o.buyer || this.user.email === o.buyerEmail);
-                    const isSeller = (this.user.name === o.seller || this.user.email === o.sellerEmail);
-                    const counterpartName = isBuyer ? o.seller : o.buyer;
+                    const bName = (o.buyer || o.buyerName || '').trim().toLowerCase();
+                    const bEmail = (o.buyerEmail || '').trim().toLowerCase();
+                    const sName = (o.seller || o.sellerName || '').trim().toLowerCase();
+                    const sEmail = (o.sellerEmail || '').trim().toLowerCase();
+
+                    const isBuyer = (bName && uName && bName === uName) || (bEmail && uEmail && bEmail === uEmail);
+                    const isSeller = (sName && uName && sName === uName) || (sEmail && uEmail && sEmail === uEmail);
+                    const counterpartName = isBuyer ? (o.seller || o.sellerName) : (o.buyer || o.buyerName);
                     const counterpartRole = isBuyer ? 'Người bán' : 'Người mua';
 
                     const isDelivered = (o.status === 'completed');
@@ -4976,14 +5114,15 @@ function openCheckoutModal(productId) {
     const confirmBtn = document.getElementById('confirmDepositBtn');
     const activeOrder = (window.app && window.app.depositOrders) ? window.app.depositOrders.find(o => 
         o.productId === item.id && 
-        ['pending_seller', 'in_trade'].includes(o.status)
+        ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status)
     ) : null;
+    const isDepositedItem = Boolean(activeOrder || item.isDeposited === true || item.status === 'deposited');
 
     if (isMine) {
         confirmBtn.innerText = 'Món đồ của chính bạn';
         confirmBtn.style.background = '#94a3b8';
         confirmBtn.disabled = true;
-    } else if (activeOrder) {
+    } else if (isDepositedItem) {
         confirmBtn.innerText = 'Đơn hàng đã được cọc';
         confirmBtn.style.background = '#dc2626';
         confirmBtn.disabled = false; // Để người khác bấm vào sẽ hiện thông báo chính xác
@@ -5079,10 +5218,11 @@ function confirmDepositOrder() {
     // 1. Kiểm tra xem món đồ đã có người khác đặt cọc trước hay chưa
     const existingActiveOrder = (window.app && window.app.depositOrders) ? window.app.depositOrders.find(o => 
         o.productId === currentCheckoutProduct.id && 
-        ['pending_seller', 'in_trade'].includes(o.status)
+        ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status)
     ) : null;
+    const isAlreadyDeposited = Boolean(existingActiveOrder || currentCheckoutProduct.isDeposited === true || currentCheckoutProduct.status === 'deposited');
 
-    if (existingActiveOrder) {
+    if (isAlreadyDeposited) {
         showToast('Đơn hàng đã được cọc! Món đồ này đã có người đặt cọc giữ chỗ trước.', 'warning');
         alert('Đơn hàng đã được cọc! Món đồ này đã có người đặt cọc giữ chỗ trước.');
         const confirmBtn = document.getElementById('confirmDepositBtn');
@@ -5142,8 +5282,10 @@ function confirmDepositOrder() {
         productId: currentCheckoutProduct.id,
         productTitle: currentCheckoutProduct.title,
         seller: currentCheckoutProduct.seller,
+        sellerName: currentCheckoutProduct.seller,
         sellerEmail: currentCheckoutProduct.sellerEmail || 'seller@st.utc2.edu.vn',
         buyer: window.app.user.name,
+        buyerName: window.app.user.name,
         buyerEmail: window.app.user.email || 'buyer@st.utc2.edu.vn',
         productPrice: basePrice,
         depositAmount,
@@ -5152,7 +5294,7 @@ function confirmDepositOrder() {
         discountAmount: discountVND,
         totalPayment: finalTotal,
         shippingOption: document.getElementById('shippingSelectOption') ? document.getElementById('shippingSelectOption').value : 'campus',
-        meetLocation: currentCheckoutProduct.location,
+        meetLocation: currentCheckoutProduct.location || 'Campus UTC2',
         status: 'pending_seller', // Người mua đã cọc, chờ người bán xác nhận đơn hàng
         sellerAccepted: false,     // Người bán đã bấm xác nhận đơn hàng hay chưa
         buyerCompleted: false,     // Người mua xác nhận đã nhận hàng
@@ -5165,8 +5307,12 @@ function confirmDepositOrder() {
 
     // Đánh dấu sản phẩm là đã được cọc
     currentCheckoutProduct.isDeposited = true;
+    currentCheckoutProduct.status = 'deposited';
     const prodInList = window.app.products.find(p => p.id === currentCheckoutProduct.id);
-    if (prodInList) prodInList.isDeposited = true;
+    if (prodInList) {
+        prodInList.isDeposited = true;
+        prodInList.status = 'deposited';
+    }
     window.app.saveProducts();
     window.app.renderProducts();
 
@@ -5215,7 +5361,13 @@ function confirmOrderBySeller(orderId) {
     const order = window.app.depositOrders.find(o => o.id === orderId);
     if (!order) return;
 
-    if (window.app.user.name !== order.seller && window.app.user.email !== order.sellerEmail) {
+    const uName = (window.app.user.name || '').trim().toLowerCase();
+    const uEmail = (window.app.user.email || '').trim().toLowerCase();
+    const sName = (order.seller || order.sellerName || '').trim().toLowerCase();
+    const sEmail = (order.sellerEmail || '').trim().toLowerCase();
+    const isSeller = (sName && uName && sName === uName) || (sEmail && uEmail && sEmail === uEmail);
+
+    if (!isSeller) {
         showToast('Chỉ người bán mới có quyền xác nhận đơn hàng này!', 'danger');
         return;
     }
@@ -5251,14 +5403,23 @@ function confirmTradeComplete(orderId, role) {
     const order = window.app.depositOrders.find(o => o.id === orderId);
     if (!order) return;
 
+    const uName = (window.app.user.name || '').trim().toLowerCase();
+    const uEmail = (window.app.user.email || '').trim().toLowerCase();
+    const bName = (order.buyer || order.buyerName || '').trim().toLowerCase();
+    const bEmail = (order.buyerEmail || '').trim().toLowerCase();
+    const sName = (order.seller || order.sellerName || '').trim().toLowerCase();
+    const sEmail = (order.sellerEmail || '').trim().toLowerCase();
+    const isBuyer = (bName && uName && bName === uName) || (bEmail && uEmail && bEmail === uEmail);
+    const isSeller = (sName && uName && sName === uName) || (sEmail && uEmail && sEmail === uEmail);
+
     if (role === 'buyer') {
-        if (window.app.user.name !== order.buyer && window.app.user.email !== order.buyerEmail) {
+        if (!isBuyer) {
             showToast('Bạn không phải người mua của đơn này!', 'danger');
             return;
         }
         order.buyerCompleted = true;
     } else if (role === 'seller') {
-        if (window.app.user.name !== order.seller && window.app.user.email !== order.sellerEmail) {
+        if (!isSeller) {
             showToast('Bạn không phải người bán của đơn này!', 'danger');
             return;
         }
@@ -5803,12 +5964,7 @@ function openDepositOrders() {
         showToast('Vui lòng đăng nhập để xem đơn đặt cọc!', 'warning');
         return;
     }
-    const myOrders = window.app.depositOrders.filter(o => 
-        (o.buyer && o.buyer === window.app.user.name) || 
-        (o.buyerEmail && o.buyerEmail === window.app.user.email) ||
-        (o.seller && o.seller === window.app.user.name) || 
-        (o.sellerEmail && o.sellerEmail === window.app.user.email)
-    );
+    const myOrders = window.app.depositOrders.filter(o => window.app.isUserInOrder(o));
     const count = myOrders.length;
     if (count === 0) {
         showToast(`Tài khoản của bạn hiện có 0 đơn cọc.`, 'info');
