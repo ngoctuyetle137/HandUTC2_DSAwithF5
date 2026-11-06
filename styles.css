@@ -1505,6 +1505,30 @@ body {
     border-color: #f59e0b;
 }
 
+/* Thẻ sản phẩm đã có người đặt cọc: Đổi viền và nền sang tông Đỏ theo yêu cầu */
+.uni-product-card.is-deposited-card {
+    border: 2px solid #ef4444 !important;
+    background: #fff5f5 !important;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.18) !important;
+}
+
+.uni-product-card.is-deposited-card:hover {
+    border-color: #dc2626 !important;
+    box-shadow: 0 8px 22px rgba(220, 38, 38, 0.28) !important;
+}
+
+.uni-product-card.is-deposited-card .card-cta-btn {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    border: 1px solid #b91c1c !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35) !important;
+}
+
+.uni-product-card.is-deposited-card .card-cta-btn:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    box-shadow: 0 6px 16px rgba(185, 28, 28, 0.45) !important;
+}
+
 
 
 .card-image-wrapper {

@@ -2203,6 +2203,9 @@ class AppController {
         }
 
         localStorage.setItem('unipass_current_user', JSON.stringify(this.user));
+        if (typeof checkExpiredPostsForCurrentUser === 'function') {
+            checkExpiredPostsForCurrentUser();
+        }
     }
 
     toggleAccount() {
@@ -2229,8 +2232,42 @@ class AppController {
 
     // Lọc sản phẩm
     getFilteredItems() {
-        // Chỉ lấy các bài đã được Admin phê duyệt (Loại bỏ các bài đang chờ duyệt TimeMark hoặc bị từ chối)
-        const baseApprovedProducts = this.products.filter(p => p.status !== 'pending' && p.status !== 'rejected');
+        // 1. Danh sách ID các sản phẩm đã có đơn hoàn tất giao nhận 2 bên (completed)
+        const completedProductIds = new Set(
+            (this.depositOrders || [])
+                .filter(o => o.status === 'completed')
+                .map(o => o.productId)
+                .filter(Boolean)
+        );
+
+        const myEmail = this.user ? (this.user.email || '').toLowerCase().trim() : '';
+        const myName = this.user ? (this.user.name || '').toLowerCase().trim() : '';
+
+        // 2. Chỉ lấy các bài hợp lệ sẵn sàng pass trên sàn:
+        // - Loại bỏ bài đang chờ duyệt (pending), bị từ chối (rejected), đã bán (sold), đã hoàn tất (completed), đã xóa (deleted)
+        // - Loại bỏ triệt để các sản phẩm đã hoàn tất giao nhận giữa 2 bên (!completedProductIds.has(p.id))
+        // - Giới hạn 7 ngày: Nếu sản phẩm đã hết hạn 7 ngày, chỉ hiển thị với chính người bán để người bán quyết định gia hạn hoặc xóa; người mua khác sẽ không nhìn thấy trên sàn
+        const baseApprovedProducts = this.products.filter(p => {
+            if (p.status === 'pending' || p.status === 'rejected' || p.status === 'sold' || p.status === 'completed' || p.status === 'deleted') {
+                return false;
+            }
+            if (completedProductIds.has(p.id)) {
+                return false;
+            }
+
+            const isOwner = Boolean(myEmail && (
+                (p.sellerEmail && p.sellerEmail.toLowerCase().trim() === myEmail) ||
+                (p.seller && p.seller.toLowerCase().trim() === myName)
+            ));
+
+            const exp = this.formatPostExpiryCountdown(p);
+            if (exp.isExpired && !isOwner) {
+                return false; // Người khác không nhìn thấy món đã hết hạn trên sàn
+            }
+
+            return true;
+        });
+
         let items = [...baseApprovedProducts];
 
         // Nếu bộ lọc đang BẬT: CHỈ LỌC NHỮNG TIÊU CHÍ NÀO ĐƯỢC BẤM DẤU TÍCH!
@@ -2260,15 +2297,21 @@ class AppController {
             items = items.filter(p => matchesProductSearch(p, this.searchKeyword));
         }
 
-        // Lọc riêng các món đồ ĐÃ CÓ NGƯỜI ĐẶT CỌC
+        // Lọc riêng các món đồ BẠN ĐÃ ĐẶT CỌC (Chỉ người đăng nhập mới lọc được các đơn cọc của chính mình)
         if (this.filterDepositedOnly) {
-            items = items.filter(p => {
-                const activeOrder = (this.depositOrders || []).find(o => 
-                    o.productId === p.id && 
-                    ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status)
-                );
-                return Boolean(p.isDeposited === true || p.status === 'deposited' || activeOrder);
-            });
+            if (!this.user) {
+                items = [];
+            } else {
+                items = items.filter(p => {
+                    const myOrder = (this.depositOrders || []).find(o => 
+                        o.productId === p.id && 
+                        ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status) &&
+                        ((o.buyerEmail && o.buyerEmail.toLowerCase().trim() === myEmail) ||
+                         (o.buyer && o.buyer.toLowerCase().trim() === myName))
+                    );
+                    return Boolean(myOrder);
+                });
+            }
         }
 
         if (this.sortBy === 'priceAsc') {
@@ -2312,14 +2355,17 @@ class AppController {
 
         const depCountEl = document.getElementById('feedDepositedCount');
         if (depCountEl) {
-            const countDeposited = this.products.filter(p => {
-                const activeOrder = (this.depositOrders || []).find(o => 
-                    o.productId === p.id && 
-                    ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status)
-                );
-                return Boolean(p.isDeposited === true || p.status === 'deposited' || activeOrder);
-            }).length;
-            depCountEl.innerText = countDeposited;
+            let myDepositedCount = 0;
+            if (this.user) {
+                const myEmail = (this.user.email || '').toLowerCase().trim();
+                const myName = (this.user.name || '').toLowerCase().trim();
+                myDepositedCount = (this.depositOrders || []).filter(o => 
+                    ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status) &&
+                    ((o.buyerEmail && o.buyerEmail.toLowerCase().trim() === myEmail) ||
+                     (o.buyer && o.buyer.toLowerCase().trim() === myName))
+                ).length;
+            }
+            depCountEl.innerText = myDepositedCount;
         }
 
         if (dsaInfo) {
@@ -2373,12 +2419,16 @@ class AppController {
         ` : '';
 
         container.innerHTML = searchBannerHtml + list.map(item => {
-            const isMyItem = this.user ? (item.seller === this.user.name) : false;
+            const isMyItem = Boolean(this.user && (
+                (item.sellerEmail && this.user.email && item.sellerEmail.toLowerCase() === this.user.email.toLowerCase()) ||
+                (item.seller && this.user.name && item.seller.toLowerCase() === this.user.name.toLowerCase())
+            ));
             const activeOrder = (this.depositOrders || []).find(o => 
                 o.productId === item.id && 
                 ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status)
             );
             const isDeposited = Boolean((!!activeOrder && item.isDeposited !== false) || item.isDeposited === true || item.status === 'deposited');
+            const exp = this.formatPostExpiryCountdown(item);
             const origPrice = item.originalPrice || Math.round((item.price * 1.5) / 10000) * 10000;
             const discountPct = (origPrice > item.price) ? Math.round((1 - item.price / origPrice) * 100) : 0;
             const starScore = ((item.sellerRep || 90) / 20).toFixed(1);
@@ -2392,12 +2442,34 @@ class AppController {
                 `<img src="${sellerUser.avatarUrl}" alt="${item.seller}" class="seller-avatar-badge">` :
                 ``;
 
+            // Nút hành động chính ở dưới thẻ
+            let ctaButtonHtml = '';
+            if (isDeposited) {
+                ctaButtonHtml = `
+                    <button class="card-cta-btn" style="background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important; border:1px solid #b91c1c !important; color:#ffffff !important; box-shadow:0 4px 12px rgba(220, 38, 38, 0.35) !important;" onclick="event.stopPropagation(); openCheckoutModal('${item.id}')">
+                        ${isMyItem ? '🔒 Đơn hàng đã đặt cọc (Đồ của bạn)' : '🔒 Đơn hàng đã đặt cọc'}
+                    </button>
+                `;
+            } else if (exp.isExpired && isMyItem) {
+                ctaButtonHtml = `
+                    <button class="card-cta-btn" style="background:linear-gradient(135deg, #e11d48, #be123c) !important; border:1px solid #9f1239 !important; color:#fff !important;" onclick="event.stopPropagation(); promptPostRenewal('${item.id}')">
+                        ⏰ Đã hết hạn 7 ngày - Gia hạn ngay
+                    </button>
+                `;
+            } else {
+                ctaButtonHtml = `
+                    <button class="card-cta-btn" onclick="event.stopPropagation(); openCheckoutModal('${item.id}')">
+                        ${isMyItem ? 'Xem chi tiết (Đồ của bạn)' : 'Xem chi tiết'}
+                    </button>
+                `;
+            }
+
             return `
-                <div class="uni-product-card" onclick="openCheckoutModal('${item.id}')">
+                <div class="uni-product-card ${isDeposited ? 'is-deposited-card' : ''}" style="${isDeposited ? 'border:2px solid #ef4444 !important; background:#fff5f5 !important; box-shadow:0 4px 14px rgba(239, 68, 68, 0.16) !important;' : ''}" onclick="openCheckoutModal('${item.id}')">
                     <div class="card-image-wrapper">
                         <img src="${item.imageUrl}" alt="${item.title}" loading="lazy">
                         <span class="card-badge-cat">${getCategoryName(item.category)}</span>
-                        ${isDeposited ? `<span class="card-badge-cat" style="background:#dc2626; color:#fff; left:auto; right:8px; font-weight:700;">Đã có người cọc</span>` : ''}
+                        ${isDeposited ? `<span class="card-badge-cat" style="background:#dc2626; color:#fff; left:auto; right:8px; font-weight:700; box-shadow:0 2px 6px rgba(220,38,38,0.35);">🔒 Đơn hàng đã đặt cọc</span>` : ''}
                     </div>
                     <div class="card-content">
                         <h4 class="card-title-text" title="${item.title}">${item.title}</h4>
@@ -2436,12 +2508,10 @@ class AppController {
                         </div>
 
                         <div class="card-expiry-row">
-                            ${this.formatPostExpiryCountdown(item).html}
+                            ${exp.html}
                         </div>
 
-                        <button class="card-cta-btn" style="${isDeposited ? 'background:#dc2626; border-color:#b91c1c;' : ''}" onclick="event.stopPropagation(); openCheckoutModal('${item.id}')">
-                            ${isMyItem ? 'Xem chi tiết (Đồ của bạn)' : (isDeposited ? 'Đã có người cọc (Xem chi tiết)' : 'Xem chi tiết')}
-                        </button>
+                        ${ctaButtonHtml}
                     </div>
                 </div>
             `;
@@ -2459,34 +2529,58 @@ class AppController {
         }
 
         if (myPosts) {
-            const myItems = this.products.filter(p => p.seller === this.user.name);
+            const myEmail = (this.user.email || '').toLowerCase().trim();
+            const myName = (this.user.name || '').toLowerCase().trim();
+            const myItems = this.products.filter(p => 
+                (p.sellerEmail && p.sellerEmail.toLowerCase().trim() === myEmail) ||
+                (p.seller && p.seller.toLowerCase().trim() === myName)
+            );
+
             if (myItems.length === 0) {
                 myPosts.innerHTML = `<p style="font-size:12px; color:#64748b;">Chưa có bài đăng nào.</p>`;
             } else {
                 myPosts.innerHTML = myItems.map(p => {
                     let statusBadge = '';
+                    const countdown = this.formatPostExpiryCountdown(p);
                     if (p.status === 'pending') {
                         statusBadge = `<span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">⏳ Chờ Admin duyệt TimeMark</span>`;
                     } else if (p.status === 'rejected') {
                         statusBadge = `<span style="background:#fee2e2; color:#b91c1c; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">❌ Bị từ chối: ${p.rejectReason || 'Không hợp lệ'}</span>`;
                     } else {
-                        const countdown = this.formatPostExpiryCountdown(p);
                         statusBadge = `<span style="background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">Đã duyệt</span> ${countdown.html}`;
                     }
 
                     return `
-                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:8px; font-size:12.5px; display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                <strong>${p.title}</strong>
-                                ${statusBadge}
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; margin-bottom:10px; font-size:12.5px;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                            <div>
+                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                    <strong>${p.title}</strong>
+                                    ${statusBadge}
+                                </div>
+                                <div style="color:#0284c7; font-size:11.5px; margin-top:3px;">
+                                    ${formatNumber(p.price)} đ
+                                    ${p.timemarkProofUrl ? ` • <a href="javascript:void(0)" onclick="openZoomImageModal('${p.timemarkProofUrl}', 'Ảnh TimeMark: ${p.title}')" style="color:#16a34a; font-weight:700; text-decoration:underline;">🔍 Xem ảnh TimeMark đã chụp</a>` : ''}
+                                </div>
                             </div>
-                            <div style="color:#0284c7; font-size:11.5px; margin-top:3px;">
-                                ${formatNumber(p.price)} đ
-                                ${p.timemarkProofUrl ? ` • <a href="javascript:void(0)" onclick="openZoomImageModal('${p.timemarkProofUrl}', 'Ảnh TimeMark: ${p.title}')" style="color:#16a34a; font-weight:700; text-decoration:underline;">🔍 Xem ảnh TimeMark đã chụp</a>` : ''}
-                            </div>
+                            <button onclick="removePost('${p.id}')" style="background:none; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:700; flex-shrink:0;">Xóa bài</button>
                         </div>
-                        <button onclick="removePost('${p.id}')" style="background:none; border:none; color:#ef4444; font-size:12px; cursor:pointer; font-weight:700;">Xóa</button>
+
+                        ${countdown.isExpired ? `
+                            <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; padding:10px 12px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                <div style="color:#be123c; font-size:12px; font-weight:700;">
+                                    ⏰ Bài đăng đã hết hạn 7 ngày! Bạn có muốn tiếp tục bán món hàng này không?
+                                </div>
+                                <div style="display:flex; gap:8px;">
+                                    <button type="button" onclick="promptPostRenewal('${p.id}')" style="background:#16a34a; color:#fff; border:none; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer; box-shadow:0 2px 6px rgba(22,163,74,0.3);">
+                                        ✓ Có, tiếp tục bán (+7 ngày)
+                                    </button>
+                                    <button type="button" onclick="confirmCurrentPostDelete('${p.id}')" style="background:#dc2626; color:#fff; border:none; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer;">
+                                        ✕ Không, xóa bài
+                                    </button>
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                     `;
                 }).join('');
@@ -5502,8 +5596,9 @@ function openCheckoutModal(productId) {
 
     document.getElementById('modalProductImage').src = item.imageUrl;
     // modalProductTimeMark hidden
+    const exp = window.app.formatPostExpiryCountdown(item);
     document.getElementById('modalProductCategory').innerText = getCategoryName(item.category);
-    document.getElementById('modalProductExpiry').innerText = `Hết hạn sau: ${item.expiryDays} ngày`;
+    document.getElementById('modalProductExpiry').innerText = exp.isExpired ? '⚠️ Đã hết hạn 7 ngày' : `Hết hạn sau: ${exp.text || item.expiryDays + ' ngày'}`;
     document.getElementById('modalProductTitle').innerText = item.title;
     document.getElementById('modalProductPrice').innerText = `${formatNumber(item.price)} VNĐ`;
     document.getElementById('modalSellerName').innerText = item.seller;
@@ -5536,8 +5631,14 @@ function openCheckoutModal(productId) {
 
     updateCheckoutCalculations();
 
-    const isMine = window.app.user ? (item.seller === window.app.user.name) : false;
+    const isMine = window.app.user ? (
+        (item.sellerEmail && window.app.user.email && item.sellerEmail.toLowerCase() === window.app.user.email.toLowerCase()) ||
+        (item.seller && window.app.user.name && item.seller.toLowerCase() === window.app.user.name.toLowerCase())
+    ) : false;
+
     const confirmBtn = document.getElementById('confirmDepositBtn');
+    confirmBtn.onclick = handleOrderCheckout; // Khôi phục handler mặc định
+
     const activeOrder = (window.app && window.app.depositOrders) ? window.app.depositOrders.find(o => 
         o.productId === item.id && 
         ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status)
@@ -5567,13 +5668,27 @@ function openCheckoutModal(productId) {
     }
 
     if (isMine) {
-        confirmBtn.innerText = 'Món đồ của chính bạn';
+        if (exp.isExpired) {
+            confirmBtn.innerText = '⏰ Món đồ đã hết hạn 7 ngày - Bấm để gia hạn';
+            confirmBtn.style.background = '#e11d48';
+            confirmBtn.disabled = false;
+            confirmBtn.onclick = function() {
+                closeModal('checkoutOrderModal');
+                promptPostRenewal(item.id);
+            };
+        } else {
+            confirmBtn.innerText = 'Món đồ của chính bạn';
+            confirmBtn.style.background = '#94a3b8';
+            confirmBtn.disabled = true;
+        }
+    } else if (isDepositedItem) {
+        confirmBtn.innerText = '🔒 Đơn hàng đã đặt cọc';
+        confirmBtn.style.background = '#dc2626';
+        confirmBtn.disabled = false; // Bấm vào sẽ có toast thông báo rõ ràng
+    } else if (exp.isExpired) {
+        confirmBtn.innerText = '⚠️ Món đồ đã hết hạn đăng bán';
         confirmBtn.style.background = '#94a3b8';
         confirmBtn.disabled = true;
-    } else if (isDepositedItem) {
-        confirmBtn.innerText = 'Đơn hàng đã được cọc';
-        confirmBtn.style.background = '#dc2626';
-        confirmBtn.disabled = false; // Để người khác bấm vào sẽ hiện thông báo chính xác
     } else {
         const userRep = (window.app && window.app.user && window.app.user.reputation !== undefined) ? window.app.user.reputation : 95;
         if (userRep < 60) {
@@ -6427,21 +6542,36 @@ function filterOrdersSectionTab(filterKey) {
 
 function toggleDepositedFilter() {
     if (!window.app) return;
+    if (!window.app.user) {
+        showToast('Vui lòng đăng nhập để lọc các món đồ bạn đã đặt cọc!', 'warning');
+        if (typeof openAuthModal === 'function') openAuthModal('login');
+        return;
+    }
+
     window.app.filterDepositedOnly = !window.app.filterDepositedOnly;
     const btn = document.getElementById('btnFilterDepositedOnly');
+
+    const myEmail = (window.app.user.email || '').toLowerCase().trim();
+    const myName = (window.app.user.name || '').toLowerCase().trim();
+    const myCount = (window.app.depositOrders || []).filter(o => 
+        ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status) &&
+        ((o.buyerEmail && o.buyerEmail.toLowerCase().trim() === myEmail) ||
+         (o.buyer && o.buyer.toLowerCase().trim() === myName))
+    ).length;
+
     if (btn) {
         if (window.app.filterDepositedOnly) {
             btn.style.background = '#fee2e2';
             btn.style.color = '#dc2626';
             btn.style.borderColor = '#ef4444';
-            btn.innerHTML = `<span>✓</span> Đang lọc: Đồ Đã Đặt Cọc (<strong id="feedDepositedCount" style="color:#dc2626;">0</strong>)`;
-            showToast('Đang lọc các món đồ ĐÃ CÓ NGƯỜI ĐẶT CỌC!', 'info');
+            btn.innerHTML = `<span>✓</span> Đang lọc: Đồ bạn đã đặt cọc (<strong id="feedDepositedCount" style="color:#dc2626;">${myCount}</strong>)`;
+            showToast('Đang hiển thị danh sách các món đồ BẠN ĐÃ ĐẶT CỌC!', 'info');
         } else {
             btn.style.background = '#ffffff';
             btn.style.color = '#475569';
             btn.style.borderColor = '#cbd5e1';
-            btn.innerHTML = `<span>🛒</span> Đồ Đã Đặt Cọc (<strong id="feedDepositedCount" style="color:#dc2626;">0</strong>)`;
-            showToast('Đã hủy lọc, hiển thị toàn bộ đồ trên sàn.', 'info');
+            btn.innerHTML = `<span>🛒</span> Đồ bạn đã đặt cọc (<strong id="feedDepositedCount" style="color:#dc2626;">${myCount}</strong>)`;
+            showToast('Đã hủy lọc, hiển thị toàn bộ đồ sẵn sàng pass trên sàn.', 'info');
         }
     }
     window.app.renderProducts();
@@ -6920,6 +7050,121 @@ function removePost(id) {
         showToast('Đã xóa bài đăng!', 'success');
     }
 }
+
+// ==============================================================================
+// XỬ LÝ HẾT HẠN 7 NGÀY & GIA HẠN SẢN PHẨM (RENEWAL SYSTEM)
+// ==============================================================================
+let currentRenewalPostId = null;
+
+function promptPostRenewal(postId) {
+    if (!window.app || !window.app.products) return;
+    const post = window.app.products.find(p => p.id === postId);
+    if (!post) return;
+
+    currentRenewalPostId = postId;
+    const titleEl = document.getElementById('renewalPostTitle');
+    const priceEl = document.getElementById('renewalPostPrice');
+    if (titleEl) titleEl.innerText = post.title;
+    if (priceEl) priceEl.innerText = `${formatNumber(post.price)} VNĐ`;
+
+    openModal('postRenewalModal');
+}
+
+function confirmCurrentPostRenewal() {
+    if (!window.app || !currentRenewalPostId) {
+        closeModal('postRenewalModal');
+        return;
+    }
+    const post = window.app.products.find(p => p.id === currentRenewalPostId);
+    if (!post) {
+        closeModal('postRenewalModal');
+        return;
+    }
+
+    // Thiết lập lại đồng hồ 7 ngày từ thời điểm hiện tại
+    post.approvedAt = Date.now();
+    post.submittedAt = Date.now();
+    post.expiryDays = 7;
+    post.status = 'approved';
+
+    window.app.saveProducts();
+    window.app.rebuildDSACache();
+    window.app.renderProducts();
+    window.app.renderProfile();
+    window.app.renderAdminDashboard();
+
+    // Đồng bộ gia hạn lên Supabase Cloud & Mạng Đa Máy
+    if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+        window.UniPassSupabase.addProduct(post);
+    }
+    if (window.UniPassOnlineSync) {
+        window.UniPassOnlineSync.broadcastNewPost(post);
+    }
+
+    closeModal('postRenewalModal');
+    if (window.sound) window.sound.playSuccess();
+    showToast(`🎉 Đã gia hạn thành công món hàng "${post.title}" thêm 7 ngày đếm ngược tiếp theo!`, 'success');
+}
+
+function confirmCurrentPostDelete(targetId) {
+    const postId = targetId || currentRenewalPostId;
+    if (!window.app || !postId) {
+        closeModal('postRenewalModal');
+        return;
+    }
+    const post = window.app.products.find(p => p.id === postId);
+    const postTitle = post ? post.title : 'Sản phẩm';
+
+    window.app.products = window.app.products.filter(p => p.id !== postId);
+    window.app.saveProducts();
+    window.app.rebuildDSACache();
+    window.app.renderProducts();
+    window.app.renderProfile();
+    window.app.renderAdminDashboard();
+
+    if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+        window.UniPassSupabase.deleteProduct(postId);
+    }
+    if (window.UniPassOnlineSync) {
+        window.UniPassOnlineSync.broadcastDeletePost(postId);
+    }
+
+    closeModal('postRenewalModal');
+    if (window.sound) window.sound.playNotification();
+    showToast(`Đã xóa sản phẩm "${postTitle}" khỏi sàn theo yêu cầu.`, 'info');
+}
+
+function checkExpiredPostsForCurrentUser() {
+    if (!window.app || !window.app.user || !window.app.products) return;
+    const myEmail = (window.app.user.email || '').toLowerCase().trim();
+    const myName = (window.app.user.name || '').toLowerCase().trim();
+
+    // Tìm các bài đăng thuộc về tài khoản này và đã hết hạn 7 ngày
+    const myExpiredPosts = window.app.products.filter(p => {
+        if (p.status === 'sold' || p.status === 'completed' || p.status === 'deleted') return false;
+        const isOwner = (p.sellerEmail && p.sellerEmail.toLowerCase().trim() === myEmail) ||
+                        (p.seller && p.seller.toLowerCase().trim() === myName);
+        if (!isOwner) return false;
+        const exp = window.app.formatPostExpiryCountdown(p);
+        return exp.isExpired;
+    });
+
+    if (myExpiredPosts.length > 0) {
+        const firstExpired = myExpiredPosts[0];
+        const sessionKey = 'unipass_prompted_expiry_' + firstExpired.id;
+        if (!sessionStorage.getItem(sessionKey)) {
+            sessionStorage.setItem(sessionKey, '1');
+            setTimeout(() => {
+                promptPostRenewal(firstExpired.id);
+            }, 1200);
+        }
+    }
+}
+
+window.promptPostRenewal = promptPostRenewal;
+window.confirmCurrentPostRenewal = confirmCurrentPostRenewal;
+window.confirmCurrentPostDelete = confirmCurrentPostDelete;
+window.checkExpiredPostsForCurrentUser = checkExpiredPostsForCurrentUser;
 
 function openModal(id) {
     if (id === 'createPostModal') {

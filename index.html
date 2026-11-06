@@ -524,7 +524,7 @@
                             Bộ lọc: Đang mở (Bấm để ẩn)
                         </button>
                         <button type="button" id="btnFilterDepositedOnly" class="btn-outline-chat" style="padding:6px 12px; font-size:12px; font-weight:700; border-radius:8px; border:1px solid #cbd5e1; background:#ffffff; color:#475569; display:inline-flex; align-items:center; gap:5px;" onclick="toggleDepositedFilter()">
-                            <span>🛒</span> Đồ Đã Đặt Cọc (<strong id="feedDepositedCount" style="color:#dc2626;">0</strong>)
+                            <span>🛒</span> Đồ bạn đã đặt cọc (<strong id="feedDepositedCount" style="color:#dc2626;">0</strong>)
                         </button>
                         <div class="feed-count-text" id="feedCountDisplay">
                             Hiển thị <strong>5 món đồ</strong> sẵn sàng pass
@@ -649,7 +649,7 @@
                     </div>
                     <div>
                         <button id="btnAdminUndo" onclick="undoDeletePost()" style="display: none; background: #e67e22; color: #fff; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer;">
-                            ↩ Hoàn tác xóa bài (Undo)
+                            ↩ Hoàn tác xóa bài
                         </button>
                     </div>
                 </div>
@@ -1864,6 +1864,35 @@
                 </button>
                 <button type="button" class="btn-primary-confirm" style="background:#0284c7; flex:2;" onclick="confirmSendSafeMeetupProposal()">
                     Gửi lời hẹn vào khung chat
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================
+         MODAL THÔNG BÁO GIA HẠN SẢN PHẨM HẾT HẠN 7 NGÀY
+         =================================================================== -->
+    <div class="checkout-modal-overlay" id="postRenewalModal">
+        <div class="checkout-modal-card" style="max-width:460px; text-align:center; padding:24px 20px;">
+            <button class="checkout-close-btn" onclick="closeModal('postRenewalModal')">✕</button>
+            <div style="width:56px; height:56px; border-radius:50%; background:#fef3c7; color:#d97706; font-size:28px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px; box-shadow:0 2px 10px rgba(217,119,6,0.2);">
+                ⏰
+            </div>
+            <h3 style="font-size:18px; color:#0f172a; margin:0 0 6px 0; font-weight:800;">
+                Sản Phẩm Đã Hết Hạn 7 Ngày!
+            </h3>
+            <p style="color:#64748b; font-size:13px; line-height:1.5; margin:0 0 14px 0;">
+                Món đồ <strong id="renewalPostTitle" style="color:#0284c7;">...</strong> (<span id="renewalPostPrice" style="color:#ea580c; font-weight:700;">0 đ</span>) của bạn đã đạt giới hạn 7 ngày đăng trên sàn UTC2Hand.
+            </p>
+            <div style="background:#fffbeb; border:1.5px dashed #fde68a; border-radius:10px; padding:12px; margin-bottom:18px; font-size:13.5px; font-weight:700; color:#92400e;">
+                📢 Bạn có muốn tiếp tục bán món hàng này không?
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button type="button" id="btnRenewalYes" class="btn-primary-confirm" style="background:linear-gradient(135deg, #16a34a, #15803d); flex:1.2; padding:11px 12px; font-size:13px; font-weight:700; border:none; border-radius:8px; color:#fff; box-shadow:0 3px 10px rgba(22,163,74,0.3); cursor:pointer;" onclick="confirmCurrentPostRenewal()">
+                    ✓ Có, tiếp tục bán (+7 ngày)
+                </button>
+                <button type="button" id="btnRenewalNo" class="btn-outline-chat" style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; flex:1; padding:11px 12px; font-size:13px; font-weight:700; border-radius:8px; cursor:pointer;" onclick="confirmCurrentPostDelete()">
+                    ✕ Không, xóa bài
                 </button>
             </div>
         </div>
