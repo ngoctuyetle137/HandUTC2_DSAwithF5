@@ -487,7 +487,17 @@
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-                return data || [];
+                return (data || []).map(row => {
+                    let clientStatus = row.status;
+                    if (row.status === 'deposited') {
+                        const m = (row.notes || '').match(/\[status:([a-zA-Z0-9_]+)\]/);
+                        clientStatus = m ? m[1] : 'pending_seller';
+                    }
+                    return {
+                        ...row,
+                        clientStatus: clientStatus
+                    };
+                });
             } catch (err) {
                 console.error('❌ [Supabase] Lỗi tải orders:', err);
                 return null;
@@ -502,6 +512,19 @@
                 const buyerEmail = order.buyerEmail || (window.app && window.app.user ? window.app.user.email : 'student@st.utc2.edu.vn');
                 const sellerName = order.seller || order.sellerName || 'Người bán UTC2';
                 const sellerEmail = order.sellerEmail || 'seller@st.utc2.edu.vn';
+
+                // PostgreSQL constraint 'orders_status_check' chỉ cho phép: 'pending', 'deposited', 'completed', 'cancelled'
+                let dbStatus = 'deposited';
+                if (order.status === 'completed' || order.status === 'cancelled' || order.status === 'pending') {
+                    dbStatus = order.status;
+                }
+
+                // Lưu trạng thái chi tiết của giao diện người dùng vào notes để các máy khác đồng bộ chính xác
+                let notes = order.notes || '';
+                const statusTag = `[status:${order.status || 'pending_seller'}]`;
+                if (!notes.includes('[status:')) {
+                    notes = (statusTag + ' ' + notes).trim();
+                }
 
                 const record = {
                     id: order.id || ('ORD_' + Date.now()),
@@ -519,8 +542,8 @@
                     total_payment: Number(order.totalPayment || order.finalTotal || 0),
                     shipping_option: order.shippingOption || 'campus',
                     meet_location: order.meetLocation || 'Cơ sở UTC2',
-                    status: order.status || 'pending_seller',
-                    notes: order.notes || ''
+                    status: dbStatus,
+                    notes: notes
                 };
 
                 const { error } = await client
@@ -529,7 +552,7 @@
 
                 if (error) throw error;
 
-                // Cập nhật trạng thái sản phẩm sang deposited
+                // Cập nhật trạng thái sản phẩm sang deposited trên bảng products Cloud
                 if (order.productId) {
                     await client
                         .from('products')
@@ -549,9 +572,21 @@
             const client = this.getClient();
             if (!client) return false;
             try {
+                const payload = { ...updates };
+                if (payload.status) {
+                    let dbStatus = 'deposited';
+                    if (payload.status === 'completed' || payload.status === 'cancelled' || payload.status === 'pending') {
+                        dbStatus = payload.status;
+                    }
+                    let notes = payload.notes || '';
+                    notes = `[status:${payload.status}] ` + notes.replace(/\[status:[^\]]+\]\s*/g, '');
+                    payload.notes = notes.trim();
+                    payload.status = dbStatus;
+                }
+
                 const { error } = await client
                     .from('orders')
-                    .update(updates)
+                    .update(payload)
                     .eq('id', orderId);
 
                 if (error) throw error;
