@@ -603,8 +603,19 @@
 
         upsertProfile: async function (user) {
             const client = this.getClient();
-            if (!client) return false;
+            if (!client || !user || !user.email) return false;
             try {
+                const emailLower = user.email.toLowerCase().trim();
+                const emailRegex = /^[a-zA-Z0-9._%+-]+@st\.utc2\.edu\.vn$/i;
+                if (!emailRegex.test(emailLower) && emailLower !== '6651071091@st.utc2.edu.vn') {
+                    console.warn('❌ [Supabase] Từ chối đồng bộ: Email không thuộc tên miền sinh viên @st.utc2.edu.vn:', emailLower);
+                    return false;
+                }
+                if (emailLower.includes('concac')) {
+                    console.warn('❌ [Supabase] Từ chối đồng bộ: Email vi phạm tiêu chuẩn cộng đồng:', emailLower);
+                    return false;
+                }
+
                 const record = {
                     id: user.id || ('U_' + Date.now()),
                     email: user.email,

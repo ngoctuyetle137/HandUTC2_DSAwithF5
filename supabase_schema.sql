@@ -13,7 +13,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- ===================================================================
 CREATE TABLE IF NOT EXISTS public.profiles (
     id TEXT PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL CONSTRAINT check_profiles_email_utc2 CHECK (email ~* '^[a-zA-Z0-9._%+-]+@st\.utc2\.edu\.vn$'),
     name TEXT NOT NULL,
     mssv TEXT,
     phone TEXT,
@@ -399,6 +399,14 @@ VALUES
 ('TANSINHVIEN', 15000, 50000, 'Giảm 15.000đ cho tân sinh viên K66', true),
 ('GIAM20K', 20000, 100000, 'Giảm 20.000đ cho đơn đồ điện tử trên 100k', true)
 ON CONFLICT (code) DO NOTHING;
+
+-- ===================================================================
+-- 15. DỌN DẸP DỮ LIỆU & RÀNG BUỘC TÊN MIỀN @st.utc2.edu.vn
+-- ===================================================================
+-- Lệnh xóa các tài khoản rác/ngoại lai không thuộc UTC2 (Chạy trên Supabase SQL Editor nếu cần):
+-- DELETE FROM public.profiles WHERE email NOT LIKE '%@st.utc2.edu.vn';
+-- ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS check_profiles_email_utc2;
+-- ALTER TABLE public.profiles ADD CONSTRAINT check_profiles_email_utc2 CHECK (email ~* '^[a-zA-Z0-9._%+-]+@st\.utc2\.edu\.vn$');
 
 -- ===================================================================
 -- HOÀN TẤT SCHEMA DATABASE SUPABASE CHO UNIPASS UTC2

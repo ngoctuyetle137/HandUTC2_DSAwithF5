@@ -407,6 +407,7 @@ class AppController {
     init() {
         // Tải danh sách người dùng đã đăng ký từ localStorage (làm sạch, bảo vệ mật khẩu)
         const savedUsers = localStorage.getItem('unipass_registered_users');
+        const emailUtc2Regex = /^[a-zA-Z0-9._%+-]+@st\.utc2\.edu\.vn$/i;
         if (savedUsers) {
             try {
                 this.registeredUsers = JSON.parse(savedUsers);
@@ -419,6 +420,15 @@ class AppController {
                         delete u.password;
                     }
                 });
+
+                // Lọc bỏ triệt để các tài khoản rác/ngoại lai (@gmail.com, trường khác, hoặc tên vi phạm)
+                this.registeredUsers = this.registeredUsers.filter(u => {
+                    if (!u || !u.email) return false;
+                    const e = u.email.toLowerCase().trim();
+                    if (e.includes('concac')) return false;
+                    return emailUtc2Regex.test(e) || (e === ADMIN_CREDENTIALS.email.toLowerCase());
+                });
+
                 DEFAULT_USERS.forEach(defUser => {
                     const idx = this.registeredUsers.findIndex(u => (u.email && u.email.toLowerCase() === defUser.email.toLowerCase()) || u.id === defUser.id);
                     if (idx === -1) {
@@ -530,7 +540,12 @@ class AppController {
         if (savedUser) {
             try {
                 const parsed = JSON.parse(savedUser);
-                if (parsed && parsed.email) {
+                const isValidUserDomain = parsed && parsed.email && (
+                    emailUtc2Regex.test(parsed.email.toLowerCase().trim()) || 
+                    parsed.email.toLowerCase().trim() === ADMIN_CREDENTIALS.email.toLowerCase()
+                ) && !parsed.email.toLowerCase().includes('concac');
+
+                if (isValidUserDomain) {
                     this.user = parsed;
                     this.isLoggedIn = true;
                     if (parsed.email === ADMIN_CREDENTIALS.email) {
@@ -540,6 +555,7 @@ class AppController {
                     this.user = null;
                     this.isLoggedIn = false;
                     this.isAdminAuthenticated = false;
+                    localStorage.removeItem('unipass_current_user');
                 }
             } catch (e) {
                 this.user = null;
@@ -572,10 +588,21 @@ class AppController {
             try {
                 const cloudProfiles = await window.UniPassSupabase.getProfiles();
                 if (cloudProfiles && Array.isArray(cloudProfiles) && cloudProfiles.length > 0) {
+                    const emailRegex = /^[a-zA-Z0-9._%+-]+@st\.utc2\.edu\.vn$/i;
                     cloudProfiles.forEach(cp => {
                         if (!cp.email) return;
-                        const emailLower = cp.email.toLowerCase();
+                        const emailLower = cp.email.toLowerCase().trim();
                         const isOfficialAdmin = (emailLower === ADMIN_CREDENTIALS.email.toLowerCase() || cp.role === 'admin');
+
+                        // LỌC NGHIÊM NGẶT: Chỉ nhận tài khoản thuộc tên miền sinh viên @st.utc2.edu.vn
+                        if (!emailRegex.test(emailLower) && !isOfficialAdmin) {
+                            console.warn(`[Supabase Sync] Bỏ qua tài khoản không thuộc tên miền UTC2: ${emailLower}`);
+                            return;
+                        }
+                        if (emailLower.includes('concac')) {
+                            console.warn(`[Supabase Sync] Bỏ qua tài khoản vi phạm tiêu chuẩn: ${emailLower}`);
+                            return;
+                        }
 
                         const mappedUser = {
                             id: cp.id || ('U_' + Date.now()),
@@ -602,6 +629,14 @@ class AppController {
                         } else {
                             this.registeredUsers.push(mappedUser);
                         }
+                    });
+
+                    // Làm sạch lần cuối loại bỏ tài khoản rác còn sót lại
+                    this.registeredUsers = this.registeredUsers.filter(u => {
+                        if (!u || !u.email) return false;
+                        const e = u.email.toLowerCase().trim();
+                        if (e.includes('concac')) return false;
+                        return emailRegex.test(e) || (e === ADMIN_CREDENTIALS.email.toLowerCase());
                     });
 
                     this.saveUsers();
@@ -1363,7 +1398,13 @@ class AppController {
         window.UniPassOnlineSync.on('USER_REGISTERED', (data) => {
             if (!data || !data.user || !data.user.email) return;
             const u = data.user;
-            const emailLower = u.email.toLowerCase();
+            const emailLower = u.email.toLowerCase().trim();
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@st\.utc2\.edu\.vn$/i;
+            if (!emailRegex.test(emailLower) && emailLower !== ADMIN_CREDENTIALS.email.toLowerCase()) {
+                return;
+            }
+            if (emailLower.includes('concac')) return;
+
             const idx = this.registeredUsers.findIndex(existing => 
                 (existing.email && existing.email.toLowerCase() === emailLower) || 
                 (existing.id && u.id && existing.id === u.id)
@@ -1419,7 +1460,13 @@ class AppController {
             this.renderProducts();
             this.renderAdminDashboard();
         } else if (data.type === 'USERS_UPDATED') {
-            this.registeredUsers = data.users;
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@st\.utc2\.edu\.vn$/i;
+            this.registeredUsers = (data.users || []).filter(u => {
+                if (!u || !u.email) return false;
+                const e = u.email.toLowerCase().trim();
+                if (e.includes('concac')) return false;
+                return emailRegex.test(e) || (e === ADMIN_CREDENTIALS.email.toLowerCase());
+            });
             this.renderAdminDashboard();
         } else if (data.type === 'ORDERS_UPDATED') {
             this.depositOrders = data.orders;
@@ -7424,7 +7471,14 @@ window.addEventListener('storage', (e) => {
         } catch (err) {}
     } else if (e.key === 'unipass_registered_users' && e.newValue) {
         try {
-            window.app.registeredUsers = JSON.parse(e.newValue);
+            const rawUsers = JSON.parse(e.newValue);
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@st\.utc2\.edu\.vn$/i;
+            window.app.registeredUsers = (rawUsers || []).filter(u => {
+                if (!u || !u.email) return false;
+                const em = u.email.toLowerCase().trim();
+                if (em.includes('concac')) return false;
+                return emailRegex.test(em) || (em === ADMIN_CREDENTIALS.email.toLowerCase());
+            });
             window.app.renderAdminDashboard();
             window.app.updateUserUI();
         } catch (err) {}
