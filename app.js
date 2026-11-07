@@ -1,4 +1,4 @@
-﻿/**
+/**
  * UniPass UTC2 / UTC2Hand - App Controller
  * Phục vụ chuẩn giao diện & tính năng:
  * 1. Chat thực thụ giữa các tài khoản sinh viên.
@@ -2513,7 +2513,7 @@ class AppController {
             if (isDeposited) {
                 ctaButtonHtml = `
                     <button class="card-cta-btn" style="background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important; border:1px solid #b91c1c !important; color:#ffffff !important; box-shadow:0 4px 12px rgba(220, 38, 38, 0.35) !important;" onclick="event.stopPropagation(); openCheckoutModal('${item.id}')">
-                        ${isMyItem ? '🔒 Đơn hàng đã đặt cọc (Bấm xem đơn)' : '🔒 Đơn hàng đã đặt cọc (Bấm xem đơn)'}
+                        ${isMyItem ? '🔒 Đơn hàng đã đặt cọc (Đồ của bạn)' : '🔒 Đơn hàng đã đặt cọc'}
                     </button>
                 `;
             } else if (exp.isExpired && isMyItem) {
@@ -5680,55 +5680,15 @@ function adminRejectDispute(dispId) {
 // ==========================================
 let currentCheckoutProduct = null;
 
-function viewOrderInOrdersTab(orderId) {
-    switchNavTab('orders');
-    if (orderId) {
-        setTimeout(() => {
-            const card = document.getElementById('order_card_' + orderId);
-            if (card) {
-                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                card.style.transition = 'box-shadow 0.4s ease, border-color 0.4s ease';
-                card.style.borderColor = '#6366f1';
-                card.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.4)';
-                setTimeout(() => {
-                    card.style.borderColor = '';
-                    card.style.boxShadow = '';
-                }, 2500);
-            }
-        }, 200);
-    }
-}
-window.viewOrderInOrdersTab = viewOrderInOrdersTab;
-
 function openCheckoutModal(productId) {
-    let item = (window.app && window.app.products) ? window.app.products.find(p => String(p.id) === String(productId)) : null;
-    if (!item && window.app && window.app.depositOrders) {
-        const fallbackOrder = window.app.depositOrders.find(o => 
-            String(o.productId || o.product_id) === String(productId) ||
-            String(o.id) === String(productId)
-        );
-        if (fallbackOrder) {
-            item = {
-                id: fallbackOrder.productId || fallbackOrder.product_id,
-                title: fallbackOrder.productTitle,
-                price: fallbackOrder.productPrice || 0,
-                category: 'GiaoTrinh',
-                seller: fallbackOrder.seller || fallbackOrder.sellerName || 'Người bán UTC2',
-                sellerEmail: fallbackOrder.sellerEmail || '',
-                sellerRep: 95,
-                location: fallbackOrder.meetLocation || 'Campus UTC2',
-                imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=150&auto=format&fit=crop&q=60',
-                description: 'Đơn hàng mua bán / đặt cọc tại UTC2.',
-                isDeposited: true,
-                status: fallbackOrder.status
-            };
-        }
-    }
+    const item = (window.app && window.app.products) 
+        ? window.app.products.find(p => p.id === productId || String(p.id) === String(productId)) 
+        : null;
     if (!item) return;
 
     currentCheckoutProduct = item;
 
-    document.getElementById('modalProductImage').src = item.imageUrl;
+    document.getElementById('modalProductImage').src = item.imageUrl || '';
     // modalProductTimeMark hidden
     const exp = window.app.formatPostExpiryCountdown(item);
     document.getElementById('modalProductCategory').innerText = getCategoryName(item.category);
@@ -5790,18 +5750,13 @@ function openCheckoutModal(productId) {
         if (depositInfoTextEl) {
             if (activeOrder) {
                 const buyerStr = activeOrder.buyer || activeOrder.buyerName || 'Khách đã cọc';
-                const sellerStr = activeOrder.seller || activeOrder.sellerName || item.seller;
-                depositInfoTextEl.innerText = `Mã đơn: ${activeOrder.orderCode || activeOrder.id} • Người cọc: ${buyerStr} • Người bán: ${sellerStr} (Đã cọc: ${formatNumber(activeOrder.depositAmount || 0)}đ)`;
+                depositInfoTextEl.innerText = `Mã đơn: ${activeOrder.orderCode || activeOrder.id} • Người cọc: ${buyerStr} (Đã cọc: ${formatNumber(activeOrder.depositAmount || 0)}đ)`;
             } else {
                 depositInfoTextEl.innerText = 'Mặt hàng này hiện đã có sinh viên đặt cọc giữ chỗ trên hệ thống UTC2.';
             }
         }
         if (btnModalViewOrder) {
             btnModalViewOrder.style.display = 'inline-block';
-            btnModalViewOrder.onclick = function() {
-                closeCheckoutModal();
-                viewOrderInOrdersTab(activeOrder ? activeOrder.id : null);
-            };
         }
     } else {
         if (depositBannerEl) depositBannerEl.style.display = 'none';
@@ -5817,27 +5772,15 @@ function openCheckoutModal(productId) {
                 closeModal('checkoutOrderModal');
                 promptPostRenewal(item.id);
             };
-        } else if (isDepositedItem) {
-            confirmBtn.innerText = '📋 Xem Chi Tiết Đơn Hàng Này ➔';
-            confirmBtn.style.background = 'linear-gradient(135deg, #0284c7, #0369a1)';
-            confirmBtn.disabled = false;
-            confirmBtn.onclick = function() {
-                closeCheckoutModal();
-                viewOrderInOrdersTab(activeOrder ? activeOrder.id : null);
-            };
         } else {
             confirmBtn.innerText = 'Món đồ của chính bạn';
             confirmBtn.style.background = '#94a3b8';
             confirmBtn.disabled = true;
         }
     } else if (isDepositedItem) {
-        confirmBtn.innerText = '📋 Xem Chi Tiết Đơn Hàng Này ➔';
-        confirmBtn.style.background = 'linear-gradient(135deg, #0284c7, #0369a1)';
-        confirmBtn.disabled = false;
-        confirmBtn.onclick = function() {
-            closeCheckoutModal();
-            viewOrderInOrdersTab(activeOrder ? activeOrder.id : null);
-        };
+        confirmBtn.innerText = '🔒 Đơn hàng đã đặt cọc';
+        confirmBtn.style.background = '#dc2626';
+        confirmBtn.disabled = false; // Bấm vào sẽ có toast thông báo rõ ràng
     } else if (exp.isExpired) {
         confirmBtn.innerText = '⚠️ Món đồ đã hết hạn đăng bán';
         confirmBtn.style.background = '#94a3b8';
@@ -5863,11 +5806,13 @@ function openCheckoutModal(productId) {
     if (modal) modal.classList.add('active');
     if (window.sound) window.sound.playClick();
 }
+window.openCheckoutModal = openCheckoutModal;
 
 function closeCheckoutModal() {
     const modal = document.getElementById('checkoutOrderModal');
     if (modal) modal.classList.remove('active');
 }
+window.closeCheckoutModal = closeCheckoutModal;
 
 function updateCheckoutCalculations() {
     if (!currentCheckoutProduct) return;
