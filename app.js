@@ -4451,9 +4451,17 @@ async function handleAuthSubmitForm(e) {
             return;
         }
 
-        // BẮT BUỘC XÁC THỰC MÃ OTP 6 SỐ
-        let isOtpValid = (window.app.generatedOtp && enteredOtp === window.app.generatedOtp) ||
-                         enteredOtp === '123456';
+        // Kiểm tra thời hạn mã OTP (5 phút)
+        const OTP_EXPIRY_MS = 5 * 60 * 1000;
+        if (window.app.otpSentAt && (Date.now() - window.app.otpSentAt > OTP_EXPIRY_MS)) {
+            window.app.generatedOtp = null;
+            showToast('Mã OTP đã hết hiệu lực sau 5 phút! Vui lòng bấm "Gửi OTP" để nhận mã mới vào Gmail.', 'danger');
+            if (window.sound) window.sound.playWarning();
+            return;
+        }
+
+        // BẮT BUỘC XÁC THỰC CHÍNH XÁC MÃ OTP 6 SỐ ĐÃ GỬI VỀ GMAIL
+        let isOtpValid = Boolean(window.app.generatedOtp && enteredOtp === window.app.generatedOtp);
 
         if (!isOtpValid && window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
             try {
@@ -4563,9 +4571,17 @@ async function handleAuthSubmitForm(e) {
             return;
         }
 
-        // BẮT BUỘC XÁC THỰC MÃ OTP 6 SỐ
-        let isOtpValid = (window.app.generatedOtp && enteredOtp === window.app.generatedOtp) ||
-                         enteredOtp === '123456';
+        // Kiểm tra thời hạn mã OTP (5 phút)
+        const OTP_EXPIRY_MS = 5 * 60 * 1000;
+        if (window.app.otpSentAt && (Date.now() - window.app.otpSentAt > OTP_EXPIRY_MS)) {
+            window.app.generatedOtp = null;
+            showToast('Mã OTP đã hết hiệu lực sau 5 phút! Vui lòng bấm "Gửi OTP" để nhận mã mới vào Gmail.', 'danger');
+            if (window.sound) window.sound.playWarning();
+            return;
+        }
+
+        // BẮT BUỘC XÁC THỰC CHÍNH XÁC MÃ OTP 6 SỐ ĐÃ GỬI VỀ GMAIL
+        let isOtpValid = Boolean(window.app.generatedOtp && enteredOtp === window.app.generatedOtp);
 
         if (!isOtpValid && window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
             try {
