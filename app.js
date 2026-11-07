@@ -2292,8 +2292,75 @@ class AppController {
         if (window.sound) window.sound.playClick();
     }
 
+    // Lấy danh sách các món đồ mà người dùng hiện tại đã đặt cọc giữ chỗ trên sàn
+    getDepositedProductsForUser() {
+        if (!this.user) return [];
+        const myEmail = (this.user.email || '').toLowerCase().trim();
+        const myName = (this.user.name || '').toLowerCase().trim();
+
+        const activeOrders = (this.depositOrders || []).filter(o => 
+            ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status) &&
+            ((o.buyerEmail && o.buyerEmail.toLowerCase().trim() === myEmail) ||
+             (o.buyer && o.buyer.toLowerCase().trim() === myName))
+        );
+
+        if (activeOrders.length === 0) return [];
+
+        const seenKeys = new Set();
+        const matchedProducts = [];
+
+        activeOrders.forEach(ord => {
+            const prod = this.products.find(p => 
+                p && p.status !== 'deleted' && p.status !== 'completed' && (
+                    (ord.productId && String(p.id) === String(ord.productId)) ||
+                    (ord.product_id && String(p.id) === String(ord.product_id)) ||
+                    (ord.productTitle && p.title && ord.productTitle.trim().toLowerCase() === p.title.trim().toLowerCase())
+                )
+            );
+
+            if (prod) {
+                const key = String(prod.id);
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    prod.isDeposited = true;
+                    prod.status = 'deposited';
+                    matchedProducts.push(prod);
+                }
+            } else {
+                const key = String(ord.productId || ord.product_id || ord.id);
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    matchedProducts.push({
+                        id: key,
+                        title: ord.productTitle || 'Sản phẩm đã đặt cọc',
+                        price: Number(ord.productPrice) || Number(ord.totalPayment) || 0,
+                        category: 'GiaoTrinh',
+                        seller: ord.seller || ord.sellerName || 'Người bán UTC2',
+                        sellerEmail: ord.sellerEmail || '',
+                        sellerRep: 95,
+                        location: ord.meetLocation || 'Campus UTC2',
+                        imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=150&auto=format&fit=crop&q=60',
+                        description: 'Món đồ bạn đã đặt cọc giữ chỗ trên hệ thống UTC2.',
+                        isDeposited: true,
+                        status: 'deposited'
+                    });
+                }
+            }
+        });
+
+        return matchedProducts;
+    }
+
     // Lọc sản phẩm
     getFilteredItems() {
+        // Nếu đang bật lọc riêng "Đồ bạn đã đặt cọc"
+        if (this.filterDepositedOnly) {
+            let myItems = this.getDepositedProductsForUser();
+            if (this.searchKeyword && this.searchKeyword.trim().length > 0) {
+                myItems = myItems.filter(p => matchesProductSearch(p, this.searchKeyword));
+            }
+            return myItems;
+        }
         // 1. Danh sách ID các sản phẩm đã có đơn hoàn tất giao nhận 2 bên (completed)
         const completedProductIds = new Set(
             (this.depositOrders || [])
@@ -2359,24 +2426,6 @@ class AppController {
             items = items.filter(p => matchesProductSearch(p, this.searchKeyword));
         }
 
-        // Lọc riêng các món đồ BẠN ĐÃ ĐẶT CỌC (Chỉ người đăng nhập mới lọc được các đơn cọc của chính mình)
-        if (this.filterDepositedOnly) {
-            if (!this.user) {
-                items = [];
-            } else {
-                items = items.filter(p => {
-                    const myOrder = (this.depositOrders || []).find(o => 
-                        ( (o.productId && String(o.productId) === String(p.id)) ||
-                          (o.product_id && String(o.product_id) === String(p.id)) ||
-                          (o.productTitle && p.title && o.productTitle.trim().toLowerCase() === p.title.trim().toLowerCase()) ) && 
-                        ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status) &&
-                        ((o.buyerEmail && o.buyerEmail.toLowerCase().trim() === myEmail) ||
-                         (o.buyer && o.buyer.toLowerCase().trim() === myName))
-                    );
-                    return Boolean(myOrder);
-                });
-            }
-        }
 
         if (this.sortBy === 'priceAsc') {
             items.sort((a, b) => a.price - b.price);
@@ -2419,17 +2468,8 @@ class AppController {
 
         const depCountEl = document.getElementById('feedDepositedCount');
         if (depCountEl) {
-            let myDepositedCount = 0;
-            if (this.user) {
-                const myEmail = (this.user.email || '').toLowerCase().trim();
-                const myName = (this.user.name || '').toLowerCase().trim();
-                myDepositedCount = (this.depositOrders || []).filter(o => 
-                    ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status) &&
-                    ((o.buyerEmail && o.buyerEmail.toLowerCase().trim() === myEmail) ||
-                     (o.buyer && o.buyer.toLowerCase().trim() === myName))
-                ).length;
-            }
-            depCountEl.innerText = myDepositedCount;
+            const myDepositedList = this.getDepositedProductsForUser();
+            depCountEl.innerText = myDepositedList.length;
         }
 
         if (dsaInfo) {
@@ -6651,13 +6691,8 @@ function toggleDepositedFilter() {
     window.app.filterDepositedOnly = !window.app.filterDepositedOnly;
     const btn = document.getElementById('btnFilterDepositedOnly');
 
-    const myEmail = (window.app.user.email || '').toLowerCase().trim();
-    const myName = (window.app.user.name || '').toLowerCase().trim();
-    const myCount = (window.app.depositOrders || []).filter(o => 
-        ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status) &&
-        ((o.buyerEmail && o.buyerEmail.toLowerCase().trim() === myEmail) ||
-         (o.buyer && o.buyer.toLowerCase().trim() === myName))
-    ).length;
+    const myDepositedList = window.app.getDepositedProductsForUser();
+    const myCount = myDepositedList.length;
 
     if (btn) {
         if (window.app.filterDepositedOnly) {
