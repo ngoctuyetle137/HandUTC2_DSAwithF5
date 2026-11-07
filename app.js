@@ -5731,7 +5731,9 @@ function openCheckoutModal(productId) {
     ) : false;
 
     const confirmBtn = document.getElementById('confirmDepositBtn');
-    confirmBtn.onclick = handleOrderCheckout; // Khôi phục handler mặc định
+    if (confirmBtn) {
+        confirmBtn.onclick = confirmDepositOrder; // Khôi phục handler mặc định
+    }
 
     const activeOrder = (window.app && window.app.depositOrders) ? window.app.depositOrders.find(o => 
         ( (o.productId && String(o.productId) === String(item.id)) ||
