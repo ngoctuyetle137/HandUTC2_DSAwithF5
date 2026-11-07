@@ -228,7 +228,9 @@
                 if (!data) return [];
 
                 // Format dữ liệu tương thích với giao diện app.js
-                return data.map(item => {
+                return data
+                    .filter(item => item && item.status !== 'deleted')
+                    .map(item => {
                     let clientStatus = 'approved';
                     let rejectReason = '';
                     const rawDesc = item.description || '';
@@ -373,13 +375,21 @@
             const client = this.getClient();
             if (!client) return false;
             try {
-                // Xóa mềm: đánh dấu status = 'deleted'
-                const { error } = await client
+                // 1. Cập nhật status = 'deleted' (soft delete an toàn)
+                await client
                     .from('products')
                     .update({ status: 'deleted' })
                     .eq('id', productId);
 
-                if (error) throw error;
+                // 2. Xóa cứng khỏi bảng để chắc chắn không bị tải lại
+                const { error } = await client
+                    .from('products')
+                    .delete()
+                    .eq('id', productId);
+
+                if (error) {
+                    console.warn('⚠️ [Supabase] Hard delete fallback notice:', error.message);
+                }
                 console.log('✅ [Supabase] Đã xóa sản phẩm trên Cloud:', productId);
                 return true;
             } catch (err) {

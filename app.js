@@ -368,6 +368,17 @@ class AppController {
         this.generatedOtp = '';
 
         this.products = [];
+        this.deletedProductIds = new Set();
+        try {
+            const savedDel = localStorage.getItem('unipass_deleted_product_ids');
+            if (savedDel) {
+                const arr = JSON.parse(savedDel);
+                if (Array.isArray(arr)) {
+                    this.deletedProductIds = new Set(arr.map(String));
+                }
+            }
+        } catch (e) {}
+
         this.chatMessages = [];
         this.depositOrders = [];
         this.adminDisputes = [];
@@ -402,6 +413,28 @@ class AppController {
         }
 
         this.init();
+    }
+
+    recordDeletedProduct(productId) {
+        if (!productId) return;
+        if (!this.deletedProductIds) this.deletedProductIds = new Set();
+        this.deletedProductIds.add(String(productId));
+        try {
+            localStorage.setItem('unipass_deleted_product_ids', JSON.stringify(Array.from(this.deletedProductIds)));
+        } catch (e) {
+            console.warn('Could not save unipass_deleted_product_ids', e);
+        }
+    }
+
+    unrecordDeletedProduct(productId) {
+        if (!productId) return;
+        if (!this.deletedProductIds) this.deletedProductIds = new Set();
+        this.deletedProductIds.delete(String(productId));
+        try {
+            localStorage.setItem('unipass_deleted_product_ids', JSON.stringify(Array.from(this.deletedProductIds)));
+        } catch (e) {
+            console.warn('Could not save unipass_deleted_product_ids', e);
+        }
     }
 
     init() {
@@ -449,18 +482,13 @@ class AppController {
         const savedProducts = localStorage.getItem('unipass_products');
         if (savedProducts) {
             try {
-                this.products = JSON.parse(savedProducts);
-                const existingIds = new Set(this.products.map(p => p.id));
-                INITIAL_PRODUCTS.forEach(initP => {
-                    if (!existingIds.has(initP.id)) {
-                        this.products.push(initP);
-                    }
-                });
+                const parsed = JSON.parse(savedProducts);
+                this.products = (Array.isArray(parsed) ? parsed : []).filter(p => p && p.id && !this.deletedProductIds.has(String(p.id)));
             } catch (e) {
-                this.products = [...INITIAL_PRODUCTS];
+                this.products = INITIAL_PRODUCTS.filter(p => !this.deletedProductIds.has(String(p.id)));
             }
         } else {
-            this.products = [...INITIAL_PRODUCTS];
+            this.products = INITIAL_PRODUCTS.filter(p => !this.deletedProductIds.has(String(p.id)));
             this.saveProducts();
         }
 
@@ -714,16 +742,17 @@ class AppController {
             // Tải sản phẩm từ Supabase
             const cloudProducts = await window.UniPassSupabase.getProducts();
             if (cloudProducts && Array.isArray(cloudProducts) && cloudProducts.length > 0) {
-                // Hợp nhất sản phẩm từ Cloud với sản phẩm cục bộ (để các bài vừa tạo chưa kịp lên Cloud không bị mất)
-                const cloudIds = new Set(cloudProducts.map(p => p.id));
-                const localOnly = this.products.filter(p => !cloudIds.has(p.id));
-                this.products = [...localOnly, ...cloudProducts];
+                // Lọc bỏ ngay lập tức những bài đã bị xóa (trong danh sách deletedProductIds hoặc status === 'deleted')
+                const validCloudProducts = cloudProducts.filter(p => p && p.id && p.status !== 'deleted' && !this.deletedProductIds.has(String(p.id)));
+                const cloudIds = new Set(validCloudProducts.map(p => p.id));
+                const localOnly = this.products.filter(p => !cloudIds.has(p.id) && !this.deletedProductIds.has(String(p.id)));
+                this.products = [...localOnly, ...validCloudProducts];
                 this.saveProducts();
                 this.rebuildDSACache();
                 this.renderProducts();
                 this.renderAdminDashboard();
                 this.renderProfile();
-                console.log(`✅ [Supabase] Đã nạp ${cloudProducts.length} sản phẩm từ Cloud (Kèm ${localOnly.length} bài cục bộ)`);
+                console.log(`✅ [Supabase] Đã nạp ${validCloudProducts.length} sản phẩm từ Cloud (Kèm ${localOnly.length} bài cục bộ)`);
             }
 
             // Tải tin nhắn từ Supabase và hợp nhất bảo toàn 100% tin nhắn đã có
@@ -810,6 +839,7 @@ class AppController {
                     .filter(Boolean)
             );
             if (completedProdIds.size > 0) {
+                completedProdIds.forEach(id => this.recordDeletedProduct(id));
                 this.products = this.products.filter(p => !completedProdIds.has(String(p.id)));
             }
 
@@ -847,6 +877,7 @@ class AppController {
         if (table === 'products') {
             if (payload.eventType === 'INSERT') {
                 const newP = payload.new;
+                if (this.deletedProductIds && this.deletedProductIds.has(String(newP.id))) return;
                 let clientStatus = 'approved';
                 let rejectReason = '';
                 const rawDesc = newP.description || '';
@@ -924,6 +955,7 @@ class AppController {
                 }
 
                 if (clientStatus === 'deleted') {
+                    this.recordDeletedProduct(updatedP.id);
                     this.products = this.products.filter(p => p.id !== updatedP.id);
                 } else {
                     const idx = this.products.findIndex(p => p.id === updatedP.id);
@@ -966,10 +998,13 @@ class AppController {
             } else if (payload.eventType === 'DELETE') {
                 const targetId = payload.old ? payload.old.id : null;
                 if (targetId) {
+                    this.recordDeletedProduct(targetId);
                     this.products = this.products.filter(p => p.id !== targetId);
+                    this.saveProducts();
                     this.rebuildDSACache();
                     this.renderProducts();
                     this.renderAdminDashboard();
+                    this.renderProfile();
                 }
             }
         } else if (table === 'chat_messages') {
@@ -1289,6 +1324,7 @@ class AppController {
         // 2. Nhận lệnh xóa bài đăng trên mạng đa máy
         window.UniPassOnlineSync.on('DELETE_POST', (postId, isHistorical) => {
             if (!postId) return;
+            this.recordDeletedProduct(postId);
             const prevLen = this.products.length;
             this.products = this.products.filter(p => p.id !== postId);
             if (this.products.length !== prevLen) {
@@ -1296,6 +1332,7 @@ class AppController {
                 this.rebuildDSACache();
                 this.renderProducts();
                 this.renderAdminDashboard();
+                this.renderProfile();
                 const isCatchingUp = isHistorical || (window.UniPassOnlineSync && window.UniPassOnlineSync.isCatchingUp);
                 if (this.user && !isCatchingUp) {
                     const toastKey = 'toast_post_del_' + postId;
@@ -1545,7 +1582,7 @@ class AppController {
                 showToast(`Tin nhắn mới từ ${latest.sender}: "${latest.text}"`, 'success');
             }
         } else if (data.type === 'POSTS_UPDATED') {
-            this.products = data.products;
+            this.products = (data.products || []).filter(p => p && p.id && !this.deletedProductIds.has(String(p.id)));
             this.rebuildDSACache();
             this.renderProducts();
             this.renderAdminDashboard();
@@ -1723,6 +1760,9 @@ class AppController {
     }
 
     saveProducts() {
+        if (this.deletedProductIds && this.deletedProductIds.size > 0) {
+            this.products = this.products.filter(p => !this.deletedProductIds.has(String(p.id)));
+        }
         localStorage.setItem('unipass_products', JSON.stringify(this.products));
         this.rebuildDSACache();
         if (this.syncChannel) {
@@ -2586,7 +2626,7 @@ class AppController {
             if (isDeposited) {
                 ctaButtonHtml = `
                     <button class="card-cta-btn" style="background:linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important; border:1px solid #b91c1c !important; color:#ffffff !important; box-shadow:0 4px 12px rgba(220, 38, 38, 0.35) !important;" onclick="event.stopPropagation(); openCheckoutModal('${item.id}')">
-                        ${isMyItem ? '🔒 Đơn hàng đã đặt cọc (Đồ của bạn)' : '🔒 Đơn hàng đã đặt cọc'}
+                        ${isMyItem ? 'Đơn hàng đã đặt cọc (Đồ của bạn)' : 'Đơn hàng đã đặt cọc'}
                     </button>
                 `;
             } else if (exp.isExpired && isMyItem) {
@@ -2608,7 +2648,7 @@ class AppController {
                     <div class="card-image-wrapper">
                         <img src="${item.imageUrl}" alt="${item.title}" loading="lazy">
                         <span class="card-badge-cat">${getCategoryName(item.category)}</span>
-                        ${isDeposited ? `<span class="card-badge-cat" style="background:#dc2626; color:#fff; left:auto; right:8px; font-weight:700; box-shadow:0 2px 6px rgba(220,38,38,0.35);">🔒 Đơn hàng đã đặt cọc</span>` : ''}
+                        ${isDeposited ? `<span class="card-badge-cat" style="background:#dc2626; color:#fff; left:auto; right:8px; font-weight:700; box-shadow:0 2px 6px rgba(220,38,38,0.35);">Đơn hàng đã đặt cọc</span>` : ''}
                     </div>
                     <div class="card-content">
                         <h4 class="card-title-text" title="${item.title}">${item.title}</h4>
@@ -2911,7 +2951,7 @@ class AppController {
         if (!this.user) {
             container.innerHTML = `
                 <div style="text-align:center; padding:44px 20px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:12px; color:#64748b;">
-                    <div style="font-size:38px; margin-bottom:8px;">🔒</div>
+                    <div style="font-size:38px; margin-bottom:8px;">📦</div>
                     <strong style="color:#0f172a; font-size:15px; display:block; margin-bottom:6px;">Vui lòng đăng nhập để xem đơn đặt cọc</strong>
                     <p style="font-size:12.5px; color:#64748b; margin:0 0 14px 0;">Đăng nhập tài khoản sinh viên UTC2 để kiểm tra đơn cọc, xác nhận giao dịch và nhắn tin hẹn gặp.</p>
                     <button onclick="switchNavTab('home')" class="btn-primary-confirm" style="width:auto; padding:8px 18px; font-size:12px; margin:0 auto;">Về Trang Chủ Sàn Đồ</button>
@@ -3291,7 +3331,7 @@ class AppController {
         if (!this.user) {
             listEl.innerHTML = `
                 <div style="text-align:center; padding:40px 20px; color:#94a3b8;">
-                    <span style="font-size:36px; display:block; margin-bottom:10px;">🔒</span>
+                    <span style="font-size:36px; display:block; margin-bottom:10px;">💬</span>
                     <strong style="color:#0f172a; font-size:14px; display:block; margin-bottom:6px;">Vui lòng đăng nhập</strong>
                     <p style="font-size:12.5px; margin:0;">Đăng nhập để xem danh sách các bạn đã gửi tin nhắn cho bạn.</p>
                 </div>
@@ -5100,6 +5140,11 @@ function adminDeletePost(postId) {
     const reason = prompt(`Nhập lý do xóa bài đăng "${deletedPost.title}":`, 'Vi phạm quy định: Không chụp ảnh kèm mã TimeMark thực tế');
     if (reason === null) return;
 
+    // Ghi nhận mã bài đăng đã xóa vĩnh viễn (chống tải lại trên F5)
+    if (window.app) {
+        window.app.recordDeletedProduct(postId);
+    }
+
     // PUSH vào Undo Stack (Lưu cả thông tin và vị trí cũ)
     adminUndoStack.push({ post: deletedPost, index: postIndex, reason: reason });
 
@@ -5153,6 +5198,11 @@ function undoDeletePost() {
     // POP phần tử trên đỉnh Stack ra (LIFO)
     const lastAction = adminUndoStack.pop();
     const postsData = (window.app && window.app.products) ? window.app.products : [];
+
+    // Hủy ghi nhận xóa để bài đăng được phép tải lại bình thường
+    if (window.app && window.app.unrecordDeletedProduct && lastAction.post) {
+        window.app.unrecordDeletedProduct(lastAction.post.id);
+    }
 
     // Khôi phục lại đúng vị trí cũ trong danh sách
     const insertIdx = Math.min(lastAction.index, postsData.length);
@@ -5853,7 +5903,7 @@ function openCheckoutModal(productId) {
             confirmBtn.disabled = true;
         }
     } else if (isDepositedItem) {
-        confirmBtn.innerText = '🔒 Đơn hàng đã đặt cọc';
+        confirmBtn.innerText = 'Đơn hàng đã đặt cọc';
         confirmBtn.style.background = '#dc2626';
         confirmBtn.disabled = false; // Bấm vào sẽ có toast thông báo rõ ràng
     } else if (exp.isExpired) {
@@ -6192,6 +6242,9 @@ function confirmTradeComplete(orderId, role) {
             if (targetProdTitle && p.title && targetProdTitle === p.title.trim().toLowerCase()) return false;
             return true;
         });
+        if (targetProdId && window.app) {
+            window.app.recordDeletedProduct(targetProdId);
+        }
         window.app.saveProducts();
         window.app.rebuildDSACache();
 
@@ -7220,10 +7273,14 @@ function confirmPublishPost() {
 
 function removePost(id) {
     if (confirm('Xác nhận xóa bài đăng này?')) {
-        window.app.products = window.app.products.filter(p => p.id !== id);
-        window.app.saveProducts();
-        window.app.renderProducts();
-        window.app.renderProfile();
+        if (window.app) {
+            window.app.recordDeletedProduct(id);
+            window.app.products = window.app.products.filter(p => p.id !== id);
+            window.app.saveProducts();
+            window.app.renderProducts();
+            window.app.renderProfile();
+            window.app.renderAdminDashboard();
+        }
 
         // Đồng bộ xóa lên Supabase Cloud
         if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
@@ -7303,6 +7360,7 @@ function confirmCurrentPostDelete(targetId) {
     const post = window.app.products.find(p => String(p.id) === String(postId));
     const postTitle = post ? post.title : 'Sản phẩm';
 
+    window.app.recordDeletedProduct(postId);
     window.app.products = window.app.products.filter(p => String(p.id) !== String(postId));
     window.app.saveProducts();
     window.app.rebuildDSACache();
