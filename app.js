@@ -751,6 +751,8 @@ class AppController {
             if (cloudOrders && Array.isArray(cloudOrders) && cloudOrders.length > 0) {
                 const mappedOrders = cloudOrders.map(o => {
                     const clientStatus = o.clientStatus || (o.notes && o.notes.match(/\[status:([a-zA-Z0-9_]+)\]/) ? o.notes.match(/\[status:([a-zA-Z0-9_]+)\]/)[1] : o.status) || 'pending_seller';
+                    const mBuyer = (o.notes && o.notes.includes('[buyerCompleted:true]')) || (clientStatus === 'completed');
+                    const mSeller = (o.notes && o.notes.includes('[sellerCompleted:true]')) || (clientStatus === 'completed');
                     return {
                         id: o.id,
                         orderCode: o.order_code,
@@ -772,10 +774,10 @@ class AppController {
                         finalTotal: Number(o.total_payment) || 0,
                         shippingOption: o.shipping_option || 'campus',
                         meetLocation: o.meet_location || 'Campus UTC2',
-                        status: clientStatus,
+                        status: (mBuyer && mSeller) ? 'completed' : clientStatus,
                         sellerAccepted: (clientStatus !== 'pending_seller'),
-                        buyerCompleted: (clientStatus === 'completed'),
-                        sellerCompleted: (clientStatus === 'completed'),
+                        buyerCompleted: mBuyer,
+                        sellerCompleted: mSeller,
                         notes: o.notes || '',
                         timestamp: new Date(o.created_at).getTime()
                     };
@@ -785,7 +787,16 @@ class AppController {
                 this.depositOrders.forEach(ord => { if (ord && ord.id) orderMap.set(ord.id, ord); });
                 mappedOrders.forEach(ord => {
                     const local = orderMap.get(ord.id);
-                    orderMap.set(ord.id, { ...local, ...ord });
+                    const bDone = ord.buyerCompleted || (local ? local.buyerCompleted : false);
+                    const sDone = ord.sellerCompleted || (local ? local.sellerCompleted : false);
+                    const isAllDone = (bDone && sDone) || ord.status === 'completed' || (local && local.status === 'completed');
+                    orderMap.set(ord.id, {
+                        ...local,
+                        ...ord,
+                        buyerCompleted: bDone,
+                        sellerCompleted: sDone,
+                        status: isAllDone ? 'completed' : ord.status
+                    });
                 });
                 this.depositOrders = Array.from(orderMap.values());
                 this.saveOrders();
@@ -1070,25 +1081,46 @@ class AppController {
                     const m = ord.notes.match(/\[status:([a-zA-Z0-9_]+)\]/);
                     if (m) clientStatus = m[1];
                 }
+                const mBuyer = (ord.notes && ord.notes.includes('[buyerCompleted:true]')) || (clientStatus === 'completed');
+                const mSeller = (ord.notes && ord.notes.includes('[sellerCompleted:true]')) || (clientStatus === 'completed');
+
                 const idx = this.depositOrders.findIndex(o => o.id === ord.id);
                 if (idx !== -1) {
+                    const prev = this.depositOrders[idx];
+                    const bDone = mBuyer || prev.buyerCompleted;
+                    const sDone = mSeller || prev.sellerCompleted;
+                    const isAllDone = (bDone && sDone) || clientStatus === 'completed' || prev.status === 'completed';
+
                     this.depositOrders[idx] = {
-                        ...this.depositOrders[idx],
-                        status: clientStatus,
+                        ...prev,
+                        status: isAllDone ? 'completed' : clientStatus,
                         sellerAccepted: (clientStatus !== 'pending_seller'),
-                        buyerCompleted: (clientStatus === 'completed'),
-                        sellerCompleted: (clientStatus === 'completed'),
-                        notes: ord.notes || this.depositOrders[idx].notes
+                        buyerCompleted: bDone,
+                        sellerCompleted: sDone,
+                        notes: ord.notes || prev.notes
                     };
+                    if (isAllDone) {
+                        clientStatus = 'completed';
+                    }
                     this.saveOrders();
                     this.renderProfile();
                     this.updateDepositBadge();
+                    this.renderOrdersSection();
                 }
                 if (clientStatus === 'completed') {
-                    const targetProdId = String(ord.product_id);
-                    this.products = this.products.filter(p => String(p.id) !== targetProdId);
+                    const targetProdId = String(ord.product_id || (idx !== -1 ? this.depositOrders[idx].productId : ''));
+                    const prodTitle = (idx !== -1 ? this.depositOrders[idx].productTitle : (ord.product_title || ''));
+                    this.products = this.products.filter(p => {
+                        if (targetProdId && String(p.id) === targetProdId) return false;
+                        if (prodTitle && p.title && prodTitle.trim().toLowerCase() === p.title.trim().toLowerCase()) return false;
+                        return true;
+                    });
                     this.saveProducts();
+                    this.rebuildDSACache();
                     this.renderProducts();
+                    this.renderProfile();
+                    this.renderOrdersSection();
+                    this.updateDepositBadge();
                     this.cleanupCompletedOrdersChats();
                     this.renderChatMessages();
                 } else if (['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(clientStatus)) {
@@ -1736,10 +1768,11 @@ class AppController {
         const sEmail = (order.sellerEmail || '').trim().toLowerCase();
 
         return Boolean(
-            (bName && uName && bName === uName) ||
+            (bName && uName && (bName === uName || bName.includes(uName) || uName.includes(bName))) ||
             (bEmail && uEmail && bEmail === uEmail) ||
-            (sName && uName && sName === uName) ||
-            (sEmail && uEmail && sEmail === uEmail)
+            (sName && uName && (sName === uName || sName.includes(uName) || uName.includes(sName))) ||
+            (sEmail && uEmail && sEmail === uEmail) ||
+            (user.role === 'admin' && (bEmail === ADMIN_CREDENTIALS.email.toLowerCase() || bName.includes('quản trị viên')))
         );
     }
 
@@ -2722,8 +2755,8 @@ class AppController {
                     const sName = (o.seller || o.sellerName || '').trim().toLowerCase();
                     const sEmail = (o.sellerEmail || '').trim().toLowerCase();
 
-                    const isBuyer = (bName && uName && bName === uName) || (bEmail && uEmail && bEmail === uEmail);
-                    const isSeller = (sName && uName && sName === uName) || (sEmail && uEmail && sEmail === uEmail);
+                    const isBuyer = Boolean((bName && uName && (bName === uName || bName.includes(uName) || uName.includes(bName))) || (bEmail && uEmail && bEmail === uEmail) || (this.user.role === 'admin' && (bEmail === ADMIN_CREDENTIALS.email.toLowerCase() || bName.includes('quản trị viên'))));
+                    const isSeller = Boolean((sName && uName && (sName === uName || sName.includes(uName) || uName.includes(sName))) || (sEmail && uEmail && sEmail === uEmail));
                     const counterpartName = isBuyer ? (o.seller || o.sellerName) : (o.buyer || o.buyerName);
                     const counterpartRole = isBuyer ? 'Người bán' : 'Người mua';
 
@@ -2914,8 +2947,8 @@ class AppController {
             const sName = (o.seller || o.sellerName || '').trim().toLowerCase();
             const sEmail = (o.sellerEmail || '').trim().toLowerCase();
 
-            const isBuyer = (bName && uName && bName === uName) || (bEmail && uEmail && bEmail === uEmail);
-            const isSeller = (sName && uName && sName === uName) || (sEmail && uEmail && sEmail === uEmail);
+            const isBuyer = Boolean((bName && uName && (bName === uName || bName.includes(uName) || uName.includes(bName))) || (bEmail && uEmail && bEmail === uEmail) || (this.user.role === 'admin' && (bEmail === ADMIN_CREDENTIALS.email.toLowerCase() || bName.includes('quản trị viên'))));
+            const isSeller = Boolean((sName && uName && (sName === uName || sName.includes(uName) || uName.includes(sName))) || (sEmail && uEmail && sEmail === uEmail));
             const isDone = (o.status === 'completed' || o.status === 'closed_penalized');
 
             // Chỉ tính vào các mục cọc những đơn ĐANG CỌC / ĐANG GIAO DỊCH (Loại bỏ các đơn đã thanh toán xong)
@@ -2997,8 +3030,8 @@ class AppController {
             const sName = (o.seller || o.sellerName || '').trim().toLowerCase();
             const sEmail = (o.sellerEmail || '').trim().toLowerCase();
 
-            const isBuyer = (bName && uName && bName === uName) || (bEmail && uEmail && bEmail === uEmail);
-            const isSeller = (sName && uName && sName === uName) || (sEmail && uEmail && sEmail === uEmail);
+            const isBuyer = Boolean((bName && uName && (bName === uName || bName.includes(uName) || uName.includes(bName))) || (bEmail && uEmail && bEmail === uEmail) || (this.user.role === 'admin' && (bEmail === ADMIN_CREDENTIALS.email.toLowerCase() || bName.includes('quản trị viên'))));
+            const isSeller = Boolean((sName && uName && (sName === uName || sName.includes(uName) || uName.includes(sName))) || (sEmail && uEmail && sEmail === uEmail));
             const counterpartName = isBuyer ? (o.seller || o.sellerName) : (o.buyer || o.buyerName);
             const counterpartEmail = isBuyer ? (o.sellerEmail || '') : (o.buyerEmail || '');
             const counterpartRole = isBuyer ? 'Người bán' : 'Người mua';
@@ -6112,8 +6145,10 @@ function confirmTradeComplete(orderId, role) {
     const bEmail = (order.buyerEmail || '').trim().toLowerCase();
     const sName = (order.seller || order.sellerName || '').trim().toLowerCase();
     const sEmail = (order.sellerEmail || '').trim().toLowerCase();
-    const isBuyer = (bName && uName && bName === uName) || (bEmail && uEmail && bEmail === uEmail);
-    const isSeller = (sName && uName && sName === uName) || (sEmail && uEmail && sEmail === uEmail);
+    
+    // So khớp thông minh: chấp nhận cả tên chứa MSSV hoặc email
+    const isBuyer = Boolean((bName && uName && (bName === uName || bName.includes(uName) || uName.includes(bName))) || (bEmail && uEmail && bEmail === uEmail) || (window.app.user.role === 'admin' && (bEmail === ADMIN_CREDENTIALS.email.toLowerCase() || bName.includes('quản trị viên'))));
+    const isSeller = Boolean((sName && uName && (sName === uName || sName.includes(uName) || uName.includes(sName))) || (sEmail && uEmail && sEmail === uEmail));
 
     if (role === 'buyer') {
         if (!isBuyer) {
@@ -6132,10 +6167,12 @@ function confirmTradeComplete(orderId, role) {
     // NẾU CẢ 2 BÊN ĐÃ XÁC NHẬN HOÀN TẤT: TỰ ĐỘNG XÓA BÀI ĐĂNG & CỘNG ĐIỂM UY TÍN
     if (order.buyerCompleted && order.sellerCompleted) {
         order.status = 'completed';
+        const notesStr = `[status:completed][buyerCompleted:true][sellerCompleted:true]`;
+        order.notes = notesStr;
 
         // Cộng +2 điểm uy tín cho cả 2 bên
-        const buyerUser = window.app.registeredUsers.find(u => u.name === order.buyer || u.email === order.buyerEmail);
-        const sellerUser = window.app.registeredUsers.find(u => u.name === order.seller || u.email === order.sellerEmail);
+        const buyerUser = window.app.registeredUsers.find(u => (order.buyer && u.name === order.buyer) || (order.buyerEmail && u.email === order.buyerEmail));
+        const sellerUser = window.app.registeredUsers.find(u => (order.seller && u.name === order.seller) || (order.sellerEmail && u.email === order.sellerEmail));
 
         if (buyerUser) buyerUser.reputation = Math.min(100, (buyerUser.reputation || 95) + 2);
         if (sellerUser) sellerUser.reputation = Math.min(100, (sellerUser.reputation || 95) + 2);
@@ -6146,20 +6183,28 @@ function confirmTradeComplete(orderId, role) {
             window.app.updateUserUI();
         }
 
-        // TỰ ĐỘNG XÓA BÀI ĐĂNG KHỎI HỆ THỐNG (BẢNG TIN + CLOUD + ĐA MÁY)
-        if (order.productId) {
-            window.app.products = window.app.products.filter(p => p.id !== order.productId);
-            window.app.saveProducts();
-            window.app.rebuildDSACache();
-            window.app.renderProducts();
-            window.app.renderAdminDashboard();
+        // TỰ ĐỘNG XÓA BÀI ĐĂNG KHỎI HỆ THỐNG (BẢNG TIN + CLOUD + ĐA MÁY + BÀI ĐĂNG CỦA TÔI)
+        const targetProdId = String(order.productId || order.product_id || '');
+        const targetProdTitle = order.productTitle ? order.productTitle.trim().toLowerCase() : '';
+        
+        window.app.products = window.app.products.filter(p => {
+            if (targetProdId && String(p.id) === targetProdId) return false;
+            if (targetProdTitle && p.title && targetProdTitle === p.title.trim().toLowerCase()) return false;
+            return true;
+        });
+        window.app.saveProducts();
+        window.app.rebuildDSACache();
 
-            if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
-                window.UniPassSupabase.deleteProduct(order.productId);
-            }
-            if (window.UniPassOnlineSync) {
-                window.UniPassOnlineSync.broadcastDeletePost(order.productId);
-            }
+        if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
+            if (targetProdId) window.UniPassSupabase.deleteProduct(targetProdId);
+            window.UniPassSupabase.updateOrder(order.id, { 
+                status: 'completed',
+                notes: notesStr
+            });
+        }
+        if (window.UniPassOnlineSync) {
+            if (targetProdId) window.UniPassOnlineSync.broadcastDeletePost(targetProdId);
+            window.UniPassOnlineSync.broadcastOrderUpdate(order);
         }
 
         // Bảo lưu 100% toàn bộ lịch sử cuộc trò chuyện giữa người mua và người bán
@@ -6174,7 +6219,7 @@ function confirmTradeComplete(orderId, role) {
             targetName: order.buyer,
             targetEmail: order.buyerEmail,
             title: 'Giao dịch hoàn tất - Đã giao hàng!',
-            message: `Đơn hàng "${order.productTitle}" đã được giao và nhận thành công 100%! (+2 điểm uy tín). Tin nhắn riêng tư đã được tự động dọn dẹp bảo mật.`,
+            message: `Đơn hàng "${order.productTitle}" đã được giao và nhận thành công 100%! (+2 điểm uy tín).`,
             type: 'order_update',
             relatedId: order.id
         });
@@ -6188,18 +6233,13 @@ function confirmTradeComplete(orderId, role) {
             relatedId: order.id
         });
 
-        if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
-            window.UniPassSupabase.updateOrder(order.id, { status: 'completed' });
-        }
-        if (window.UniPassOnlineSync) {
-            window.UniPassOnlineSync.broadcastOrderUpdate(order);
-        }
-
         if (window.sound) window.sound.playSuccess();
-        showToast(`Giao dịch thành công 100%! Cả hai bên đã xác nhận hoàn tất. Bài đăng "${order.productTitle}" và lịch sử chat đã được tự động dọn dẹp bảo mật (+2 điểm uy tín)!`, 'success');
+        showToast(`Giao dịch thành công 100%! Cả hai bên đã xác nhận hoàn tất. Bài đăng "${order.productTitle}" đã được tự động gỡ khỏi hệ thống (+2 điểm uy tín)!`, 'success');
     } else {
         // Chỉ mới 1 bên xác nhận
         order.status = 'pending_mutual';
+        const notesStr = `[status:pending_mutual][buyerCompleted:${order.buyerCompleted === true}][sellerCompleted:${order.sellerCompleted === true}]`;
+        order.notes = notesStr;
         window.app.saveOrders();
 
         const waitingParty = role === 'buyer' ? order.seller : order.buyer;
@@ -6217,17 +6257,27 @@ function confirmTradeComplete(orderId, role) {
         });
 
         if (window.UniPassSupabase && window.UniPassSupabase.isConfigured()) {
-            window.UniPassSupabase.updateOrder(order.id, { status: 'pending_mutual' });
+            window.UniPassSupabase.updateOrder(order.id, { 
+                status: 'pending_mutual',
+                notes: notesStr
+            });
         }
         if (window.UniPassOnlineSync) {
             window.UniPassOnlineSync.broadcastOrderUpdate(order);
         }
 
         if (window.sound) window.sound.playNotification();
-        showToast(`✓ Bạn đã xác nhận thành công! Đang chờ đối phương xác nhận để hoàn tất giao dịch và hoàn cọc.`, 'info');
+        showToast(`✓ Bạn đã xác nhận ${actionStr}! Đang chờ đối phương xác nhận để hoàn tất giao dịch và gỡ bài đăng.`, 'info');
     }
 
+    // BẮT BUỘC RENDER LẠI TOÀN BỘ GIAO DIỆN CÁ NHÂN & SÀN ĐỒ
+    window.app.saveOrders();
     window.app.renderProfile();
+    window.app.renderProducts();
+    window.app.renderOrdersSection();
+    window.app.updateDepositBadge();
+    window.app.renderAdminDashboard();
+    window.app.renderNotifications();
 }
 
 // 3. Xử phạt cá nhân không chịu xác nhận sau khi giao dịch thành công (Trừ 5 điểm uy tín)
