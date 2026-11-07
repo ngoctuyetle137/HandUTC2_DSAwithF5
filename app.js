@@ -1690,8 +1690,8 @@ class AppController {
         const mainApp = document.getElementById('mainAppInterface');
         const adminTabBtn = document.getElementById('navAdminTab') || document.querySelector('.nav-item-btn.admin-tab');
         const emailInput = document.getElementById('authEmailInput');
-        if (emailInput && !emailInput.value && typeof getRandomStudentMSSV === 'function') {
-            emailInput.placeholder = `Ví dụ: ${getRandomStudentMSSV()}`;
+        if (emailInput) {
+            emailInput.placeholder = 'Nhập Gmail sinh viên (@st.utc2.edu.vn)...';
         }
 
         const sysBg = document.getElementById('systemAmbientBg');
@@ -1728,6 +1728,18 @@ class AppController {
             if (authScreen) authScreen.style.display = 'flex';
             if (mainApp) mainApp.style.display = 'none';
             if (sysBg) sysBg.style.display = 'none';
+
+            // Tắt hoàn toàn việc gợi ý và điền sẵn thông tin đăng nhập khi vừa vào trang
+            const emailInp = document.getElementById('authEmailInput');
+            const pwdInp = document.getElementById('authPasswordInput');
+            if (emailInp) {
+                emailInp.value = '';
+                emailInp.placeholder = 'Nhập Gmail sinh viên (@st.utc2.edu.vn)...';
+            }
+            if (pwdInp) {
+                pwdInp.value = '';
+                pwdInp.placeholder = 'Nhập mật khẩu...';
+            }
         }
     }
 
@@ -4014,8 +4026,8 @@ function getRandomStudentMSSV() {
 function switchAuthMode(mode) {
     window.app.currentAuthMode = mode;
     const emailInp = document.getElementById('authEmailInput');
-    if (emailInp && !emailInp.value) {
-        emailInp.placeholder = `Ví dụ: ${getRandomStudentMSSV()}`;
+    if (emailInp) {
+        emailInp.placeholder = 'Nhập Gmail sinh viên (@st.utc2.edu.vn)...';
     }
     const tabReg = document.getElementById('tabRegisterBtn');
     const tabLog = document.getElementById('tabLoginBtn');
@@ -7026,6 +7038,12 @@ function handlePostImageFileSelect(event) {
             if (previewWrap) previewWrap.style.display = 'block';
             if (promptContent) promptContent.style.display = 'none';
 
+            const uploadBox = document.getElementById('postImageUploadBox');
+            if (uploadBox) {
+                uploadBox.style.borderColor = '#10b981';
+                uploadBox.style.boxShadow = 'none';
+            }
+
             if (window.sound) window.sound.playClick();
             showToast('✓ Đã tải ảnh từ tệp thành công!', 'success');
         };
@@ -7155,7 +7173,18 @@ function handlePostSubmit(e) {
         return;
     }
 
-    const finalImage = pendingUploadedImageDataUrl || urlInput || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=60';
+    const finalImage = pendingUploadedImageDataUrl || urlInput;
+    if (!finalImage) {
+        showToast('⚠️ Bắt buộc phải thêm hình ảnh chụp thực tế của sản phẩm trước khi đăng bài!', 'danger');
+        if (window.sound) window.sound.playWarning();
+        const uploadBox = document.getElementById('postImageUploadBox');
+        if (uploadBox) {
+            uploadBox.style.borderColor = '#ef4444';
+            uploadBox.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.2)';
+            uploadBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+    }
     const randCode = 'UTC2 - ' + Math.floor(1000 + Math.random() * 9000);
 
     const now = new Date();

@@ -186,14 +186,14 @@
                 </div>
 
                 <!-- FORM ĐĂNG KÝ / ĐĂNG NHẬP -->
-                <form onsubmit="handleAuthSubmitForm(event)">
+                <form onsubmit="handleAuthSubmitForm(event)" autocomplete="off">
                     <!-- 1. Họ và Tên (Hiện khi Đăng Ký) -->
                     <div class="auth-form-group" id="authNameField" style="display:none;">
                         <label class="auth-label">Họ và tên sinh viên *</label>
                         <div class="auth-input-wrap">
                             <span class="auth-input-icon"></span>
                             <input type="text" id="authFullNameInput" class="auth-input" 
-                                   placeholder="Ví dụ: Nguyễn Văn An, Trần Thị Mai..." value="">
+                                   placeholder="Ví dụ: Nguyễn Văn An, Trần Thị Mai..." value="" autocomplete="off">
                         </div>
                     </div>
 
@@ -203,7 +203,7 @@
                         <div class="auth-input-wrap">
                             <span class="auth-input-icon"></span>
                             <input type="email" id="authEmailInput" class="auth-input" 
-                                   placeholder="Ví dụ: 6651071091@st.utc2.edu.vn" value="" required autocomplete="username">
+                                   placeholder="Nhập Gmail sinh viên (@st.utc2.edu.vn)..." value="" required autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
                         </div>
                     </div>
 
@@ -213,7 +213,7 @@
                         <div class="auth-input-wrap">
                             <span class="auth-input-icon"></span>
                             <input type="password" id="authPasswordInput" class="auth-input auth-input-password" 
-                                   placeholder="Password" value="" required autocomplete="current-password">
+                                   placeholder="Nhập mật khẩu..." value="" required autocomplete="new-password">
                             <button type="button" class="auth-password-toggle-btn" id="authPasswordToggleBtn" onclick="togglePasswordVisibility()">SHOW</button>
                         </div>
                     </div>
@@ -993,7 +993,7 @@
          ========================================== -->
     <div class="checkout-modal-overlay" id="checkoutOrderModal">
         <div class="checkout-modal-card">
-            <button class="checkout-close-btn" onclick="closeCheckoutModal()">✕</button>
+            <button class="checkout-close-btn" onclick="closeCheckoutModal()" title="Đóng chi tiết (Esc)">✕</button>
 
             <div class="checkout-image-preview">
                 <img id="modalProductImage" src="" alt="Sản phẩm">
@@ -1199,8 +1199,8 @@
 
                 <!-- Tải ảnh từ tệp file hoặc dán URL -->
                 <div style="margin-bottom:16px;">
-                    <label style="display:block; font-size:12.5px; font-weight:600; color:#334155; margin-bottom:6px;">
-                        Hình ảnh sản phẩm kèm TimeMark *
+                    <label style="display:block; font-size:12.5px; font-weight:700; color:#0f172a; margin-bottom:6px;">
+                        Hình ảnh sản phẩm * <span style="color:#ef4444; font-weight:700;">(Bắt buộc phải tải ảnh lên hoặc dán URL)</span>
                     </label>
 
                     <!-- Khung tải ảnh từ tệp máy tính / điện thoại -->
