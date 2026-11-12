@@ -316,7 +316,7 @@
 
                 const { data, error } = await client
                     .from('products')
-                    .insert([record]);
+                    .upsert([record], { onConflict: 'id' });
 
                 if (error) throw error;
                 console.log(`✅ [Supabase] Đã thêm sản phẩm lên Cloud (DB Status: ${record.status}, Client: ${product.status}):`, record.id);

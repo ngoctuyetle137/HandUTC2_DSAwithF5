@@ -20,6 +20,7 @@
 
     // Tạo mã định danh duy nhất cho từng máy để chống echo chính mình
     const CLIENT_ID = 'DEV_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+    const SESSION_START_TIME = Date.now();
 
     let eventSource = null;
     let isConnected = false;
@@ -169,10 +170,13 @@
         },
 
         // Xử lý gói tin nhận được từ các máy khác
-        handleIncomingRawMessage: function (messageStr, eventId) {
+        handleIncomingRawMessage: function (messageStr, eventId, isHistorical = false) {
             // Chống xử lý trùng lặp gói tin
             if (eventId && processedMessageIds.has(eventId)) return;
-            if (eventId) processedMessageIds.add(eventId);
+            if (eventId) {
+                processedMessageIds.add(eventId);
+                saveProcessedSyncIds(processedMessageIds);
+            }
 
             let payload;
             try {
@@ -186,41 +190,47 @@
             // Bỏ qua gói tin do chính máy này phát đi (Echo suppression)
             if (payload.senderClientId === CLIENT_ID) return;
 
+            const historicalFlag = Boolean(
+                isHistorical ||
+                this.isCatchingUp ||
+                (payload.timestamp && payload.timestamp < SESSION_START_TIME - 5000)
+            );
+
             console.log(`📩 [Online Sync Nhận] Loại: ${payload.type} từ Client: ${payload.senderClientId}`);
 
             switch (payload.type) {
                 case 'NEW_POST':
-                    this.emit('NEW_POST', payload.post);
+                    this.emit('NEW_POST', payload.post, historicalFlag);
                     break;
                 case 'DELETE_POST':
-                    this.emit('DELETE_POST', payload.postId);
+                    this.emit('DELETE_POST', payload.postId, historicalFlag);
                     break;
                 case 'CHAT_MESSAGE':
-                    this.emit('CHAT_MESSAGE', payload.message);
+                    this.emit('CHAT_MESSAGE', payload.message, historicalFlag);
                     break;
                 case 'DEPOSIT_ORDER':
-                    this.emit('DEPOSIT_ORDER', payload.order);
+                    this.emit('DEPOSIT_ORDER', payload.order, historicalFlag);
                     break;
                 case 'ORDER_UPDATED':
-                    this.emit('ORDER_UPDATED', payload.order);
+                    this.emit('ORDER_UPDATED', payload.order, historicalFlag);
                     break;
                 case 'NEW_DISPUTE':
-                    this.emit('NEW_DISPUTE', payload.dispute);
+                    this.emit('NEW_DISPUTE', payload.dispute, historicalFlag);
                     break;
                 case 'DISPUTE_RESOLVED':
-                    this.emit('DISPUTE_RESOLVED', payload);
+                    this.emit('DISPUTE_RESOLVED', payload, historicalFlag);
                     break;
                 case 'POST_APPROVED':
-                    this.emit('POST_APPROVED', payload);
+                    this.emit('POST_APPROVED', payload, historicalFlag);
                     break;
                 case 'POST_REJECTED':
-                    this.emit('POST_REJECTED', payload);
+                    this.emit('POST_REJECTED', payload, historicalFlag);
                     break;
                 case 'CHAT_DELETED':
-                    this.emit('CHAT_DELETED', payload);
+                    this.emit('CHAT_DELETED', payload, historicalFlag);
                     break;
                 case 'ADMIN_WARNING':
-                    this.emit('ADMIN_WARNING', payload.warning);
+                    this.emit('ADMIN_WARNING', payload.warning, historicalFlag);
                     break;
             }
         },

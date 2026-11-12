@@ -419,6 +419,8 @@ class AppController {
         if (!productId) return;
         if (!this.deletedProductIds) this.deletedProductIds = new Set();
         this.deletedProductIds.add(String(productId));
+        if (!this._recentDeletedIds) this._recentDeletedIds = new Map();
+        this._recentDeletedIds.set(String(productId), Date.now());
         try {
             localStorage.setItem('unipass_deleted_product_ids', JSON.stringify(Array.from(this.deletedProductIds)));
         } catch (e) {
@@ -430,6 +432,7 @@ class AppController {
         if (!productId) return;
         if (!this.deletedProductIds) this.deletedProductIds = new Set();
         this.deletedProductIds.delete(String(productId));
+        if (this._recentDeletedIds) this._recentDeletedIds.delete(String(productId));
         try {
             localStorage.setItem('unipass_deleted_product_ids', JSON.stringify(Array.from(this.deletedProductIds)));
         } catch (e) {
@@ -478,18 +481,21 @@ class AppController {
             this.saveUsers();
         }
 
-        // Tải sản phẩm
+        // Tải sản phẩm (ưu tiên cache tạm; nếu chưa có cache và đã cấu hình Supabase thì chờ nạp trực tiếp từ Cloud để tránh nạp nhầm bài mẫu)
+        const isCloudConfigured = Boolean(window.UniPassSupabase && window.UniPassSupabase.isConfigured());
         const savedProducts = localStorage.getItem('unipass_products');
         if (savedProducts) {
             try {
                 const parsed = JSON.parse(savedProducts);
                 this.products = (Array.isArray(parsed) ? parsed : []).filter(p => p && p.id && !this.deletedProductIds.has(String(p.id)));
             } catch (e) {
-                this.products = INITIAL_PRODUCTS.filter(p => !this.deletedProductIds.has(String(p.id)));
+                this.products = isCloudConfigured ? [] : INITIAL_PRODUCTS.filter(p => !this.deletedProductIds.has(String(p.id)));
             }
         } else {
-            this.products = INITIAL_PRODUCTS.filter(p => !this.deletedProductIds.has(String(p.id)));
-            this.saveProducts();
+            this.products = isCloudConfigured ? [] : INITIAL_PRODUCTS.filter(p => !this.deletedProductIds.has(String(p.id)));
+            if (!isCloudConfigured) {
+                this.saveProducts();
+            }
         }
 
         // Tải tin nhắn
@@ -739,21 +745,8 @@ class AppController {
             // 0. Tải và đồng bộ toàn bộ tài khoản người dùng từ Supabase Cloud
             await this.syncUsersFromCloud();
 
-            // Tải sản phẩm từ Supabase
-            const cloudProducts = await window.UniPassSupabase.getProducts();
-            if (cloudProducts && Array.isArray(cloudProducts) && cloudProducts.length > 0) {
-                // Lọc bỏ ngay lập tức những bài đã bị xóa (trong danh sách deletedProductIds hoặc status === 'deleted')
-                const validCloudProducts = cloudProducts.filter(p => p && p.id && p.status !== 'deleted' && !this.deletedProductIds.has(String(p.id)));
-                const cloudIds = new Set(validCloudProducts.map(p => p.id));
-                const localOnly = this.products.filter(p => !cloudIds.has(p.id) && !this.deletedProductIds.has(String(p.id)));
-                this.products = [...localOnly, ...validCloudProducts];
-                this.saveProducts();
-                this.rebuildDSACache();
-                this.renderProducts();
-                this.renderAdminDashboard();
-                this.renderProfile();
-                console.log(`✅ [Supabase] Đã nạp ${validCloudProducts.length} sản phẩm từ Cloud (Kèm ${localOnly.length} bài cục bộ)`);
-            }
+            // Tải sản phẩm đồng bộ chuẩn từ Supabase (lấy Cloud làm nguồn chuẩn duy nhất, kể cả khi đã xóa hết về [])
+            await this.syncProductsFromCloud(true);
 
             // Tải tin nhắn từ Supabase và hợp nhất bảo toàn 100% tin nhắn đã có
             const cloudMessages = await window.UniPassSupabase.getChatMessages();
@@ -865,8 +858,104 @@ class AppController {
 
             // Đăng ký nhận sự kiện Realtime qua WebSocket
             window.UniPassSupabase.subscribeRealtime(this.handleSupabaseRealtimeEvent.bind(this));
+
+            // Tự động đồng bộ lại danh sách bài đăng khi mở lại tab/điện thoại hoặc định kỳ để các thiết bị luôn khớp 100%
+            if (!this._cloudProductSyncBound && typeof window !== 'undefined') {
+                this._cloudProductSyncBound = true;
+                const triggerCloudRefresh = () => {
+                    const now = Date.now();
+                    if (now - (this._lastCloudProductSync || 0) < 4000) return;
+                    this._lastCloudProductSync = now;
+                    this.syncProductsFromCloud(false);
+                };
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') triggerCloudRefresh();
+                });
+                window.addEventListener('focus', triggerCloudRefresh);
+                setInterval(() => {
+                    if (document.visibilityState === 'visible') triggerCloudRefresh();
+                }, 15000);
+            }
         } catch (err) {
             console.error('❌ Lỗi khi đồng bộ ban đầu với Supabase:', err);
+        }
+    }
+
+    async syncProductsFromCloud(forceRender = false) {
+        if (!window.UniPassSupabase || !window.UniPassSupabase.isConfigured()) return false;
+        if (this._isSyncingProducts) return false;
+        this._isSyncingProducts = true;
+        try {
+            this._lastCloudProductSync = Date.now();
+            const cloudProducts = await window.UniPassSupabase.getProducts();
+            if (!Array.isArray(cloudProducts)) return false;
+
+            const now = Date.now();
+            const isRecentlyDeletedHere = (id) => {
+                if (!this._recentDeletedIds) return false;
+                const ts = this._recentDeletedIds.get(String(id));
+                return Boolean(ts && (now - ts < 15000));
+            };
+            const validCloudProducts = cloudProducts.filter(
+                p => p && p.id && p.status !== 'deleted' && !isRecentlyDeletedHere(p.id)
+            );
+            const cloudIds = new Set(validCloudProducts.map(p => String(p.id)));
+
+            // Chỉ giữ tạm bài vừa đăng trên máy hiện tại trong vòng 15 giây phòng trường hợp đang upload lên Cloud
+            const justPostedLocal = (this.products || []).filter(p =>
+                p && p.id &&
+                !cloudIds.has(String(p.id)) &&
+                !isRecentlyDeletedHere(p.id) &&
+                p._localCreatedAt && (now - p._localCreatedAt < 15000)
+            );
+
+            const completedProdIds = new Set(
+                (this.depositOrders || [])
+                    .filter(o => o.status === 'completed')
+                    .map(o => String(o.productId || o.product_id || ''))
+                    .filter(Boolean)
+            );
+            const activeDepositedIds = new Set(
+                (this.depositOrders || [])
+                    .filter(o => ['pending_seller', 'in_trade', 'deposited', 'pending_mutual'].includes(o.status))
+                    .map(o => String(o.productId || o.product_id || ''))
+                    .filter(Boolean)
+            );
+
+            const prevMap = new Map((this.products || []).map(p => [String(p.id), p]));
+            const nextProducts = [...justPostedLocal, ...validCloudProducts]
+                .filter(p => !completedProdIds.has(String(p.id)))
+                .map(p => {
+                    const prev = prevMap.get(String(p.id));
+                    const isDep = activeDepositedIds.has(String(p.id)) || p.isDeposited || p.status === 'deposited';
+                    return {
+                        ...p,
+                        status: isDep ? 'deposited' : p.status,
+                        isDeposited: isDep,
+                        approvedAt: p.approvedAt || (prev && prev.approvedAt),
+                        submittedAt: p.submittedAt || (prev && prev.submittedAt),
+                        timemarkProofUrl: p.timemarkProofUrl || (prev && prev.timemarkProofUrl) || ''
+                    };
+                });
+
+            const buildSig = (arr) => (arr || []).map(p => `${p.id}:${p.status}:${p.price}:${p.title}:${p.isDeposited ? 1 : 0}`).join('|');
+            const changed = buildSig(this.products) !== buildSig(nextProducts);
+
+            this.products = nextProducts;
+            if (changed || forceRender) {
+                this.saveProducts();
+                this.rebuildDSACache();
+                this.renderProducts();
+                this.renderAdminDashboard();
+                this.renderProfile();
+                console.log(`✅ [Supabase] Đã đồng bộ chính xác ${this.products.length} sản phẩm từ Cloud.`);
+            }
+            return true;
+        } catch (err) {
+            console.warn('⚠️ [Supabase] Lỗi khi đồng bộ sản phẩm từ Cloud:', err);
+            return false;
+        } finally {
+            this._isSyncingProducts = false;
         }
     }
 
@@ -898,7 +987,12 @@ class AppController {
                     clientStatus = newP.status || 'approved';
                 }
 
-                if (!this.products.some(p => p.id === newP.id)) {
+                if (clientStatus === 'deleted') {
+                    this.recordDeletedProduct(newP.id);
+                    return;
+                }
+
+                if (!this.products.some(p => String(p.id) === String(newP.id))) {
                     this.products.unshift({
                         id: newP.id,
                         title: newP.title,
@@ -956,7 +1050,7 @@ class AppController {
 
                 if (clientStatus === 'deleted') {
                     this.recordDeletedProduct(updatedP.id);
-                    this.products = this.products.filter(p => p.id !== updatedP.id);
+                    this.products = this.products.filter(p => String(p.id) !== String(updatedP.id));
                 } else {
                     const idx = this.products.findIndex(p => p.id === updatedP.id);
                     if (idx !== -1) {
@@ -999,7 +1093,7 @@ class AppController {
                 const targetId = payload.old ? payload.old.id : null;
                 if (targetId) {
                     this.recordDeletedProduct(targetId);
-                    this.products = this.products.filter(p => p.id !== targetId);
+                    this.products = this.products.filter(p => String(p.id) !== String(targetId));
                     this.saveProducts();
                     this.rebuildDSACache();
                     this.renderProducts();
@@ -1228,7 +1322,9 @@ class AppController {
         // 1. Nhận bài đăng mới từ Máy B, C, D... tức thì
         window.UniPassOnlineSync.on('NEW_POST', (post, isHistorical) => {
             if (!post || !post.id) return;
-            const exists = this.products.some(p => p.id === post.id);
+            if (this.deletedProductIds && this.deletedProductIds.has(String(post.id))) return;
+            if (isHistorical && window.UniPassSupabase && window.UniPassSupabase.isConfigured()) return;
+            const exists = this.products.some(p => String(p.id) === String(post.id));
             if (!exists) {
                 this.products.unshift(post);
                 localStorage.setItem('unipass_products', JSON.stringify(this.products));
@@ -1259,7 +1355,9 @@ class AppController {
         // 1b. Nhận sự kiện bài đăng được Admin phê duyệt TimeMark
         window.UniPassOnlineSync.on('POST_APPROVED', (data, isHistorical) => {
             if (!data || !data.postId) return;
-            let post = this.products.find(p => p.id === data.postId);
+            if (this.deletedProductIds && this.deletedProductIds.has(String(data.postId))) return;
+            if (isHistorical && window.UniPassSupabase && window.UniPassSupabase.isConfigured()) return;
+            let post = this.products.find(p => String(p.id) === String(data.postId));
             if (post) {
                 post.status = 'approved';
                 post.approvedAt = Date.now();
@@ -1326,7 +1424,7 @@ class AppController {
             if (!postId) return;
             this.recordDeletedProduct(postId);
             const prevLen = this.products.length;
-            this.products = this.products.filter(p => p.id !== postId);
+            this.products = this.products.filter(p => String(p.id) !== String(postId));
             if (this.products.length !== prevLen) {
                 localStorage.setItem('unipass_products', JSON.stringify(this.products));
                 this.rebuildDSACache();
@@ -7266,6 +7364,7 @@ function confirmPublishPostWithProof() {
         pendingNewPost.status = 'pending'; // ⏳ Nếu độ khớp < 95%: Chờ Admin kiểm duyệt thủ công
     }
 
+    pendingNewPost._localCreatedAt = Date.now();
     window.app.products.unshift(pendingNewPost);
     window.app.saveProducts();
     window.app.rebuildDSACache();
